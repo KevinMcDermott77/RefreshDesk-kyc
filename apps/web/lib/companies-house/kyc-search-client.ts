@@ -47,8 +47,17 @@ export async function kycSearchGetJson(path: string, token: string): Promise<unk
   return response.json()
 }
 
+export type KycSearchResponse = {
+  status: number
+  body: unknown
+  /** X-Fetched-At: when kyc-search fetched the data from Companies House. */
+  fetchedAt?: string
+  /** Retry-After sent with a 503 (Companies House rate limit), verbatim. */
+  retryAfter?: string
+}
+
 /** Like kycSearchGetJson, but returns the status instead of throwing on non-2xx. */
-export async function kycSearchGet(path: string, token: string): Promise<{ status: number; body: unknown }> {
+export async function kycSearchGet(path: string, token: string): Promise<KycSearchResponse> {
   const url = `${kycSearchUrl()}${path}`
   console.log(`[kyc-search] GET ${url}`)
 
@@ -57,7 +66,14 @@ export async function kycSearchGet(path: string, token: string): Promise<{ statu
   })
 
   const body = response.ok ? await response.json() : null
-  return { status: response.status, body }
+  const fetchedAt = response.headers.get('x-fetched-at')
+  const retryAfter = response.headers.get('retry-after')
+  return {
+    status: response.status,
+    body,
+    ...(fetchedAt ? { fetchedAt } : {}),
+    ...(retryAfter ? { retryAfter } : {}),
+  }
 }
 
 export async function kycSearchGetBinary(path: string, token: string): Promise<Buffer> {

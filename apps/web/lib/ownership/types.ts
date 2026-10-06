@@ -73,6 +73,10 @@ export const ownershipNodeSchema = z.object({
   depth: z.number().int().nonnegative(),
   // Companies House PSC statement code, verbatim (including CH's "signficant" typo).
   statementCode: z.string().optional(),
+  // Oldest X-Fetched-At among the responses read for this company.
+  fetchedAt: z.string().optional(),
+  // Retry-After from the response that made this node SOURCE_UNAVAILABLE.
+  retryAfter: z.string().optional(),
 })
 export type OwnershipNode = z.infer<typeof ownershipNodeSchema>
 
@@ -104,7 +108,14 @@ export type WalkPolicy = {
 }
 
 /** A raw upstream response: HTTP status plus parsed JSON body (null when empty). */
-export type Fetched = { status: number; body: unknown }
+export type Fetched = {
+  status: number
+  body: unknown
+  /** When the upstream fetched this from Companies House (kyc-search X-Fetched-At). */
+  fetchedAt?: string
+  /** Retry-After from a 503, verbatim. */
+  retryAfter?: string
+}
 
 export type GleifParents = {
   lei: string

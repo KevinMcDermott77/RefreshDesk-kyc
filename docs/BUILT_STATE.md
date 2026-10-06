@@ -3,7 +3,7 @@
 ## 1. Entity CDD flow
 - **Entry:** `/dashboard/clients/[id]/entity-cdd` → `fetchEntityCddAction` (`app/dashboard/clients/[id]/entity-cdd/actions.ts`). Entity clients only; `read_only` role blocked (app layer only).
 - **Input:** a company number, or a PDF/JPEG/PNG (≤10 MB). An upload goes to Storage, is registered as a `client_documents` row (`document_type='incorporation'`), and is sent to Claude (`claude-sonnet-4-20250514`, prompt `v1.0-entity`) to extract the number. The number is then checked against `^([0-9]{8}|[A-Z]{2}[0-9]{6})$`.
-- **kyc-search calls** (`lib/companies-house/kyc-search-client.ts`): `POST /auth/login` (admin email/password → `access_token`; a new login for every operation, nothing cached), then these run in parallel: `GET /companies/{n}`, `/companies/{n}/officers`, `/companies/{n}/pscs`. Filings use `GET /companies/{n}/filings` and `/companies/{n}/filings/{txId}/document` (PDF).
+- **kyc-search calls** (`lib/companies-house/kyc-search-client.ts`): `POST /auth/login` (admin email/password → `access_token`; a new login for every operation, nothing cached), then these run in parallel: `GET /companies/{n}`, `/companies/{n}/officers?fresh=true`, `/companies/{n}/pscs?fresh=true` (via `kycSearchGet`, which also reads `X-Fetched-At`). Filings use `GET /companies/{n}/filings` and `/companies/{n}/filings/{txId}/document` (PDF).
 - **Stored:** RPC `save_entity_cdd` writes one `entity_cdd_records` row (`pending_review`) holding the raw profile, officers and PSCs, plus the computed chain and UBOs.
 - **Review gate:** `/entity-cdd/[recordId]/review` shows the profile, active officers, the PSC table, a ReactFlow org chart and Approve/Reject buttons. RPC `review_entity_cdd` locks the row and rejects records that are already reviewed. On approve it merges `company_number`, `registered_name`, `registered_address` and `incorporation_date` into `clients.details`, sets `last_refreshed_at`, recomputes `refresh_due_date` from `firm_refresh_rules`, and then embeds the client and the CDD record (Voyage).
 - **Audit events:** `entity_cdd.fetched` (payload includes the extraction model and prompt version), `entity_cdd.approved` / `entity_cdd.rejected` (with notes), `client.refreshed`, `document.uploaded`, `filing.saved`. The timeline UI has no labels for `entity_cdd.*` or `filing.saved`, so it shows the raw event type.
@@ -20,7 +20,15 @@
   - Other outcomes are `PSC_NONE_FILED`, `PSC_SUPER_SECURE`, `CIRCULAR_OWNERSHIP` (ancestor revisit), `DEPTH_LIMIT_REACHED` and `SOURCE_UNAVAILABLE`.
   - A non-individual branch that sits wholly below the threshold is `PRUNED` and not fetched.
 - **Overall status:** `resolved` if no material UNRESOLVED leaf remains, otherwise `partial` or `unresolved`.
-- **Production wiring:** the walker uses kyc-search, which exposes no statements, exemptions or GLEIF data. In production, a company with no PSCs therefore ends as `SOURCE_UNAVAILABLE`, and listed companies are not detected.
+- **Production wiring (`lib/ownership/kyc-search-fetcher.ts`):** the walker reads live data from kyc-search.
+  - The root's profile and PSCs come from `fetchEntityCdd`, which calls `/officers?fresh=true` and `/pscs?fresh=true`, so the root is not fetched twice.
+  - Each company above the root uses `GET /companies/{n}` and `/companies/{n}/pscs?fresh=true`. kyc-search paginates officers and PSCs fully.
+  - Every company, root included, also calls `GET /companies/{n}/exemptions`, which is always live. An open `psc-exempt-as-trading-on-uk-regulated-market` exemption ends the company as `RESOLVED_LISTED` before its PSCs are read; J Sainsbury plc (00185647) resolves this way.
+  - A company with no active PSCs calls `GET /companies/{n}/pscs/statements` (always live). An active statement gives `PSC_STATEMENT`.
+  - kyc-search maps a CH 404 to 404, and the walker reads a 404 on PSCs, statements or exemptions as "none on file". So a company with nothing on file ends `PSC_NONE_FILED`, not `SOURCE_UNAVAILABLE`.
+  - kyc-search maps a CH 429 to 503 with `Retry-After`. A 503 or other 5xx (or a network error) on the profile, the PSCs, or, for a company with no PSCs, the statements or exemptions, ends the company as `SOURCE_UNAVAILABLE`. The node keeps `Retry-After` verbatim as `retryAfter`.
+  - There is still no GLEIF in production: `getGleifParents` returns null.
+- **Freshness:** each company node records `fetchedAt`, the oldest `X-Fetched-At` among the kyc-search responses read for it. It is not yet carried into the stored `ownership_chain`.
 - **Stored shape:** `toEntityCddOwnership` maps the walk onto the existing `ownership_chain` (direct owners, `ownership_percentage` always null), `ubo_list`, `psc_data_quality` and `psc_warning` fields.
 
 ## 3. Data model (relevant)

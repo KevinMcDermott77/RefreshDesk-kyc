@@ -189,6 +189,20 @@ export async function walk(
     if (reasonCode) node.reasonCode = reasonCode
   }
 
+  /** Keeps the oldest X-Fetched-At of the responses that informed this node. */
+  function noteFetched(node: OwnershipNode, fetched: Fetched) {
+    if (!fetched.fetchedAt || !isAvailable(fetched)) return
+    if (!node.fetchedAt || Date.parse(fetched.fetchedAt) < Date.parse(node.fetchedAt)) {
+      node.fetchedAt = fetched.fetchedAt
+    }
+  }
+
+  function unavailable(node: OwnershipNode, ...failed: Fetched[]) {
+    settle(node, 'UNRESOLVED', 'SOURCE_UNAVAILABLE')
+    const retryAfter = failed.find((fetched) => !isAvailable(fetched) && fetched.retryAfter)?.retryAfter
+    if (retryAfter) node.retryAfter = retryAfter
+  }
+
   function addPsc(item: Item, psc: Psc, index: number) {
     const natures = Array.isArray(psc.natures_of_control)
       ? psc.natures_of_control.filter((n): n is string => typeof n === 'string')
@@ -296,9 +310,10 @@ export async function walk(
 
     const profile = await safely(() => fetcher.getProfile(item.companyNumber))
     if (profile.status !== 200) {
-      settle(node, 'UNRESOLVED', 'SOURCE_UNAVAILABLE')
+      unavailable(node, profile)
       continue
     }
+    noteFetched(node, profile)
     const profileBody = asRecord(profile.body)
     node.name = str(profileBody.company_name) ?? node.name
     node.jurisdiction = str(profileBody.jurisdiction) ?? node.jurisdiction
@@ -322,6 +337,7 @@ export async function walk(
     }
 
     const exemptions = await safely(() => fetcher.getExemptions(item.companyNumber))
+    noteFetched(node, exemptions)
     if (hasUkRegulatedMarketExemption(exemptions)) {
       settle(node, 'RESOLVED_LISTED')
       continue
@@ -329,9 +345,10 @@ export async function walk(
 
     const pscs = await safely(() => fetcher.getPscs(item.companyNumber))
     if (!isAvailable(pscs)) {
-      settle(node, 'UNRESOLVED', 'SOURCE_UNAVAILABLE')
+      unavailable(node, pscs)
       continue
     }
+    noteFetched(node, pscs)
 
     const active = items(pscs).filter((psc) => !isCeased(psc))
     if (active.length > 0) {
@@ -340,12 +357,13 @@ export async function walk(
     }
 
     const statements = await safely(() => fetcher.getPscStatements(item.companyNumber))
+    noteFetched(node, statements)
     const activeStatement = items(statements).find((statement) => !isCeased(statement))
     if (activeStatement) {
       settle(node, 'UNRESOLVED', 'PSC_STATEMENT')
       node.statementCode = str(activeStatement.statement)
     } else if (!isAvailable(statements) || !isAvailable(exemptions)) {
-      settle(node, 'UNRESOLVED', 'SOURCE_UNAVAILABLE')
+      unavailable(node, statements, exemptions)
     } else {
       settle(node, 'UNRESOLVED', 'PSC_NONE_FILED')
     }
