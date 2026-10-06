@@ -1,0 +1,304 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 3,
+    "etag": "885cd4fab6878a4c1d070cabc4bf01e609b7c59d",
+    "items": [
+      {
+        "etag": "885cd4fab6878a4c1d070cabc4bf01e609b7c59d",
+        "address": {
+          "address_line_1": "Berkeley Square",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "W1J 5AL",
+          "premises": "40"
+        },
+        "appointed_on": "2022-07-22",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/12467359/appointments/1TzQR2Slhhu74mIRf5Uaemwdbfg",
+          "officer": {
+            "appointments": "/officers/a2XftXvow9kGt5gU7q3DSsEbS9s/appointments"
+          }
+        },
+        "name": "KANAKIS, Rebecca Louise",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "299050010001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-02-23"
+        }
+      },
+      {
+        "etag": "238aef6456a1fb5cf856a287c8581c5c0c87d3cb",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "appointed_on": "2026-04-30",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1978
+        },
+        "links": {
+          "self": "/company/12467359/appointments/L8XebVA0tNgk7WYS_mm3dTRSveQ",
+          "officer": {
+            "appointments": "/officers/ThDB3M4JDXJLaQATfOM1YLrAzXo/appointments"
+          }
+        },
+        "name": "MERRICK, Matthew Graham",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "201281410001",
+        "identity_verification_details": {
+          "anti_money_laundering_supervisory_bodies": [
+            "HMRC"
+          ],
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-04-30",
+          "authorised_corporate_service_provider_name": "MOURANT GOVERNANCE SERVICES (UK) LIMITED ACSP",
+          "identity_verified_on": "2025-08-06",
+          "preferred_name": "Matthew Graham Merrick"
+        }
+      },
+      {
+        "etag": "1f33ad68cb73fb945b8d7356752677ecdc6f253e",
+        "address": {
+          "address_line_1": "More London Riverside",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "appointed_on": "2025-05-16",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 1,
+          "year": 1982
+        },
+        "links": {
+          "self": "/company/12467359/appointments/uvzb3KAfudXDS1zfSZ7Vi2cze3U",
+          "officer": {
+            "appointments": "/officers/ipib_I_r0sttfOnjsIrCSo93YMQ/appointments"
+          }
+        },
+        "name": "SANGAR, Dushyant Singh",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "286210520001",
+        "identity_verification_details": {
+          "anti_money_laundering_supervisory_bodies": [
+            "HMRC"
+          ],
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-02-23",
+          "authorised_corporate_service_provider_name": "MOURANT GOVERNANCE SERVICES (UK) LIMITED ACSP",
+          "identity_verified_on": "2025-08-06",
+          "preferred_name": "Dushyant Singh Sangar"
+        }
+      },
+      {
+        "etag": "ff71b686154b18db4cf1a2e1cf3ec5aaf0141e1d",
+        "address": {
+          "address_line_1": "Floor, Cottons Centre",
+          "address_line_2": "Cottons Lane",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2QG",
+          "premises": "7th"
+        },
+        "appointed_on": "2020-02-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 8,
+          "year": 1976
+        },
+        "links": {
+          "self": "/company/12467359/appointments/A7_6NhzMTSXvyviuOhF-Yybjfsw",
+          "officer": {
+            "appointments": "/officers/t9tr82P73kE5AwhtIfpWlp7XHgY/appointments"
+          }
+        },
+        "name": "DAVIES, Simon David Austin",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2022-07-22",
+        "person_number": "197508390001"
+      },
+      {
+        "etag": "e29de0f6a909aed294b3f212ea8658c2694a7c77",
+        "address": {
+          "address_line_1": "Floor, Cottons Centre",
+          "address_line_2": "Cottons Lane",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2QG",
+          "premises": "7th"
+        },
+        "appointed_on": "2020-02-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 9,
+          "year": 1983
+        },
+        "links": {
+          "self": "/company/12467359/appointments/JbhFqVaNJc5vNqPxNbPkeFMN-as",
+          "officer": {
+            "appointments": "/officers/KY0h08l6Q_y-6WqbHD4cRntcW7g/appointments"
+          }
+        },
+        "name": "KATAKY, Gemma Nandita",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2023-02-24",
+        "person_number": "208442910001"
+      },
+      {
+        "etag": "ac7fa74f2a741bece34962c60a520bc5f1b5d2df",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "appointed_on": "2021-07-30",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 5,
+          "year": 1979
+        },
+        "links": {
+          "self": "/company/12467359/appointments/9CSTZwVQn2Zs41XJiDnYWjD5QxE",
+          "officer": {
+            "appointments": "/officers/htRIBVTG75Q9MGKs8g3ajydfdyo/appointments"
+          }
+        },
+        "name": "MORTIMER, James Neil",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2026-04-30",
+        "person_number": "280627890001",
+        "identity_verification_details": {
+          "anti_money_laundering_supervisory_bodies": [
+            "HMRC"
+          ],
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-02-23",
+          "authorised_corporate_service_provider_name": "MOURANT GOVERNANCE SERVICES (UK) LIMITED ACSP",
+          "identity_verified_on": "2025-08-06",
+          "preferred_name": "James Neil Mortimer"
+        }
+      },
+      {
+        "etag": "ff71b686154b18db4cf1a2e1cf3ec5aaf0141e1d",
+        "address": {
+          "address_line_1": "Floor, Cottons Centre",
+          "address_line_2": "Cottons Lane",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2QG",
+          "premises": "7th"
+        },
+        "appointed_on": "2020-02-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 4,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/12467359/appointments/wK3m8IDKfXi5dWzGYBDmeJE66QI",
+          "officer": {
+            "appointments": "/officers/_Aec1oPNJTwXZFE6okqGr0wGLrU/appointments"
+          }
+        },
+        "name": "MORTON, Emma Jane",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2021-07-30",
+        "person_number": "267235880001"
+      },
+      {
+        "etag": "e19ff8c2de012d8a9f57a34eb7347f76449375c1",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "appointed_on": "2023-02-24",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 8,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/12467359/appointments/MpHNhN4LfcawB5Ze9IiQThixmwo",
+          "officer": {
+            "appointments": "/officers/0ravOwH4s5VvL8Snx1UdOEtWQms/appointments"
+          }
+        },
+        "name": "VASHI, Rachana Gautam",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2025-05-16",
+        "person_number": "302030820001"
+      },
+      {
+        "etag": "0669cc9ec8a1bc8d318bac1ea9dc2492d377f1ee",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "appointed_on": "2020-02-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 12,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/12467359/appointments/9BP1_WARFwcyPeC13M26Z0uMGtA",
+          "officer": {
+            "appointments": "/officers/rH4gcpBx2wHmewT-nLo9BjnHsp8/appointments"
+          }
+        },
+        "name": "VRANA, Michael David",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2025-05-16",
+        "person_number": "197849520001"
+      }
+    ],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/12467359/officers"
+    },
+    "resigned_count": 6,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 9
+  }
+}

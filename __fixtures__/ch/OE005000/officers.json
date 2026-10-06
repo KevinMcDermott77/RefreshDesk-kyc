@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 0,
+    "etag": "",
+    "items": [],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {},
+    "resigned_count": 0,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 0
+  }
+}

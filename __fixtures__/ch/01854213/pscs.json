@@ -1,0 +1,103 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 100,
+    "items": [
+      {
+        "etag": "4545cdf5fc6a904355a0b4639f7c357ae173a650",
+        "notified_on": "2019-09-23",
+        "ceased_on": "2019-12-20",
+        "name": "Jab (Acquisition) Ltd",
+        "links": {
+          "self": "/company/01854213/persons-with-significant-control/corporate-entity/EDtmSO6J_JLKrMjSDEgfyQuVshk"
+        },
+        "identification": {
+          "legal_form": "Limited By Shares",
+          "legal_authority": "United Kingdom (England And Wales)",
+          "country_registered": "England And Wales",
+          "place_registered": "Companies House",
+          "registration_number": "11391321"
+        },
+        "ceased": true,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b",
+          "region": "England"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      },
+      {
+        "etag": "73f3f76ec4cc3cf0604fb09bb1a88a2a6ca18dd0",
+        "notified_on": "2019-09-23",
+        "name": "Pret A Manger Limited",
+        "links": {
+          "self": "/company/01854213/persons-with-significant-control/corporate-entity/3FLTwmBXgWsbRsTmdsLtf9-ML1k"
+        },
+        "identification": {
+          "legal_form": "Private Limited Company",
+          "legal_authority": "Companies Act 2006"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      },
+      {
+        "etag": "249b17230492d3bdd95bd93bd9b6978449005c1b",
+        "notified_on": "2016-09-30",
+        "ceased_on": "2019-09-23",
+        "name": "Pam Acquisitionco Limited",
+        "links": {
+          "self": "/company/01854213/persons-with-significant-control/corporate-entity/QocscZAB6AWZF71g8wME3aNGTGM"
+        },
+        "identification": {
+          "legal_form": "Private Company Limited By Shares",
+          "legal_authority": "Companies Act 2006",
+          "country_registered": "England",
+          "place_registered": "The Registrar Of Companies, Companies House",
+          "registration_number": "06500206"
+        },
+        "ceased": true,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 3,
+    "active_count": 1,
+    "ceased_count": 2,
+    "links": {
+      "self": "/company/01854213/persons-with-significant-control"
+    }
+  }
+}

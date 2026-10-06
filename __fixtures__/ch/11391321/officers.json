@@ -1,0 +1,302 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 2,
+    "etag": "f9c746741c4789a6a15719efaf180716d292a820",
+    "items": [
+      {
+        "etag": "f9c746741c4789a6a15719efaf180716d292a820",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2019-09-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 11,
+          "year": 1977
+        },
+        "links": {
+          "self": "/company/11391321/appointments/82XtkxUMeTxgyD5OZOi-nxsd0l8",
+          "officer": {
+            "appointments": "/officers/cl1FnVnW8lup_xbQmPz7kxng3ZY/appointments"
+          }
+        },
+        "name": "CHRISTOU, Panayioti Michael Andrew",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "261079900001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-06-04"
+        }
+      },
+      {
+        "etag": "99d13d77e2b89ec8a4f8edbec6da0f49b036c4f8",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2021-11-12",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 1,
+          "year": 1975
+        },
+        "links": {
+          "self": "/company/11391321/appointments/M8VGhgNFyhfZlWNontfsJT8FnUc",
+          "officer": {
+            "appointments": "/officers/YRdelmH2VVup_kskpkGgEMIpTv4/appointments"
+          }
+        },
+        "name": "PEIXOTO, Gustavo Henrique Lins",
+        "nationality": "Brazilian",
+        "officer_role": "director",
+        "person_number": "306567100001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-06-04"
+        }
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2019-05-23",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 6,
+          "year": 1965
+        },
+        "links": {
+          "self": "/company/11391321/appointments/CfFE4IFo930Orx4HT1a-8tsfCSQ",
+          "officer": {
+            "appointments": "/officers/JtMb38H7hed0nztw7j5I3nNL6ag/appointments"
+          }
+        },
+        "name": "BHAT, Axel Paul-Yves Marie",
+        "nationality": "French",
+        "officer_role": "director",
+        "resigned_on": "2020-03-13",
+        "person_number": "258993610001"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20 Eastbourne Terrace"
+        },
+        "appointed_on": "2018-05-31",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "Luxembourg",
+        "date_of_birth": {
+          "month": 1,
+          "year": 1979
+        },
+        "links": {
+          "self": "/company/11391321/appointments/PmrjjJWPX_68I4DG2ECI2bg1vhA",
+          "officer": {
+            "appointments": "/officers/olUo1-IxSI4E47Fp79qJNcYX38k/appointments"
+          }
+        },
+        "name": "CHENU, Philippe",
+        "nationality": "Belgian",
+        "officer_role": "director",
+        "resigned_on": "2018-06-19",
+        "person_number": "246932310001"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2018-06-19",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United States",
+        "date_of_birth": {
+          "month": 6,
+          "year": 1976
+        },
+        "links": {
+          "self": "/company/11391321/appointments/36YX3-XK2XBvbakUqHte9xE7gf4",
+          "officer": {
+            "appointments": "/officers/jGNygVZoAkQw81BMrxlFGw09q64/appointments"
+          }
+        },
+        "name": "CREUS, Joachim",
+        "nationality": "Belgian",
+        "officer_role": "director",
+        "resigned_on": "2018-10-22",
+        "person_number": "247426310001"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2018-06-19",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "Germany",
+        "date_of_birth": {
+          "month": 5,
+          "year": 1961
+        },
+        "links": {
+          "self": "/company/11391321/appointments/umE2L424FQOGOQznloaECwoy7yg",
+          "officer": {
+            "appointments": "/officers/u_UcJpyPUdK1OPwxPBwoCTehwso/appointments"
+          }
+        },
+        "name": "HOPMANN, Markus",
+        "nationality": "German",
+        "officer_role": "director",
+        "resigned_on": "2018-10-22",
+        "person_number": "247715500001"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2020-11-01",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 3,
+          "year": 1975
+        },
+        "links": {
+          "self": "/company/11391321/appointments/20lJdAKN8XoNgIY8AtVY7N63avI",
+          "officer": {
+            "appointments": "/officers/bXOVI0A-_wEvq4lzuofkzI5byVY/appointments"
+          }
+        },
+        "name": "MACKAY, Thomas Owen",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2021-11-12",
+        "person_number": "225890880001"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2020-03-13",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/11391321/appointments/2O63OLybT9mgJdLVdGizrH4hydw",
+          "officer": {
+            "appointments": "/officers/q1tEXkx8vIlI4W2R0_bSer8Owdo/appointments"
+          }
+        },
+        "name": "MEYER, Konrad Fano",
+        "nationality": "German",
+        "officer_role": "director",
+        "resigned_on": "2020-11-01",
+        "person_number": "251015650002"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2018-10-22",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/11391321/appointments/lm_GG8N6huOr8915KdkTzXdwc60",
+          "officer": {
+            "appointments": "/officers/q1tEXkx8vIlI4W2R0_bSer8Owdo/appointments"
+          }
+        },
+        "name": "MEYER, Konrad Fano",
+        "nationality": "German",
+        "officer_role": "director",
+        "resigned_on": "2019-05-23",
+        "person_number": "251015650002"
+      },
+      {
+        "etag": "98e64d871672df1d965c630e4613f89e0043966f",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2018-10-22",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 3,
+          "year": 1959
+        },
+        "links": {
+          "self": "/company/11391321/appointments/kjHf9yAlA9DcBv6cP4A-cvX6rik",
+          "officer": {
+            "appointments": "/officers/2titS5fshx4GGqbDTrkhbnBovTI/appointments"
+          }
+        },
+        "name": "SCHLEE, Clive Edward Benedict",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2019-09-30",
+        "person_number": "129760720001"
+      }
+    ],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/11391321/officers"
+    },
+    "resigned_count": 8,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 10
+  }
+}

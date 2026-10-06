@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f2ea;
+  --foreground: #17201c;
+  --muted: #6b716d;
+  --line: #d8d0c2;
+  --panel: #fffaf1;
+  --accent: #0f766e;
+  --accent-strong: #0d5f5a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 34%),
+    var(--background);
+  color: var(--foreground);
+  font-family: "Aptos", "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* Landing page responsive overrides */
+@media (max-width: 768px) {
+  /* Hero: stack columns */
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Features / How it works: stack grid */
+  .landing-3col-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Pricing: stack plans */
+  .landing-2col-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Testimonials: stack */
+  .landing-testimonials-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Nav: hide "Log in" text link on very small screens, keep CTA */
+  .nav-secondary-link {
+    display: none !important;
+  }
+}

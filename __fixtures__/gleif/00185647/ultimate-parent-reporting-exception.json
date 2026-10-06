@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "body": {
+    "meta": {
+      "goldenCopy": {
+        "publishDate": "2026-10-06T08:00:00Z"
+      }
+    },
+    "data": {
+      "type": "reporting-exceptions",
+      "id": "213800VGZAAJIKJ9Y484|0|917403a2ad1e1f9fb6b19776caeef0ef3853bdf3976a3549a06fc419d3e442da|ULTIMATE_ACCOUNTING_CONSOLIDATION_PARENT|",
+      "attributes": {
+        "validFrom": null,
+        "validTo": null,
+        "lei": "213800VGZAAJIKJ9Y484",
+        "category": "ULTIMATE_ACCOUNTING_CONSOLIDATION_PARENT",
+        "reason": "NO_KNOWN_PERSON",
+        "reference": null
+      },
+      "relationships": {
+        "lei-record": {
+          "links": {
+            "related": "https://api.gleif.org/api/v1/lei-records/213800VGZAAJIKJ9Y484"
+          }
+        }
+      }
+    }
+  }
+}

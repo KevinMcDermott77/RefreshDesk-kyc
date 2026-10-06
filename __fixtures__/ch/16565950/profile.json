@@ -1,0 +1,54 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "06",
+        "month": "03"
+      },
+      "next_accounts": {
+        "due_on": "2026-12-06",
+        "overdue": false,
+        "period_end_on": "2026-03-06",
+        "period_start_on": "2025-07-07"
+      },
+      "next_due": "2026-12-06",
+      "next_made_up_to": "2026-03-06",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "SAINSBURY'S HOLDINGS LIMITED",
+    "company_number": "16565950",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2026-07-01",
+      "next_due": "2027-07-15",
+      "next_made_up_to": "2027-07-01",
+      "overdue": false
+    },
+    "date_of_creation": "2025-07-07",
+    "etag": "0cdf33ccc567a02afc95e42287cfde588f40b276",
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "links": {
+      "persons_with_significant_control": "/company/16565950/persons-with-significant-control",
+      "self": "/company/16565950",
+      "filing_history": "/company/16565950/filing-history",
+      "officers": "/company/16565950/officers"
+    },
+    "registered_office_address": {
+      "address_line_1": "33 Charterhouse Street",
+      "country": "England",
+      "locality": "London",
+      "postal_code": "EC1M 6HA"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "64209"
+    ],
+    "type": "ltd",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

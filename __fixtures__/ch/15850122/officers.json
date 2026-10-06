@@ -1,0 +1,148 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 2,
+    "etag": "ae826f8a2a8d31a56997fada60f732b61a600df5",
+    "items": [
+      {
+        "etag": "ae826f8a2a8d31a56997fada60f732b61a600df5",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2026-06-15",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 6,
+          "year": 1976
+        },
+        "links": {
+          "self": "/company/15850122/appointments/W-aIPqmwLRVGIldIVSaGIXValoA",
+          "officer": {
+            "appointments": "/officers/Ga6IqnfmCq9Qb-3rTbhzyjXUXqo/appointments"
+          }
+        },
+        "name": "CREUS, Joachim",
+        "nationality": "Belgian",
+        "officer_role": "director",
+        "person_number": "349589970001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-06-19"
+        }
+      },
+      {
+        "etag": "20a7b46147bb83cbaa07dfb4d070553a2347a0e8",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2026-06-15",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "Netherlands",
+        "date_of_birth": {
+          "month": 10,
+          "year": 1982
+        },
+        "links": {
+          "self": "/company/15850122/appointments/mhLUnMz-4cBtAYj_DdmA0JkkPjs",
+          "officer": {
+            "appointments": "/officers/_KsUkraiLDEHUDrLHXrAvJIO4Tw/appointments"
+          }
+        },
+        "name": "WOLVERS, Sebastiaan",
+        "nationality": "Dutch",
+        "officer_role": "director",
+        "person_number": "349538070001",
+        "identity_verification_details": {
+          "anti_money_laundering_supervisory_bodies": [
+            "Institute of Chartered Accountants in England and Wales (ICAEW)"
+          ],
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-06-18",
+          "authorised_corporate_service_provider_name": "PRICEWATERHOUSECOOPERS LLP ACSP",
+          "identity_verified_on": "2025-11-25",
+          "preferred_name": "Sebastiaan Wolvers"
+        }
+      },
+      {
+        "etag": "06a78d52079352cf28ca51e8af8231a7e0372166",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2024-07-22",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United States",
+        "date_of_birth": {
+          "month": 1,
+          "year": 1979
+        },
+        "links": {
+          "self": "/company/15850122/appointments/FE9OtOWQgUs0lEai3F1BsS1qvME",
+          "officer": {
+            "appointments": "/officers/AFf8sw7XS4Fu3-zjZxCEox7PiQE/appointments"
+          }
+        },
+        "name": "CHENU, Philippe, Mr.",
+        "nationality": "Belgian",
+        "officer_role": "director",
+        "resigned_on": "2026-06-24",
+        "person_number": "325328890001",
+        "identity_verification_details": {
+          "appointment_verification_statement_due_on": "2026-08-04"
+        }
+      },
+      {
+        "etag": "71979f485adb39bcbaee1da4668d4e88df20ff10",
+        "address": {
+          "address_line_1": "10 Bressenden Place",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b Verde"
+        },
+        "appointed_on": "2024-07-22",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/15850122/appointments/eRj4RlExA6IJK1vIv7CLjzPAFXQ",
+          "officer": {
+            "appointments": "/officers/q1tEXkx8vIlI4W2R0_bSer8Owdo/appointments"
+          }
+        },
+        "name": "MEYER, Konrad Fano",
+        "nationality": "German",
+        "officer_role": "director",
+        "resigned_on": "2026-06-24",
+        "person_number": "251015650002",
+        "identity_verification_details": {
+          "appointment_verification_statement_due_on": "2026-08-04"
+        }
+      }
+    ],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/15850122/officers"
+    },
+    "resigned_count": 2,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 4
+  }
+}

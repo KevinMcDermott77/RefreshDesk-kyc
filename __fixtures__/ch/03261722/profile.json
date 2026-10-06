@@ -1,0 +1,70 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "06",
+        "month": "03"
+      },
+      "last_accounts": {
+        "made_up_to": "2025-03-01",
+        "period_end_on": "2025-03-01",
+        "period_start_on": "2024-03-03",
+        "type": "full"
+      },
+      "next_accounts": {
+        "due_on": "2026-12-06",
+        "overdue": false,
+        "period_end_on": "2026-03-06",
+        "period_start_on": "2025-03-02"
+      },
+      "next_due": "2026-12-06",
+      "next_made_up_to": "2026-03-06",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "SAINSBURY'S SUPERMARKETS LTD",
+    "company_number": "03261722",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2026-08-01",
+      "next_due": "2027-08-15",
+      "next_made_up_to": "2027-08-01",
+      "overdue": false
+    },
+    "date_of_creation": "1996-10-10",
+    "etag": "6aafc063f10661589ee74e92470269ceced7fb74",
+    "has_been_liquidated": false,
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "last_full_members_list_date": "2015-10-07",
+    "links": {
+      "persons_with_significant_control": "/company/03261722/persons-with-significant-control",
+      "self": "/company/03261722",
+      "charges": "/company/03261722/charges",
+      "filing_history": "/company/03261722/filing-history",
+      "officers": "/company/03261722/officers"
+    },
+    "previous_company_names": [
+      {
+        "ceased_on": "1997-02-07",
+        "effective_from": "1996-10-10",
+        "name": "BURGINHALL 921 LIMITED"
+      }
+    ],
+    "registered_office_address": {
+      "address_line_1": "33 Charterhouse Street",
+      "country": "England",
+      "locality": "London",
+      "postal_code": "EC1M 6HA"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "47110"
+    ],
+    "type": "ltd",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

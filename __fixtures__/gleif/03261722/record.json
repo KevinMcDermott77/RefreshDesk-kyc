@@ -1,0 +1,150 @@
+{
+  "type": "lei-records",
+  "id": "213800KMLDLT2PROXX14",
+  "attributes": {
+    "lei": "213800KMLDLT2PROXX14",
+    "entity": {
+      "legalName": {
+        "name": "SAINSBURY'S SUPERMARKETS LTD",
+        "language": "en"
+      },
+      "otherNames": [],
+      "transliteratedOtherNames": [],
+      "legalAddress": {
+        "language": "en",
+        "addressLines": [
+          "33 CHARTERHOUSE STREET"
+        ],
+        "addressNumber": null,
+        "addressNumberWithinBuilding": null,
+        "mailRouting": null,
+        "city": "LONDON",
+        "region": "GB-LND",
+        "country": "GB",
+        "postalCode": "EC1M 6HA"
+      },
+      "headquartersAddress": {
+        "language": "en",
+        "addressLines": [
+          "33 CHARTERHOUSE STREET"
+        ],
+        "addressNumber": null,
+        "addressNumberWithinBuilding": null,
+        "mailRouting": null,
+        "city": "LONDON",
+        "region": "GB-LND",
+        "country": "GB",
+        "postalCode": "EC1M 6HA"
+      },
+      "registeredAt": {
+        "id": "RA000585",
+        "other": null
+      },
+      "registeredAs": "03261722",
+      "jurisdiction": "GB",
+      "category": "GENERAL",
+      "legalForm": {
+        "id": "H0PO",
+        "other": null
+      },
+      "associatedEntity": {
+        "lei": null,
+        "name": null
+      },
+      "status": "ACTIVE",
+      "expiration": {
+        "date": null,
+        "reason": null
+      },
+      "successorEntity": {
+        "lei": null,
+        "name": null
+      },
+      "successorEntities": [],
+      "creationDate": "1996-10-10T00:00:00Z",
+      "subCategory": null,
+      "otherAddresses": [],
+      "eventGroups": [
+        {
+          "groupType": "STANDALONE",
+          "events": [
+            {
+              "validationDocuments": "ACCOUNTS_FILING",
+              "effectiveDate": "2025-06-18T00:00:00Z",
+              "recordedDate": "2025-06-27T14:51:23Z",
+              "type": "CHANGE_LEGAL_ADDRESS",
+              "status": "COMPLETED"
+            }
+          ]
+        },
+        {
+          "groupType": "STANDALONE",
+          "events": [
+            {
+              "validationDocuments": "ACCOUNTS_FILING",
+              "effectiveDate": "2025-06-18T00:00:00Z",
+              "recordedDate": "2025-06-27T14:50:56Z",
+              "type": "CHANGE_HQ_ADDRESS",
+              "status": "COMPLETED"
+            }
+          ]
+        }
+      ]
+    },
+    "registration": {
+      "initialRegistrationDate": "2014-01-24T00:00:00Z",
+      "lastUpdateDate": "2025-12-22T16:08:49Z",
+      "status": "ISSUED",
+      "nextRenewalDate": "2027-02-10T00:00:00Z",
+      "managingLou": "213800WAVVOPS85N2205",
+      "corroborationLevel": "FULLY_CORROBORATED",
+      "validatedAt": {
+        "id": "RA000585",
+        "other": null
+      },
+      "validatedAs": "03261722",
+      "otherValidationAuthorities": []
+    },
+    "bic": null,
+    "mic": null,
+    "ocid": null,
+    "qcc": "QGB3HK93C7",
+    "gem": null,
+    "spglobal": [
+      "7758616"
+    ],
+    "conformityFlag": "CONFORMING"
+  },
+  "relationships": {
+    "managing-lou": {
+      "links": {
+        "related": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/managing-lou"
+      }
+    },
+    "lei-issuer": {
+      "links": {
+        "related": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/lei-issuer"
+      }
+    },
+    "field-modifications": {
+      "links": {
+        "related": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/field-modifications"
+      }
+    },
+    "direct-parent": {
+      "links": {
+        "relationship-record": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/direct-parent-relationship",
+        "lei-record": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/direct-parent"
+      }
+    },
+    "ultimate-parent": {
+      "links": {
+        "relationship-record": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/ultimate-parent-relationship",
+        "lei-record": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14/ultimate-parent"
+      }
+    }
+  },
+  "links": {
+    "self": "https://api.gleif.org/api/v1/lei-records/213800KMLDLT2PROXX14"
+  }
+}

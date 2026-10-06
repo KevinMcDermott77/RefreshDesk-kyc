@@ -1,0 +1,83 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 2,
+    "ceased_count": 5,
+    "items": [
+      {
+        "etag": "a17460d44b08c2b11f19506ad81f29a09b195a87",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/37JWmN1e5iNRPF3dNH45w5BIdL0"
+        },
+        "notified_on": "2025-11-23",
+        "statement": "all-beneficial-owners-identified"
+      },
+      {
+        "etag": "3f85e18104132d2cdd87107c01231ca3b2ac33b0",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/-FsQ5AORS4IxJ2P_dd7nJtEk76c"
+        },
+        "notified_on": "2025-11-23",
+        "statement": "nobody-has-become-or-ceased-to-be-a-beneficial-owner"
+      },
+      {
+        "ceased_on": "2025-11-23",
+        "etag": "d7ec54531fd1085784949aa0e0aa08ebb7ebfe07",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/9v-CB-z3u-S-ECtJUpzyn11RSgI"
+        },
+        "notified_on": "2024-11-23",
+        "statement": "all-beneficial-owners-identified"
+      },
+      {
+        "ceased_on": "2025-11-23",
+        "etag": "9d6a5fd52005ca0c30906ff184fcdfd225178f49",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/VsQC94qINqB7KuWqUN06yLY1idw"
+        },
+        "notified_on": "2024-11-23",
+        "statement": "nobody-has-become-or-ceased-to-be-a-beneficial-owner"
+      },
+      {
+        "ceased_on": "2024-11-23",
+        "etag": "b4b5b5b97f44ed80af155a680fc7f6ddd36bcbe8",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/Dt7Z4Rk4oMpIxbHfAjZ8P-CuQWI"
+        },
+        "notified_on": "2023-12-05",
+        "statement": "all-beneficial-owners-identified"
+      },
+      {
+        "ceased_on": "2024-11-23",
+        "etag": "051f8cbb6efa5ad1c98a429eecbc1c2f617b1206",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/6HS3xA3-vBhFF_lNB2e47cxObCQ"
+        },
+        "notified_on": "2023-12-05",
+        "statement": "nobody-has-become-or-ceased-to-be-a-beneficial-owner"
+      },
+      {
+        "ceased_on": "2023-12-05",
+        "etag": "c8faed6248b8e5547f71b53cccd9ec57c84f89be",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control-statements/OY26z912ti4yVTOk4zfOlUyds_I"
+        },
+        "notified_on": "2022-11-24",
+        "statement": "all-beneficial-owners-identified"
+      }
+    ],
+    "items_per_page": 25,
+    "links": {
+      "self": "/company/OE005000/persons-with-significant-control-statements"
+    },
+    "start_index": 0,
+    "total_results": 7
+  }
+}

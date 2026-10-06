@@ -1,0 +1,804 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 4,
+    "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+    "items": [
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2019-09-17",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/01854213/appointments/1WQguaM6-IrEUxlGdVoUpUvqBj0",
+          "officer": {
+            "appointments": "/officers/LU69g9ZtpdzSMvKsTB7OlM32Rxw/appointments"
+          }
+        },
+        "name": "CHRISTOU, Panayioti Michael Andrew",
+        "officer_role": "secretary",
+        "person_number": "262527080001"
+      },
+      {
+        "etag": "f6f1ed1caea99fd592e0150ff60fb5c703cf6454",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2019-05-23",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 11,
+          "year": 1977
+        },
+        "links": {
+          "self": "/company/01854213/appointments/0iYxZHxOev8s_mdcG5G4sSDS2TI",
+          "officer": {
+            "appointments": "/officers/cl1FnVnW8lup_xbQmPz7kxng3ZY/appointments"
+          }
+        },
+        "name": "CHRISTOU, Panayioti Michael Andrew",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "261079900001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-01-31"
+        }
+      },
+      {
+        "etag": "d5616c22d1054875b2933e79a8f90f385a85c137",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2025-11-13",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 12,
+          "year": 1984
+        },
+        "links": {
+          "self": "/company/01854213/appointments/2AuVPRRUQkqCl8y8EgwR2YCJaiI",
+          "officer": {
+            "appointments": "/officers/p5fmRH4gKeEJHSo6CBA5c_91QeU/appointments"
+          }
+        },
+        "name": "EVANS, Edward",
+        "nationality": "British",
+        "officer_role": "director",
+        "person_number": "342693930001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-01-31"
+        }
+      },
+      {
+        "etag": "872fea72da7439d81d9c68bc3f8d7a9d446a88f2",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2021-11-12",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 1,
+          "year": 1975
+        },
+        "links": {
+          "self": "/company/01854213/appointments/4iT5JOLZdEGZMaSbGQZ0N7VTSrc",
+          "officer": {
+            "appointments": "/officers/xeUeOVtF8v7zXQCQv7QHFsGVYb4/appointments"
+          }
+        },
+        "name": "LINS PEIXOTO, Gustavo Henrique",
+        "nationality": "Brazilian",
+        "officer_role": "director",
+        "person_number": "344830780001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-01-31"
+        }
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "20 Mount Avenue",
+          "address_line_2": "Ealing",
+          "locality": "London",
+          "postal_code": "W5 2RG"
+        },
+        "appointed_on": "2001-12-17",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/01854213/appointments/mh23MW94VjrhkOyRjcTp_PpFBjY",
+          "officer": {
+            "appointments": "/officers/sKy6DBB2LkWtuPn7gZ1BUuwCwR4/appointments"
+          }
+        },
+        "name": "CLARK, John Robert Morton",
+        "nationality": "British",
+        "officer_role": "secretary",
+        "resigned_on": "2003-05-12",
+        "person_number": "79328330001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "High Lodge",
+          "address_line_2": "Blenheim Park",
+          "locality": "Whitney",
+          "postal_code": "OX7 2NE",
+          "region": "Oxfordshire"
+        },
+        "appointed_before": "1992-08-28",
+        "is_pre_1992_appointment": true,
+        "links": {
+          "self": "/company/01854213/appointments/iMSWLNQ49c3IvEn1oQV0F1QlnSs",
+          "officer": {
+            "appointments": "/officers/aNOYT4ai1imumtuRd1Xh99avHQQ/appointments"
+          }
+        },
+        "name": "METCALFE, Julian Edward",
+        "nationality": "British",
+        "officer_role": "secretary",
+        "resigned_on": "1999-08-31",
+        "person_number": "43805380002"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2003-05-12",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/01854213/appointments/-I2GJs4wsijI5LUyxcnx9RR3ufY",
+          "officer": {
+            "appointments": "/officers/dQrVI-W0X8X283PZTV3BU7j-DY4/appointments"
+          }
+        },
+        "name": "SCHLEE, Clive Edward Benedict",
+        "nationality": "British",
+        "officer_role": "secretary",
+        "resigned_on": "2019-09-17",
+        "person_number": "88506560001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Flat L 54 Cornwall Gardens",
+          "locality": "London",
+          "postal_code": "SW7 4BG"
+        },
+        "appointed_on": "1999-08-31",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/01854213/appointments/cgjpHV_lc1iq8FvE4EfkHB60Acc",
+          "officer": {
+            "appointments": "/officers/xUFniJyeG-oBrvjZAGWhj8dUS1s/appointments"
+          }
+        },
+        "name": "SMYTH, Harvey John",
+        "nationality": "British",
+        "officer_role": "secretary",
+        "resigned_on": "2001-12-17",
+        "person_number": "74178000001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "11718 Barrington Court",
+          "country": "Usa",
+          "locality": "Los Angeles",
+          "postal_code": "FOREIGN",
+          "region": "90049"
+        },
+        "appointed_on": "2004-01-29",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 3,
+          "year": 1964
+        },
+        "links": {
+          "self": "/company/01854213/appointments/lJ1Ox658i1X4YauIbU1nGgPu3wI",
+          "officer": {
+            "appointments": "/officers/yLDa1llXqTsw3giIWPTnBv112T0/appointments"
+          }
+        },
+        "name": "ABDALLA, Kenneth",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "98752070001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Harbeck",
+          "address_line_2": "64 Baybrook Oak Brook",
+          "country": "Usa",
+          "locality": "Illinois",
+          "region": "60523"
+        },
+        "appointed_on": "2001-02-16",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 7,
+          "year": 1957
+        },
+        "links": {
+          "self": "/company/01854213/appointments/dTt1wPGVZDu-Vv9V_vLA6-ECDTM",
+          "officer": {
+            "appointments": "/officers/rLFGXZ_xfr3plNjx5cnKifSSRQQ/appointments"
+          }
+        },
+        "name": "BABROWSKI, Claire",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2003-05-19",
+        "person_number": "74434560001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "22 Painters Yard",
+          "address_line_2": "10-14 Old Church Road",
+          "locality": "London",
+          "postal_code": "SW3 5DQ"
+        },
+        "appointed_before": "1992-08-28",
+        "is_pre_1992_appointment": true,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 8,
+          "year": 1958
+        },
+        "links": {
+          "self": "/company/01854213/appointments/1rf7adJZ13wfQru4iZ5P7wz-hW8",
+          "officer": {
+            "appointments": "/officers/ctdE9U14vUqhzckgChUy5mPnih4/appointments"
+          }
+        },
+        "name": "BEECHAM, Sinclair Christopher Seymour",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "169916050001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "405 Fox Trail Lane",
+          "country": "Usa",
+          "locality": "Oakbrook",
+          "region": "Illinois"
+        },
+        "appointed_on": "2001-02-16",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 11,
+          "year": 1960
+        },
+        "links": {
+          "self": "/company/01854213/appointments/27sT2AfRGbc08ReQ61meGqJbL_I",
+          "officer": {
+            "appointments": "/officers/M1Ds-dmch5nvsvz6cgx6ivFOLRA/appointments"
+          }
+        },
+        "name": "BELL, Charles Hamilton",
+        "nationality": "Australian",
+        "officer_role": "director",
+        "resigned_on": "2001-07-27",
+        "person_number": "75089450001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2019-05-23",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 6,
+          "year": 1965
+        },
+        "links": {
+          "self": "/company/01854213/appointments/GAqvK7cGu7DrLIleSayDgGNnNfU",
+          "officer": {
+            "appointments": "/officers/JtMb38H7hed0nztw7j5I3nNL6ag/appointments"
+          }
+        },
+        "name": "BHAT, Axel Paul-Yves Marie",
+        "nationality": "French",
+        "officer_role": "director",
+        "resigned_on": "2020-03-13",
+        "person_number": "258993610001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "7 Egerton Place",
+          "locality": "London",
+          "postal_code": "SW3 2EF"
+        },
+        "appointed_on": "2003-03-20",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1954
+        },
+        "links": {
+          "self": "/company/01854213/appointments/t6k5yw6uNxuirZ5j00ZEOOzHk-s",
+          "officer": {
+            "appointments": "/officers/c1GnVvgSuLYKkZbT-LLm5h3zj5w/appointments"
+          }
+        },
+        "name": "BILLETT, Laurence Kenneth",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "55508660001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2008-04-03",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 10,
+          "year": 1963
+        },
+        "links": {
+          "self": "/company/01854213/appointments/n0ENxtdckYeNZYAg9_UjyBdn8RI",
+          "officer": {
+            "appointments": "/officers/4IIe1zwR8t-xoRwzpemzDWIwaNQ/appointments"
+          }
+        },
+        "name": "CANDLER, Nicholas John",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2017-09-29",
+        "person_number": "129758090001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "719 South Bodin Street",
+          "country": "Usa",
+          "locality": "Hinsdale",
+          "region": "Du Page/Illinois 60521"
+        },
+        "appointed_on": "2004-01-27",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 12,
+          "year": 1963
+        },
+        "links": {
+          "self": "/company/01854213/appointments/L2D4ow7o6HM7Y7YE40-d8fkb40k",
+          "officer": {
+            "appointments": "/officers/MB4xvzizQRwCbH194whcxNdDgfI/appointments"
+          }
+        },
+        "name": "CATALANO, Christopher",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "96117880001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "20 Mount Avenue",
+          "address_line_2": "Ealing",
+          "locality": "London",
+          "postal_code": "W5 2RG"
+        },
+        "appointed_on": "2001-12-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 8,
+          "year": 1958
+        },
+        "links": {
+          "self": "/company/01854213/appointments/BJloIjFq2d2Wk4f3T5kZYmaqlvI",
+          "officer": {
+            "appointments": "/officers/sKy6DBB2LkWtuPn7gZ1BUuwCwR4/appointments"
+          }
+        },
+        "name": "CLARK, John Robert Morton",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2003-03-20",
+        "person_number": "79328330001"
+      },
+      {
+        "etag": "7feb0a97cc229ff67206f1f72f069cd9c6be3f29",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2018-09-26",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 10,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/01854213/appointments/AtgdXJ7hSwYCJ9iH9GKnzXHqvvk",
+          "officer": {
+            "appointments": "/officers/fG3L27TW8vUHivDT5trR1CduBIE/appointments"
+          }
+        },
+        "name": "CLOUGH, Clare Patricia",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2025-09-26",
+        "former_names": [
+          {
+            "surname": "LANGFORD"
+          }
+        ],
+        "person_number": "251030850001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2014-03-28",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 4,
+          "year": 1969
+        },
+        "links": {
+          "self": "/company/01854213/appointments/VWCotU5w-b-5Fc7vwWos0zNo2oY",
+          "officer": {
+            "appointments": "/officers/W2EBSUFd_HTENDYtR8OKbiCdgPc/appointments"
+          }
+        },
+        "name": "JONES, Adam Maxwell",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2018-09-26",
+        "person_number": "124674500013"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "5 Longmeadow Road",
+          "country": "America",
+          "locality": "Winnetka",
+          "region": "Illinois"
+        },
+        "appointed_on": "2001-07-27",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 5,
+          "year": 1955
+        },
+        "links": {
+          "self": "/company/01854213/appointments/CGRIovaB3-oixmQlsapfoYwIpyo",
+          "officer": {
+            "appointments": "/officers/euLPF5D3Rqki8tGn8iRxtnH9ldE/appointments"
+          }
+        },
+        "name": "KINDLER, Jeffrey Bruce",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2001-12-17",
+        "person_number": "77516780001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "335 E. Hickory",
+          "country": "Usa",
+          "locality": "Hinsdale",
+          "region": "Il 60521"
+        },
+        "appointed_on": "2003-05-19",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 10,
+          "year": 1963
+        },
+        "links": {
+          "self": "/company/01854213/appointments/hVaLLNJz9DtUjT3qMxXztw6VACA",
+          "officer": {
+            "appointments": "/officers/Mtrv-6uqt6GDi4ZvB_HeeJEQqak/appointments"
+          }
+        },
+        "name": "LEDERHAUSEN, Mats Allan",
+        "nationality": "Swedish",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "90671140001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2020-11-01",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 3,
+          "year": 1975
+        },
+        "links": {
+          "self": "/company/01854213/appointments/hlMhO2Ixgjk4gXM66bGC8iiXI_I",
+          "officer": {
+            "appointments": "/officers/bXOVI0A-_wEvq4lzuofkzI5byVY/appointments"
+          }
+        },
+        "name": "MACKAY, Thomas Owen",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2021-11-12",
+        "person_number": "225890880001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "High Lodge",
+          "address_line_2": "Blenheim Park",
+          "locality": "Whitney",
+          "postal_code": "OX7 2NE",
+          "region": "Oxfordshire"
+        },
+        "appointed_before": "1992-08-28",
+        "is_pre_1992_appointment": true,
+        "date_of_birth": {
+          "month": 12,
+          "year": 1959
+        },
+        "links": {
+          "self": "/company/01854213/appointments/KXJAk8T6FasyK9uSBZS91OLJvz4",
+          "officer": {
+            "appointments": "/officers/aNOYT4ai1imumtuRd1Xh99avHQQ/appointments"
+          }
+        },
+        "name": "METCALFE, Julian Edward",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2008-04-03",
+        "person_number": "43805380002"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Eastbourne Terrace",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "W2 6LG",
+          "premises": "20"
+        },
+        "appointed_on": "2020-03-13",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1980
+        },
+        "links": {
+          "self": "/company/01854213/appointments/BzuLhoqpImxp6ixEeHvezb9L_eA",
+          "officer": {
+            "appointments": "/officers/q1tEXkx8vIlI4W2R0_bSer8Owdo/appointments"
+          }
+        },
+        "name": "MEYER, Konrad Fano",
+        "nationality": "German",
+        "officer_role": "director",
+        "resigned_on": "2020-11-01",
+        "person_number": "251015650002"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "5 The Vale",
+          "locality": "London",
+          "postal_code": "SW3 6AG"
+        },
+        "appointed_on": "1998-09-01",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 7,
+          "year": 1966
+        },
+        "links": {
+          "self": "/company/01854213/appointments/WSiIUDWYJ7uRIduIFH3qAMmL9KA",
+          "officer": {
+            "appointments": "/officers/Lin2bRGwHU8H2usqE2qZ-jbasxM/appointments"
+          }
+        },
+        "name": "ROLFE, Andrew John",
+        "nationality": "British South African",
+        "officer_role": "director",
+        "resigned_on": "2003-03-20",
+        "person_number": "51146460003"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2003-03-20",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "United Kingdom",
+        "date_of_birth": {
+          "month": 3,
+          "year": 1959
+        },
+        "links": {
+          "self": "/company/01854213/appointments/vsBe9tSCFz_fKfP3ra88YmwdW8g",
+          "officer": {
+            "appointments": "/officers/dQrVI-W0X8X283PZTV3BU7j-DY4/appointments"
+          }
+        },
+        "name": "SCHLEE, Clive Edward Benedict",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2019-09-30",
+        "person_number": "88506560001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Flat L 54 Cornwall Gardens",
+          "locality": "London",
+          "postal_code": "SW7 4BG"
+        },
+        "appointed_on": "1998-06-09",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 9,
+          "year": 1968
+        },
+        "links": {
+          "self": "/company/01854213/appointments/nNHl85U1Wfiu9p7V3NVHMQSYles",
+          "officer": {
+            "appointments": "/officers/xUFniJyeG-oBrvjZAGWhj8dUS1s/appointments"
+          }
+        },
+        "name": "SMYTH, Harvey John",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2003-03-20",
+        "person_number": "74178000001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "44 Stone Creek Dr",
+          "address_line_2": "Lemont",
+          "country": "America",
+          "locality": "Illinois",
+          "region": "60439"
+        },
+        "appointed_on": "2001-12-17",
+        "is_pre_1992_appointment": false,
+        "date_of_birth": {
+          "month": 12,
+          "year": 1956
+        },
+        "links": {
+          "self": "/company/01854213/appointments/U0x0SZm6vKAbo1oHjA0Nvxp37Ac",
+          "officer": {
+            "appointments": "/officers/a-pX0aMroptw6dQTXbBcswUD8fY/appointments"
+          }
+        },
+        "name": "SMYTH, Russell",
+        "nationality": "American",
+        "officer_role": "director",
+        "resigned_on": "2004-01-27",
+        "person_number": "80564140001"
+      },
+      {
+        "etag": "2bd02e08735c1a64c5df02314e5176a0ebccb9eb",
+        "address": {
+          "address_line_1": "Verde",
+          "address_line_2": "10 Bressenden Place",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1E 5DH",
+          "premises": "75b"
+        },
+        "appointed_on": "2018-09-26",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1972
+        },
+        "links": {
+          "self": "/company/01854213/appointments/gz4zV5lIAVYvQ5_Q2fXWDYSQp0Y",
+          "officer": {
+            "appointments": "/officers/LyIrTctNdcy9xhJDox4X-7KlxRY/appointments"
+          }
+        },
+        "name": "WAREHAM, Andrea",
+        "nationality": "British",
+        "officer_role": "director",
+        "resigned_on": "2023-04-04",
+        "person_number": "199484240001"
+      }
+    ],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/01854213/officers"
+    },
+    "resigned_count": 25,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 29
+  }
+}

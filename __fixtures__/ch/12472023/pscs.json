@@ -1,0 +1,77 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 100,
+    "items": [
+      {
+        "etag": "5be1fad095fee31880053900442332d77cb422a6",
+        "notified_on": "2020-02-19",
+        "ceased_on": "2021-11-23",
+        "country_of_residence": "United States",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1947
+        },
+        "name": "Mr Stephen Allen Schwarzman",
+        "name_elements": {
+          "title": "Mr",
+          "surname": "Schwarzman",
+          "forename": "Stephen",
+          "middle_name": "Allen"
+        },
+        "links": {
+          "self": "/company/12472023/persons-with-significant-control/individual/Xaf5BWCkAeaTSkwFpza9vsEZyT4"
+        },
+        "nationality": "British",
+        "ceased": true,
+        "kind": "individual-person-with-significant-control",
+        "address": {
+          "address_line_1": "Park Avenue",
+          "country": "United States",
+          "locality": "New York",
+          "premises": "345",
+          "region": "Ny10154"
+        },
+        "natures_of_control": [
+          "significant-influence-or-control"
+        ]
+      },
+      {
+        "etag": "ffce56c5f53098d12d38506c0dd6deb9b693dde6",
+        "notified_on": "2020-02-19",
+        "name": "Capella Uk Holdco Limited",
+        "links": {
+          "self": "/company/12472023/persons-with-significant-control/corporate-entity/r-RCbiz-w--IA2kuvwHRTUFCluo"
+        },
+        "identification": {
+          "legal_form": "Limited Company",
+          "legal_authority": "Companies Act 2006",
+          "country_registered": "United Kingdom",
+          "place_registered": "Uk Register Of Companies",
+          "registration_number": "12467857"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 2,
+    "active_count": 1,
+    "ceased_count": 1,
+    "links": {
+      "self": "/company/12472023/persons-with-significant-control"
+    }
+  }
+}

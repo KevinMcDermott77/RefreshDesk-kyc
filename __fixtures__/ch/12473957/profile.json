@@ -1,0 +1,61 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "30",
+        "month": "09"
+      },
+      "last_accounts": {
+        "made_up_to": "2025-09-30",
+        "period_end_on": "2025-09-30",
+        "period_start_on": "2024-10-01",
+        "type": "full"
+      },
+      "next_accounts": {
+        "due_on": "2027-06-30",
+        "overdue": false,
+        "period_end_on": "2026-09-30",
+        "period_start_on": "2025-10-01"
+      },
+      "next_due": "2027-06-30",
+      "next_made_up_to": "2026-09-30",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "CAPELLA UK MEZZCO 1 LIMITED",
+    "company_number": "12473957",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2026-02-19",
+      "next_due": "2027-03-05",
+      "next_made_up_to": "2027-02-19",
+      "overdue": false
+    },
+    "date_of_creation": "2020-02-20",
+    "etag": "fb05997e1a22f299c9c63029d3997e614ea10395",
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "links": {
+      "persons_with_significant_control": "/company/12473957/persons-with-significant-control",
+      "self": "/company/12473957",
+      "filing_history": "/company/12473957/filing-history",
+      "officers": "/company/12473957/officers"
+    },
+    "registered_office_address": {
+      "address_line_1": "Third Floor",
+      "address_line_2": "2 More London Riverside",
+      "country": "United Kingdom",
+      "locality": "London",
+      "postal_code": "SE1 2DB"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "68209"
+    ],
+    "type": "ltd",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

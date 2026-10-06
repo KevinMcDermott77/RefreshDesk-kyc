@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 0,
+    "ceased_count": 1,
+    "items": [
+      {
+        "ceased_on": "2021-05-11",
+        "etag": "94bed7f3be06927c418c9a1e1aabc6217bdec7f0",
+        "kind": "persons-with-significant-control-statement",
+        "links": {
+          "self": "/company/11415952/persons-with-significant-control-statements/x-JjW4SSE7Mdr5GJKDGsyfIWaUc"
+        },
+        "notified_on": "2018-06-14",
+        "statement": "no-individual-or-entity-with-signficant-control"
+      }
+    ],
+    "items_per_page": 25,
+    "links": {
+      "self": "/company/11415952/persons-with-significant-control-statements"
+    },
+    "start_index": 0,
+    "total_results": 1
+  }
+}

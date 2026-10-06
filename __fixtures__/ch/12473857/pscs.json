@@ -1,0 +1,78 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 100,
+    "items": [
+      {
+        "etag": "1dd4f96c67bf6ab2f1482a069c39c8e0076cc96b",
+        "notified_on": "2020-02-20",
+        "ceased_on": "2021-11-23",
+        "country_of_residence": "United States",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1947
+        },
+        "name": "Mr Stephen Allen Schwarzman",
+        "name_elements": {
+          "title": "Mr",
+          "surname": "Schwarzman",
+          "forename": "Stephen",
+          "middle_name": "Allen"
+        },
+        "links": {
+          "self": "/company/12473857/persons-with-significant-control/individual/0y0eUJfLzoaclROiowsxB5ppbdo"
+        },
+        "nationality": "American",
+        "ceased": true,
+        "kind": "individual-person-with-significant-control",
+        "address": {
+          "address_line_1": "Floor, Cottons Centre",
+          "address_line_2": "Cottons Lane",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2QG",
+          "premises": "7th"
+        },
+        "natures_of_control": [
+          "significant-influence-or-control"
+        ]
+      },
+      {
+        "etag": "a9475d73d37fd1bc13850c45b6f7e29201d611f2",
+        "notified_on": "2020-02-20",
+        "name": "Capella Uk Mezzco 1 Limited",
+        "links": {
+          "self": "/company/12473857/persons-with-significant-control/corporate-entity/jl0RvtGKoTce3uAXCHQF8XICM2g"
+        },
+        "identification": {
+          "legal_form": "Private Company Limited By Shares",
+          "legal_authority": "Companies Act 2006",
+          "country_registered": "United Kingdom",
+          "place_registered": "Uk Register Of Companies",
+          "registration_number": "12473957"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 2,
+    "active_count": 1,
+    "ceased_count": 1,
+    "links": {
+      "self": "/company/12473857/persons-with-significant-control"
+    }
+  }
+}

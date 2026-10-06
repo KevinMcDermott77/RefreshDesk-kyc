@@ -1,0 +1,51 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 100,
+    "items": [
+      {
+        "etag": "dff11d8cb2782249842e766c2132daae822125b3",
+        "notified_on": "2015-03-11",
+        "name": "Capella Uk Bidco 1 Limited",
+        "links": {
+          "self": "/company/OE005000/persons-with-significant-control/corporate-entity-beneficial-owner/_7irCIi9oGIpeo5Ox5e057wIdGA"
+        },
+        "identification": {
+          "legal_form": "Private Limited Company",
+          "legal_authority": "The Companies Act 2006",
+          "country_registered": "United Kingdom",
+          "place_registered": "Companies House",
+          "registration_number": "12474076"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-beneficial-owner",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-more-than-25-percent-registered-overseas-entity",
+          "voting-rights-more-than-25-percent-registered-overseas-entity",
+          "right-to-appoint-and-remove-directors-registered-overseas-entity"
+        ],
+        "principal_office_address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "United Kingdom",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        }
+      }
+    ],
+    "start_index": 0,
+    "total_results": 1,
+    "active_count": 1,
+    "ceased_count": 0,
+    "links": {
+      "self": "/company/OE005000/persons-with-significant-control"
+    }
+  }
+}

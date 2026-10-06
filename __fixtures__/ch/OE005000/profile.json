@@ -1,0 +1,58 @@
+{
+  "status": 200,
+  "body": {
+    "can_file": false,
+    "company_name": "IQSA ARCADE HOLLOWAY ROAD S.À R.L.",
+    "company_number": "OE005000",
+    "company_status": "registered",
+    "corporate_annotation": [
+      {
+        "type": "overseas-entity-dissolved-wound-up-or-ceased-to-exist",
+        "created_on": "2026-07-13"
+      }
+    ],
+    "confirmation_statement": {
+      "last_made_up_to": "2025-11-23",
+      "next_due": "2026-12-07",
+      "next_made_up_to": "2026-11-23",
+      "overdue": false
+    },
+    "date_of_creation": "2022-11-24",
+    "etag": "ff2d82d9c2fa7bde89b2356d2fa5cb3a07e74b46",
+    "external_registration_number": "B195651",
+    "foreign_company_details": {
+      "governed_by": "The Luxembourg Law Of 10 August 1915 On Commercial Companies",
+      "originating_registry": {
+        "country": "LUXEMBOURG",
+        "name": "Registre De Commerce Et Des Sociétés Luxembourg,Luxembourg"
+      },
+      "registration_number": "B195651",
+      "legal_form": "Private Limited Company"
+    },
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "united-kingdom",
+    "links": {
+      "persons_with_significant_control": "/company/OE005000/persons-with-significant-control",
+      "persons_with_significant_control_statements": "/company/OE005000/persons-with-significant-control-statements",
+      "self": "/company/OE005000",
+      "filing_history": "/company/OE005000/filing-history"
+    },
+    "registered_office_address": {
+      "address_line_1": "18 Rue Michel Rodange",
+      "country": "Luxembourg",
+      "locality": "Luxembourg",
+      "postal_code": "L-2430"
+    },
+    "registered_office_is_in_dispute": false,
+    "service_address": {
+      "address_line_1": "18 Rue Michel Rodange",
+      "country": "Luxembourg",
+      "locality": "Luxembourg",
+      "postal_code": "L-2430"
+    },
+    "type": "registered-overseas-entity",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "06",
+        "month": "03"
+      },
+      "last_accounts": {
+        "made_up_to": "2026-02-28",
+        "period_end_on": "2026-02-28",
+        "period_start_on": "2025-03-02",
+        "type": "group"
+      },
+      "next_accounts": {
+        "due_on": "2027-09-06",
+        "overdue": false,
+        "period_end_on": "2027-03-06",
+        "period_start_on": "2026-03-01"
+      },
+      "next_due": "2027-09-06",
+      "next_made_up_to": "2027-03-06",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "J SAINSBURY PLC",
+    "company_number": "00185647",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2026-07-25",
+      "next_due": "2027-08-08",
+      "next_made_up_to": "2027-07-25",
+      "overdue": false
+    },
+    "date_of_creation": "1922-11-10",
+    "etag": "fb7e0b3821f58300d925e089e08f40fb0c3c662f",
+    "has_been_liquidated": false,
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "last_full_members_list_date": "2012-07-25",
+    "links": {
+      "self": "/company/00185647",
+      "charges": "/company/00185647/charges",
+      "filing_history": "/company/00185647/filing-history",
+      "officers": "/company/00185647/officers",
+      "exemptions": "/company/00185647/exemptions"
+    },
+    "registered_office_address": {
+      "address_line_1": "33 Charterhouse Street",
+      "country": "England",
+      "locality": "London",
+      "postal_code": "EC1M 6HA"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "47110"
+    ],
+    "type": "plc",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

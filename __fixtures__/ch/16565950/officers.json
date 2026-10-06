@@ -1,0 +1,105 @@
+{
+  "status": 200,
+  "body": {
+    "active_count": 3,
+    "etag": "8c833438bf2ebea1a114553918ebceebd5b5bac8",
+    "items": [
+      {
+        "etag": "8c833438bf2ebea1a114553918ebceebd5b5bac8",
+        "address": {
+          "address_line_1": "Charterhouse Street",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "EC1M 6HA",
+          "premises": "33"
+        },
+        "appointed_on": "2025-07-14",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/16565950/appointments/ZeN44S8-Gq_ASSrXAAhpka6v3Ys",
+          "officer": {
+            "appointments": "/officers/N2LhAG8zyh7_fojoEQmXZIIlmng/appointments"
+          }
+        },
+        "name": "SAINSBURY'S CORPORATE SECRETARY LIMITED",
+        "officer_role": "corporate-secretary",
+        "identification": {
+          "identification_type": "uk-limited-company",
+          "registration_number": "13368643"
+        },
+        "person_number": "282919160001"
+      },
+      {
+        "etag": "2103002211de94159c968939bbf0ab67a152e9f4",
+        "address": {
+          "address_line_1": "Charterhouse Street",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "EC1M 6HA",
+          "premises": "33"
+        },
+        "appointed_on": "2025-07-07",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 5,
+          "year": 1975
+        },
+        "links": {
+          "self": "/company/16565950/appointments/yzdchiKOaaX3cjtXfbkiPUEvpdI",
+          "officer": {
+            "appointments": "/officers/JwEndbZxFb2Zm_LHeFK587Oi-Pw/appointments"
+          }
+        },
+        "name": "BERGIN, Blathnaid",
+        "nationality": "Irish",
+        "officer_role": "director",
+        "person_number": "138463250002",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-07-07"
+        }
+      },
+      {
+        "etag": "d58c47b7e129516d53e25c2933fb60cd7396a30f",
+        "address": {
+          "address_line_1": "Charterhouse Street",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "EC1M 6HA",
+          "premises": "33"
+        },
+        "appointed_on": "2025-07-17",
+        "is_pre_1992_appointment": false,
+        "country_of_residence": "England",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1970
+        },
+        "links": {
+          "self": "/company/16565950/appointments/AhzpD8nQ9sS4-Nza6RNqGZumvdw",
+          "officer": {
+            "appointments": "/officers/5byBkKK9ZINu5W_MFLJcjt9X50U/appointments"
+          }
+        },
+        "name": "RICHARDSON, Bruce Michael",
+        "nationality": "British,South African",
+        "officer_role": "director",
+        "person_number": "231243770001",
+        "identity_verification_details": {
+          "appointment_verification_end_on": "9999-12-31",
+          "appointment_verification_start_on": "2026-07-07"
+        }
+      }
+    ],
+    "items_per_page": 100,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/16565950/officers"
+    },
+    "resigned_count": 0,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 3
+  }
+}

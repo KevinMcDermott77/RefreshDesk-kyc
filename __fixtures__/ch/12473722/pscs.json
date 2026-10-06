@@ -1,0 +1,108 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 100,
+    "items": [
+      {
+        "etag": "34037631c242a45174460e8b91846d1f39ad98e7",
+        "notified_on": "2021-11-23",
+        "name": "Capella Uk Holdco 2 Ltd",
+        "links": {
+          "self": "/company/12473722/persons-with-significant-control/corporate-entity/nL3hLe5T58l9WgVaA46waazm2iM"
+        },
+        "identification": {
+          "legal_form": "Private Limited Company",
+          "legal_authority": "Companies Act 2006",
+          "country_registered": "United Kingdom",
+          "place_registered": "Companies House",
+          "registration_number": "12472023"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "2 More London Riverside",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2DB",
+          "premises": "Third Floor"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      },
+      {
+        "etag": "77b0ffce04b186fbf6b47958b6803a47698470eb",
+        "notified_on": "2020-02-20",
+        "ceased_on": "2021-11-23",
+        "country_of_residence": "United States",
+        "date_of_birth": {
+          "month": 2,
+          "year": 1947
+        },
+        "name": "Mr Stephen Allen Schwarzman",
+        "name_elements": {
+          "title": "Mr",
+          "surname": "Schwarzman",
+          "forename": "Stephen",
+          "middle_name": "Allen"
+        },
+        "links": {
+          "self": "/company/12473722/persons-with-significant-control/individual/xmvfxI5GXIp0slQpNso6FZw3Kr0"
+        },
+        "nationality": "American",
+        "ceased": true,
+        "kind": "individual-person-with-significant-control",
+        "address": {
+          "address_line_1": "Floor, Cottons Centre",
+          "address_line_2": "Cottons Lane",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SE1 2QG",
+          "premises": "7th"
+        },
+        "natures_of_control": [
+          "significant-influence-or-control"
+        ]
+      },
+      {
+        "etag": "29afd74a94c67937fc2679ea4c85d3ec019a586b",
+        "notified_on": "2020-02-20",
+        "ceased_on": "2021-11-23",
+        "name": "Capella Uk Bondco Plc",
+        "links": {
+          "self": "/company/12473722/persons-with-significant-control/corporate-entity/Wc7d7pzsUQ70jcFLoSuibBNkBH4"
+        },
+        "identification": {
+          "legal_form": "Public Limited Company",
+          "legal_authority": "Companies Act 2006",
+          "country_registered": "United Kingdom",
+          "place_registered": "Uk Register Of Companies",
+          "registration_number": "12472023"
+        },
+        "ceased": true,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "St. James's Square",
+          "country": "England",
+          "locality": "London",
+          "postal_code": "SW1Y 4LB",
+          "premises": "12"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 3,
+    "active_count": 1,
+    "ceased_count": 2,
+    "links": {
+      "self": "/company/12473722/persons-with-significant-control"
+    }
+  }
+}
