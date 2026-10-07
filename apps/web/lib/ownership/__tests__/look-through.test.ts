@@ -62,4 +62,14 @@ describe('PSC_LOOK_THROUGH_LIKELY', () => {
     const result = await walk('AA000001', fetcher)
     expect(result.nodes.find((n) => n.kind === 'individual')!.secondaryReasons).toEqual(['PSC_LOOK_THROUGH_LIKELY'])
   })
+
+  it('stores no jurisdiction on individual nodes, whatever their residence', async () => {
+    const node = await individual('ACME TRADING LIMITED', person(SHARES_75_100, { country_of_residence: 'Bermuda' }))
+    expect('jurisdiction' in node).toBe(false)
+    expect(JSON.stringify(node)).not.toContain('Bermuda')
+
+    const { fetcher } = fixtureFetcher()
+    const result = await walk('OE005000', fetcher, { maxDepth: 10 })
+    for (const n of result.nodes.filter((n) => n.kind === 'individual')) expect(n.jurisdiction).toBeUndefined()
+  })
 })

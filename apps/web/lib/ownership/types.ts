@@ -57,7 +57,8 @@ export const ownershipNodeSchema = z.object({
   id: z.string(),
   name: z.string(),
   kind: z.enum(['individual', 'corporate', 'legal_person', 'super_secure']),
-  jurisdiction: z.string().nullable(),
+  // Absent for individuals and super-secure PSCs: their country of residence is personal data.
+  jurisdiction: z.string().nullable().optional(),
   companyNumber: z.string().optional(),
   lei: z.string().optional(),
   resolution: resolutionSchema,

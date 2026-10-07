@@ -243,7 +243,10 @@ export async function walk(
       const created: OwnershipNode = {
         id: `${item.nodeId}/psc/${index}`,
         name: pscName(psc),
-        jurisdiction: str(psc.country_of_residence) ?? str(asRecord(psc.identification).country_registered) ?? null,
+        // country_of_residence is read only for the look-through flag, never stored.
+        ...(node.kind === 'individual' || node.kind === 'super_secure'
+          ? {}
+          : { jurisdiction: str(asRecord(psc.identification).country_registered) ?? null }),
         depth,
         secondaryReasons: [],
         ...rangeFields(ranges, method),
