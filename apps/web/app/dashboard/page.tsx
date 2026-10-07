@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { redirect } from "next/navigation";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Network, Settings } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -57,6 +57,13 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-3">
+            <Link
+              className="inline-flex items-center gap-2 border border-[var(--line)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold"
+              href="/dashboard/ownership"
+            >
+              <Network className="h-4 w-4" />
+              Ownership chain
+            </Link>
             <Link
               className="inline-flex items-center gap-2 border border-[var(--line)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold"
               href="/settings"
