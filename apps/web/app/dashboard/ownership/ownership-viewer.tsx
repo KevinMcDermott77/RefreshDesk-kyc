@@ -57,10 +57,15 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
     >
       <Handle type="target" position={Position.Top} />
       <p className="line-clamp-2 text-[14px] font-semibold leading-tight">{data.name}</p>
-      <p className="text-[12px] opacity-80">{data.subtitle}</p>
+      {data.subtitle ? <p className="text-[12px] opacity-80">{data.subtitle}</p> : null}
       <div className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold">
         <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
+        {data.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY') ? (
+          <span className={`${BADGE} border-amber-600 text-amber-800 dark:border-amber-400 dark:text-amber-300`}>
+            Look-through likely
+          </span>
+        ) : null}
       </div>
       <Handle type="source" position={Position.Bottom} />
     </div>
@@ -86,7 +91,7 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold">{data.name}</h2>
-          <p className="text-sm text-[var(--muted)]">{data.subtitle}</p>
+          {data.subtitle ? <p className="text-sm text-[var(--muted)]">{data.subtitle}</p> : null}
         </div>
         <button aria-label="Close" onClick={onClose} className="p-1 hover:opacity-70">
           <X className="h-4 w-4" />
@@ -207,7 +212,7 @@ export function OwnershipViewer() {
               <ul className="mt-3 space-y-1 text-sm">
                 {result.summary.unresolved.map((u) => (
                   <li key={u.id}>
-                    <strong>{u.name}</strong> ({u.subtitle})
+                    <strong>{u.name}</strong>{u.subtitle ? ` (${u.subtitle})` : ''}
                     {u.reasonCode ? (
                       <>
                         {' '}
@@ -219,6 +224,19 @@ export function OwnershipViewer() {
               </ul>
             ) : null}
           </section>
+
+          {result.summary.pointsToCheck.length > 0 ? (
+            <section className={`mt-4 border p-4 ${TONE_CLASSES.unresolved}`}>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.1em]">Points to check</h2>
+              <ul className="mt-2 space-y-1 text-sm">
+                {result.summary.pointsToCheck.map((p) => (
+                  <li key={p.id}>
+                    <strong>{p.name}</strong> <span className={BADGE}>{p.code}</span> {reasonText(p.code)}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <div
             ref={chartRef}

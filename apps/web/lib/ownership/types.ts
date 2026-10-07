@@ -19,6 +19,8 @@ export const REASON_CODES = [
   'CIRCULAR_OWNERSHIP',
   'DEPTH_LIMIT_REACHED',
   'SOURCE_UNAVAILABLE',
+  // Secondary only: an individual's 75%+ holding probably hides non-UK fund entities the PSC regime looks through.
+  'PSC_LOOK_THROUGH_LIKELY',
 ] as const
 
 export const reasonCodeSchema = z.enum(REASON_CODES)

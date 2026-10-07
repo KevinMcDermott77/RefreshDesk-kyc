@@ -24,6 +24,8 @@ export const REASON_TEXT: Record<ReasonCode, string> = {
   BAND_STRADDLES_THRESHOLD: 'Ownership band straddles the threshold; request the exact percentage held',
   CIRCULAR_OWNERSHIP: 'Ownership loops back on itself; request an ownership chart to establish the true controller',
   DEPTH_LIMIT_REACHED: 'Walk stopped at the depth limit; request an ownership chart from this level up',
+  PSC_LOOK_THROUGH_LIKELY:
+    'Register likely looks through non-UK fund entities; request a group structure chart showing intermediate funds, general partners and the fund manager, or resolve at a listed or regulated parent.',
   SOURCE_UNAVAILABLE: 'Companies House data was unavailable; retry later',
 }
 

@@ -119,6 +119,21 @@ function ukRegistrationNumber(psc: Psc): string | null {
   return number
 }
 
+const HOLDING_COMPANY_NAME = /\b(top ?co|hold ?co|mid ?co|mezz ?co|bid ?co|pledge ?co|fin ?co|acquisition ?co|holdings? \d)\b/i
+const UK_RESIDENCE = /^(united kingdom|uk|great britain|england|wales|scotland|northern ireland)$/i
+
+/**
+ * The PSC regime looks through non-UK fund entities, so an individual shown at
+ * 75%+ of a holding-company-style structure, or living abroad, probably sits
+ * above funds the register cannot show. Supporting evidence only.
+ */
+function likelyLookThrough(psc: Psc, parsed: ReturnType<typeof parseNatures>, pathNames: string[]): boolean {
+  if ((parsed.shares?.[0] ?? 0) < 75 && (parsed.votes?.[0] ?? 0) < 75) return false
+  if (pathNames.some((name) => HOLDING_COMPANY_NAME.test(name))) return true
+  const residence = str(psc.country_of_residence)
+  return residence !== undefined && !UK_RESIDENCE.test(residence.trim())
+}
+
 function pscName(psc: Psc): string {
   const name = str(psc.name)
   if (name) return name
@@ -241,6 +256,8 @@ export async function walk(
 
     if (kind.startsWith('individual-')) {
       const node = leaf({ kind: 'individual', resolution: 'RESOLVED_INDIVIDUAL' })
+      const pathNames = [...item.ancestors].map((id) => nodes.get(id)?.name ?? '')
+      if (likelyLookThrough(psc, parsed, pathNames)) node.secondaryReasons.push('PSC_LOOK_THROUGH_LIKELY')
       if (range && classify(range, threshold) === 'straddles') node.reasonCode = 'BAND_STRADDLES_THRESHOLD'
       return
     }

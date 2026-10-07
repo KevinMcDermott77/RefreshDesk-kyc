@@ -34,7 +34,7 @@ describe('toFlow', () => {
     const { fetcher } = fixtureFetcher()
     const { nodes } = toFlow(await walk('OE005000', fetcher, { maxDepth: 10 }))
 
-    const person = nodes.find((n) => n.data.subtitle === 'individual')!
+    const person = nodes.find((n) => n.data.resolutionLabel === 'Individual')!
     expect(person.data.name).toBe('S.A.S.')
     expect(person.data.companyUrl).toBeUndefined()
     expect(JSON.stringify(nodes)).not.toMatch(/Schwarzman|Stephen/)
@@ -45,7 +45,7 @@ describe('friendly labels', () => {
   it('keeps UNRESOLVED as its code and the individual as "Individual"', async () => {
     const { fetcher } = fixtureFetcher()
     const { nodes } = toFlow(await walk('OE005000', fetcher, { maxDepth: 10 }))
-    expect(nodes.find((n) => n.data.subtitle === 'individual')!.data.resolutionLabel).toBe('Individual')
+    expect(nodes.find((n) => n.data.resolutionLabel === 'Individual')!.data.resolutionLabel).toBe('Individual')
     const limited = toFlow(await walk('OE005000', fixtureFetcher().fetcher, { maxDepth: 6 })).nodes
     expect(limited.find((n) => n.data.reasonCode === 'DEPTH_LIMIT_REACHED')!.data.resolutionLabel).toBe('UNRESOLVED')
   })

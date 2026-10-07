@@ -10,7 +10,7 @@ export type Tone = 'resolved' | 'unresolved' | 'pruned' | 'pending'
 /** Everything the node card and side panel show. Individuals are masked to initials. */
 export type FlowNodeData = {
   name: string
-  /** Company number, or "individual". */
+  /** Company number; empty for individuals, whose "Individual" status label says it. */
   subtitle: string
   resolution: Resolution
   /** What the card shows: a friendly label, or "Intermediate" / "Not reached" for PENDING nodes. The code stays in `resolution`. */
@@ -109,7 +109,7 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
   const individual = node.kind === 'individual'
   return {
     name: individual ? initials(node.name) : node.name,
-    subtitle: individual ? 'individual' : (node.companyNumber ?? node.kind.replace('_', ' ')),
+    subtitle: individual ? '' : (node.companyNumber ?? node.kind.replace('_', ' ')),
     resolution: node.resolution,
     resolutionLabel: resolutionLabel(node, hasOwners),
     tone: toneOf(node.resolution),
@@ -185,6 +185,8 @@ export type WalkSummary = {
   /** Terminal outcomes only; PENDING nodes are counted in `intermediate` / `notReached`. */
   counts: Partial<Record<Resolution, number>>
   intermediate: number
+  /** Non-blocking observations (secondary flags); they never change the overall status. */
+  pointsToCheck: { id: string; name: string; code: ReasonCode }[]
   notReached: number
   sourceUnavailable: boolean
   unresolved: { id: string; name: string; subtitle: string; reasonCode: ReasonCode | undefined }[]
@@ -211,6 +213,9 @@ export function summarise(result: WalkResult): WalkSummary {
     status: result.status,
     counts,
     intermediate,
+    pointsToCheck: result.nodes
+      .filter((node) => node.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY'))
+      .map((node) => ({ id: node.id, name: nodeData(node, [], false).name, code: 'PSC_LOOK_THROUGH_LIKELY' as const })),
     notReached,
     sourceUnavailable: result.nodes.some((node) => node.reasonCode === 'SOURCE_UNAVAILABLE'),
     unresolved,
