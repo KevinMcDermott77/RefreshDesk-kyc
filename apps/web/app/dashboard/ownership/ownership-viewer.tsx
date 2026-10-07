@@ -5,8 +5,7 @@ import ReactFlow, { Background, Controls, Handle, Position, type NodeProps } fro
 import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
-import type { FlowNodeData, Tone } from '@/lib/ownership/to-flow'
-import type { Range } from '@/lib/ownership/types'
+import { formatFetchedAt, formatRange, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
 const TONE_CLASSES: Record<Tone, string> = {
@@ -16,30 +15,44 @@ const TONE_CLASSES: Record<Tone, string> = {
   pending: 'border-[var(--line)] bg-[var(--panel)] text-[var(--foreground)] dark:bg-gray-900 dark:text-gray-100',
 }
 
-const STATUS_CLASSES = {
-  resolved: 'border-emerald-600 bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100',
-  partial: 'border-amber-600 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
-  unresolved: 'border-red-600 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100',
+const BANNER_CLASSES = {
+  good: TONE_CLASSES.resolved,
+  attention: TONE_CLASSES.unresolved,
+  error: 'border-red-600 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950 dark:text-red-100',
 } as const
+
+type Summary = NonNullable<OwnershipViewState['result']>['summary']
+
+function bannerTone(summary: Summary) {
+  if (summary.sourceUnavailable) return 'error'
+  return summary.status === 'resolved' ? 'good' : 'attention'
+}
 
 const BADGE = 'border border-current px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]'
 
-function formatRange(range: Range | undefined): string {
-  return range ? `${range[0]}-${range[1]}%` : '—'
+/** Plain-English list: "5 intermediate · 1 unresolved". */
+function countsLine(summary: Summary): string {
+  const parts: string[] = []
+  if (summary.intermediate > 0) parts.push(`${summary.intermediate} intermediate`)
+  if (summary.notReached > 0) parts.push(`${summary.notReached} not reached`)
+  for (const [resolution, count] of Object.entries(summary.counts)) {
+    parts.push(`${count} ${resolution.toLowerCase().replace(/_/g, ' ')}`)
+  }
+  return parts.join(' · ')
 }
 
 function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
   return (
     <div
-      className={`w-[240px] cursor-pointer border-2 px-3 py-2 shadow-sm ${TONE_CLASSES[data.tone]} ${
-        selected ? 'ring-2 ring-[var(--accent)]' : ''
+      className={`w-[260px] cursor-pointer border-2 px-3 py-2 shadow-sm ${TONE_CLASSES[data.tone]} ${
+        selected ? 'border-[var(--accent)]! shadow-md' : ''
       }`}
     >
       <Handle type="target" position={Position.Top} />
-      <p className="truncate text-sm font-semibold">{data.name}</p>
+      <p className="line-clamp-2 text-sm font-semibold leading-tight">{data.name}</p>
       <p className="text-xs opacity-80">{data.subtitle}</p>
       <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.06em]">
-        <span className="opacity-80">{data.resolution}</span>
+        <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -49,7 +62,9 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
 
 const nodeTypes = { owner: OwnerNode }
 
+/** Renders nothing when there is no value. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  if (children === null || children === undefined || children === '' || children === false) return null
   return (
     <div>
       <dt className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{label}</dt>
@@ -72,7 +87,7 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
       </div>
       <dl className="mt-4 space-y-3">
         <Field label="Resolution">
-          {data.resolution}
+          {data.resolutionLabel}
           {data.reasonCode ? ` · ${data.reasonCode}` : ''}
         </Field>
         {data.reasonCode ? <Field label="What to do">{reasonText(data.reasonCode)}</Field> : null}
@@ -86,14 +101,14 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
                 <li key={n}>{n.replace(/-/g, ' ')}</li>
               ))}
             </ul>
-          ) : (
-            '—'
-          )}
+          ) : null}
         </Field>
-        <Field label="Statement code">{data.statementCode ?? '—'}</Field>
-        <Field label="Secondary reasons">{data.secondaryReasons.length > 0 ? data.secondaryReasons.join(', ') : '—'}</Field>
-        <Field label="Fetched at">{data.fetchedAt ?? '—'}</Field>
-        <Field label="Retry after">{data.retryAfter ?? '—'}</Field>
+        <Field label="Statement code">{data.statementCode}</Field>
+        <Field label="Secondary reasons">
+          {data.secondaryReasons.length > 0 ? data.secondaryReasons.join(', ') : null}
+        </Field>
+        <Field label="Fetched at">{formatFetchedAt(data.fetchedAt)}</Field>
+        <Field label="Retry after">{data.retryAfter}</Field>
       </dl>
       {data.companyUrl ? (
         <a
@@ -162,13 +177,9 @@ export function OwnershipViewer() {
 
       {result ? (
         <>
-          <section className={`mt-6 border p-4 ${STATUS_CLASSES[result.summary.status]}`}>
+          <section className={`mt-6 border p-4 ${BANNER_CLASSES[bannerTone(result.summary)]}`}>
             <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {result.summary.status}</p>
-            <p className="mt-1 text-sm">
-              {Object.entries(result.summary.counts)
-                .map(([resolution, count]) => `${count} ${resolution}`)
-                .join(' · ')}
-            </p>
+            <p className="mt-1 text-sm">{countsLine(result.summary)}</p>
             {result.summary.unresolved.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm">
                 {result.summary.unresolved.map((u) => (

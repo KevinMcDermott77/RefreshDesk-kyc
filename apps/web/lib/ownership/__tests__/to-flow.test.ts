@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { walk } from '../walk'
-import { edgeLabel, initials, toFlow } from '../to-flow'
+import { edgeLabel, formatFetchedAt, formatRange, initials, summarise, toFlow } from '../to-flow'
 import { fixtureFetcher } from './fixture-fetcher'
 
 describe('toFlow', () => {
@@ -13,6 +13,8 @@ describe('toFlow', () => {
     const plc = nodes.find((n) => n.id === 'GB:00185647')!
     expect(plc.data.tone).toBe('resolved')
     expect(plc.data.resolution).toBe('RESOLVED_LISTED')
+    expect(plc.data.resolutionLabel).toBe('RESOLVED_LISTED')
+    expect(nodes.find((n) => n.id === 'GB:16565950')!.data.resolutionLabel).toBe('Intermediate')
 
     const root = nodes.find((n) => n.id === 'GB:03261722')!
     expect(plc.position.y).toBeLessThan(root.position.y)
@@ -54,5 +56,37 @@ describe('edgeLabel', () => {
       '25-50% votes + control',
     )
     expect(edgeLabel(null, ['significant-influence-or-control'])).toBe('control')
+  })
+})
+
+describe('summarise', () => {
+  it('counts walked-through companies as intermediate, not as a resolution', async () => {
+    const { fetcher } = fixtureFetcher()
+    const summary = summarise(await walk('03261722', fetcher))
+    expect(summary.intermediate).toBe(2)
+    expect(summary.notReached).toBe(0)
+    expect(summary.counts).toEqual({ RESOLVED_LISTED: 1 })
+    expect(summary.sourceUnavailable).toBe(false)
+  })
+
+  it('flags SOURCE_UNAVAILABLE', async () => {
+    const { fetcher } = fixtureFetcher()
+    const summary = summarise(await walk('99999999', fetcher))
+    expect(summary.sourceUnavailable).toBe(true)
+  })
+})
+
+describe('formatting', () => {
+  it('limits ranges to one decimal place', () => {
+    expect(formatRange([23.7499, 100])).toBe('23.7-100%')
+    expect(formatRange([18.75, 25])).toBe('18.8-25%')
+    expect(formatRange(undefined)).toBeUndefined()
+    expect(edgeLabel([18.75, 25], ['ownership-of-shares-25-to-50-percent'])).toContain('18.8-25%')
+  })
+
+  it('formats fetchedAt in London time', () => {
+    expect(formatFetchedAt('2026-10-07T19:04:00Z')).toBe('7 Oct 2026, 20:04')
+    expect(formatFetchedAt('2026-01-07T19:04:00Z')).toBe('7 Jan 2026, 19:04')
+    expect(formatFetchedAt(undefined)).toBeUndefined()
   })
 })
