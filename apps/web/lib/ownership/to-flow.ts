@@ -46,6 +46,8 @@ const TITLES = new Set(['mr', 'mrs', 'ms', 'miss', 'mx', 'dr', 'prof', 'sir', 'd
 
 /** "Mr Stephen Allen Schwarzman" -> "S.A.S."; "SMITH, John Paul" -> "J.P.S." */
 export function initials(name: string): string {
+  // Already initials (e.g. a sanitised fixture): leave as is.
+  if (/^([A-Z]\.)+$/.test(name.trim())) return name.trim()
   const [first, ...rest] = name.split(',')
   const ordered = rest.length > 0 ? `${rest.join(' ')} ${first}` : first
   const letters = ordered

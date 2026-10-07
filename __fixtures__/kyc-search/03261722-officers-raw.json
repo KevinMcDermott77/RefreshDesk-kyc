@@ -1,0 +1,522 @@
+{
+  "status": 200,
+  "fetchedAt": "2026-10-07T19:53:16.994547+00:00",
+  "body": {
+    "active_count": 8,
+    "etag": "87ba39f3dec6a7979e9b5eab9ff1b24c8ae38c01",
+    "items": [
+      {
+        "name": "N.S.G.",
+        "officer_role": "secretary",
+        "appointed_on": "2024-07-05",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.H.B.",
+        "officer_role": "director",
+        "appointed_on": "2021-06-14",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "B.B.",
+        "officer_role": "director",
+        "appointed_on": "2023-03-05",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "G.R.B.",
+        "officer_role": "director",
+        "appointed_on": "2022-03-06",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "T.C.",
+        "officer_role": "director",
+        "appointed_on": "2025-09-03",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.G.D.",
+        "officer_role": "director",
+        "appointed_on": "2025-01-26",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "M.G.",
+        "officer_role": "director",
+        "appointed_on": "2020-06-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "S.J.R.",
+        "officer_role": "director",
+        "appointed_on": "2017-07-17",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "T.F.",
+        "officer_role": "secretary",
+        "appointed_on": "2001-11-28",
+        "resigned_on": "2024-07-05",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "N.F.M.",
+        "officer_role": "secretary",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2001-11-28",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "etag": "87ba39f3dec6a7979e9b5eab9ff1b24c8ae38c01",
+        "address": {
+          "address_line_1": "5 Chancery Lane",
+          "address_line_2": "Cliffords Inn",
+          "locality": "London",
+          "postal_code": "EC4A 1BU"
+        },
+        "appointed_on": "1996-10-10",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/03261722/appointments/u-EgFet50DX4u6wyR-546KA7CwA",
+          "officer": {
+            "appointments": "/officers/2se_HmvmYCg3z__1poauz7xlgG8/appointments"
+          }
+        },
+        "name": "GRAY'S INN SECRETARIES LIMITED",
+        "officer_role": "corporate-nominee-secretary",
+        "resigned_on": "1997-02-19",
+        "person_number": "900002550001"
+      },
+      {
+        "name": "D.B.A.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2000-01-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.E.A.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2003-04-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "E.P.B.",
+        "officer_role": "director",
+        "appointed_on": "2016-09-02",
+        "resigned_on": "2017-02-22",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "D.M.B.",
+        "officer_role": "director",
+        "appointed_on": "1999-11-08",
+        "resigned_on": "2000-03-09",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.A.B.",
+        "officer_role": "director",
+        "appointed_on": "2019-08-28",
+        "resigned_on": "2024-03-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "H.E.B.",
+        "officer_role": "director",
+        "appointed_on": "2010-07-19",
+        "resigned_on": "2015-07-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.M.B.",
+        "officer_role": "director",
+        "appointed_on": "2006-01-03",
+        "resigned_on": "2015-10-12",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "G.B.",
+        "officer_role": "director",
+        "appointed_on": "2005-06-06",
+        "resigned_on": "2013-03-16",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "L.R.C.",
+        "officer_role": "director",
+        "appointed_on": "2008-03-28",
+        "resigned_on": "2008-04-18",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "L.R.C.",
+        "officer_role": "director",
+        "appointed_on": "2004-09-09",
+        "resigned_on": "2006-03-23",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "D.J.C.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "1999-05-14",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.C.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "1998-11-20",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "I.D.C.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2002-12-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "M.A.C.",
+        "officer_role": "director",
+        "appointed_on": "2004-10-01",
+        "resigned_on": "2020-05-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.J.D.",
+        "officer_role": "director",
+        "appointed_on": "2000-03-10",
+        "resigned_on": "2004-06-14",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "H.M.A.E.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2006-06-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "T.F.",
+        "officer_role": "director",
+        "appointed_on": "2008-06-15",
+        "resigned_on": "2024-07-05",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "A.P.F.",
+        "officer_role": "director",
+        "appointed_on": "2002-09-02",
+        "resigned_on": "2005-01-07",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.C.F.",
+        "officer_role": "director",
+        "appointed_on": "2009-07-27",
+        "resigned_on": "2014-03-15",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.L.G.",
+        "officer_role": "director",
+        "appointed_on": "2014-05-11",
+        "resigned_on": "2019-08-27",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "D.M.H.",
+        "officer_role": "director",
+        "appointed_on": "2008-03-30",
+        "resigned_on": "2010-02-12",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.N.I.",
+        "officer_role": "director",
+        "appointed_on": "2023-05-30",
+        "resigned_on": "2025-09-12",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "L.G.W.J.",
+        "officer_role": "director",
+        "appointed_on": "2008-06-15",
+        "resigned_on": "2014-03-19",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "I.M.W.J.",
+        "officer_role": "director",
+        "appointed_on": "2002-07-04",
+        "resigned_on": "2003-06-21",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.V.J.",
+        "officer_role": "director",
+        "appointed_on": "2018-01-15",
+        "resigned_on": "2023-03-04",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.M.K.",
+        "officer_role": "director",
+        "appointed_on": "2004-03-29",
+        "resigned_on": "2014-07-09",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.J.M.",
+        "officer_role": "director",
+        "appointed_on": "2000-03-10",
+        "resigned_on": "2005-06-24",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "K.M.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2000-03-09",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.J.M.",
+        "officer_role": "director",
+        "appointed_on": "2004-06-07",
+        "resigned_on": "2006-06-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "K.M.",
+        "officer_role": "director",
+        "appointed_on": "2005-02-06",
+        "resigned_on": "2008-01-25",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "A.M.",
+        "officer_role": "director",
+        "appointed_on": "2000-03-24",
+        "resigned_on": "2001-09-14",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "N.P.M.A.M.",
+        "officer_role": "director",
+        "appointed_on": "2014-05-11",
+        "resigned_on": "2021-01-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "S.R.M.",
+        "officer_role": "director",
+        "appointed_on": "2000-03-24",
+        "resigned_on": "2004-05-19",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "C.M.",
+        "officer_role": "director",
+        "appointed_on": "2018-06-06",
+        "resigned_on": "2025-09-12",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "A.F.M.",
+        "officer_role": "director",
+        "appointed_on": "2008-06-15",
+        "resigned_on": "2009-07-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "S.K.J.N.",
+        "officer_role": "director",
+        "appointed_on": "2003-07-07",
+        "resigned_on": "2005-07-01",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.P.N.",
+        "officer_role": "director",
+        "appointed_on": "2017-01-27",
+        "resigned_on": "2018-01-15",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "P.M.N.",
+        "officer_role": "director",
+        "appointed_on": "2021-06-14",
+        "resigned_on": "2024-02-10",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "K.O.",
+        "officer_role": "director",
+        "appointed_on": "2017-01-09",
+        "resigned_on": "2023-03-04",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "T.S.D.P.",
+        "officer_role": "director",
+        "appointed_on": "2004-05-19",
+        "resigned_on": "2006-03-21",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "A.S.R.",
+        "officer_role": "director",
+        "appointed_on": "2013-01-07",
+        "resigned_on": "2023-05-29",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.T.R.",
+        "officer_role": "director",
+        "appointed_on": "2008-06-15",
+        "resigned_on": "2019-10-31",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.D.R.",
+        "officer_role": "director",
+        "appointed_on": "2014-03-16",
+        "resigned_on": "2017-01-27",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "N.S.",
+        "officer_role": "director",
+        "appointed_on": "2008-06-15",
+        "resigned_on": "2014-03-15",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "D.M.S.",
+        "officer_role": "director",
+        "appointed_on": "2005-08-01",
+        "resigned_on": "2011-07-13",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "J.S.",
+        "officer_role": "director",
+        "appointed_on": "2004-05-19",
+        "resigned_on": "2004-11-19",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "D.L.M.T.",
+        "officer_role": "director",
+        "appointed_on": "2003-05-07",
+        "resigned_on": "2004-11-12",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "I.W.",
+        "officer_role": "director",
+        "appointed_on": "2003-04-01",
+        "resigned_on": "2010-07-16",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "S.W.",
+        "officer_role": "director",
+        "appointed_on": "2012-01-30",
+        "resigned_on": "2017-02-03",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "S.V.W.",
+        "officer_role": "director",
+        "appointed_on": "2000-01-20",
+        "resigned_on": "2004-05-19",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.P.W.",
+        "officer_role": "director",
+        "appointed_on": "2000-03-10",
+        "resigned_on": "2001-10-15",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "R.P.W.",
+        "officer_role": "director",
+        "appointed_on": "1997-02-19",
+        "resigned_on": "2000-02-03",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "M.P.W.",
+        "officer_role": "director",
+        "appointed_on": "1998-09-10",
+        "resigned_on": "2004-09-09",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "name": "B.W.",
+        "officer_role": "director",
+        "appointed_on": "1998-11-15",
+        "resigned_on": "2000-02-17",
+        "is_pre_1992_appointment": false
+      },
+      {
+        "etag": "87ba39f3dec6a7979e9b5eab9ff1b24c8ae38c01",
+        "address": {
+          "address_line_1": "5 Chancery Lane",
+          "address_line_2": "Cliffords Inn",
+          "locality": "London",
+          "postal_code": "EC4A 1BU"
+        },
+        "appointed_on": "1996-10-10",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/03261722/appointments/62zcDJIuFhw6Xsv3Z8Lte4u-t7w",
+          "officer": {
+            "appointments": "/officers/bqpdmeHfwmwHE1-PyJBiO5Q_J6E/appointments"
+          }
+        },
+        "name": "DH & B DIRECTORS LIMITED",
+        "officer_role": "corporate-nominee-director",
+        "resigned_on": "1997-02-19",
+        "person_number": "900002540001"
+      },
+      {
+        "etag": "87ba39f3dec6a7979e9b5eab9ff1b24c8ae38c01",
+        "address": {
+          "address_line_1": "5 Chancery Lane",
+          "address_line_2": "Cliffords Inn",
+          "locality": "London",
+          "postal_code": "EC4A 1BU"
+        },
+        "appointed_on": "1996-10-10",
+        "is_pre_1992_appointment": false,
+        "links": {
+          "self": "/company/03261722/appointments/TefDYh5cAdFszrVwKaXDuVEdGh4",
+          "officer": {
+            "appointments": "/officers/R0GAqjfrx5ZG6KIYDUKX1SZOioo/appointments"
+          }
+        },
+        "name": "DH & B MANAGERS LIMITED",
+        "officer_role": "corporate-nominee-director",
+        "resigned_on": "1997-02-19",
+        "person_number": "900002530001"
+      }
+    ],
+    "items_per_page": 67,
+    "kind": "officer-list",
+    "links": {
+      "self": "/company/03261722/officers"
+    },
+    "resigned_count": 59,
+    "inactive_count": 0,
+    "start_index": 0,
+    "total_results": 67
+  }
+}

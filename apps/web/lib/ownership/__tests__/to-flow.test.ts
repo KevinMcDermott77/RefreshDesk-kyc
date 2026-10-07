@@ -56,6 +56,8 @@ describe('initials', () => {
     expect(initials('Mr Stephen Allen Schwarzman')).toBe('S.A.S.')
     expect(initials('SMITH, John Paul')).toBe('J.P.S.')
     expect(initials('')).toBe('?')
+    expect(initials('S.A.S.')).toBe('S.A.S.')
+    expect(initials('AB')).toBe('A.')
   })
 })
 

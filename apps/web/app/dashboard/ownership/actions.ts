@@ -7,6 +7,7 @@ import { walk, UK_COMPANY_NUMBER } from '@/lib/ownership/walk'
 import { createKycSearchFetcher } from '@/lib/ownership/kyc-search-fetcher'
 import { summarise, toFlow, type FlowEdge, type FlowNode, type WalkSummary } from '@/lib/ownership/to-flow'
 import { evaluateProfile, ownershipSummary, type ProfileRow } from '@/lib/kyc-profile/evaluate'
+import { fetchRawProfile } from '@/lib/kyc-profile/fetch-raw'
 import { lookupLei } from '@/lib/kyc-profile/gleif'
 import type { IndirectMethod } from '@/lib/ownership/types'
 
@@ -46,17 +47,19 @@ export async function walkOwnershipAction(
   try {
     const token = await fetchAuthToken()
     const cdd = await fetchEntityCdd(companyNumber, token)
-    const [walked, gleif] = await Promise.all([
+    const [walked, gleif, raw] = await Promise.all([
       walk(cdd.companyNumber, createKycSearchFetcher(token, cdd), { maxDepth, threshold, indirectMethod }),
       lookupLei(cdd.companyNumber),
+      // The panel needs Companies House field names, which the flattened cdd data lacks.
+      fetchRawProfile(cdd.companyNumber, token),
     ])
     const profile = evaluateProfile({
-      profile: cdd.companyProfile,
-      officers: cdd.officers,
+      profile: raw.profile,
+      officers: raw.officers,
       gleif: gleif.lookup,
       gleifFetchedAt: gleif.fetchedAt,
       ownership: ownershipSummary(walked, threshold),
-      fetchedAt: { profile: cdd.fetchedAt?.profile, officers: cdd.fetchedAt?.officers },
+      fetchedAt: raw.fetchedAt,
     })
     return { result: { ...toFlow(walked), summary: summarise(walked), profile } }
   } catch (err) {
