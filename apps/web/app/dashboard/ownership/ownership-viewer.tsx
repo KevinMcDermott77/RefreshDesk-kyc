@@ -13,6 +13,7 @@ import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
 import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
+import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
 const TONE_CLASSES: Record<Tone, string> = {
@@ -29,6 +30,52 @@ const BANNER_CLASSES = {
 } as const
 
 type Summary = NonNullable<OwnershipViewState['result']>['summary']
+
+const MARK_CLASSES: Record<Mark, string> = {
+  PASS: TONE_CLASSES.resolved,
+  GAP: TONE_CLASSES.unresolved,
+  INFO: TONE_CLASSES.pending,
+}
+
+function ProfilePanel({ rows }: { rows: ProfileRow[] }) {
+  return (
+    <section className="mt-6 border border-[var(--line)] bg-[var(--panel)] p-4 text-[var(--foreground)] dark:bg-gray-900 dark:text-gray-100">
+      <h2 className="text-lg font-semibold">Entity KYC profile</h2>
+      <div className="mt-3 divide-y divide-[var(--line)]">
+        {rows.map((row) => (
+          <div key={row.key} className="grid gap-2 py-3 md:grid-cols-[8rem_1fr]">
+            <div>
+              <p className="text-sm font-semibold">{row.label}</p>
+              <span className={`${BADGE} mt-1 inline-block ${MARK_CLASSES[row.mark]}`}>{row.mark}</span>
+            </div>
+            <div className="text-sm">
+              <ul className="space-y-0.5">
+                {row.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              {row.note ? <p className="mt-1 text-xs text-[var(--muted)]">{row.note}</p> : null}
+              {row.source || row.fetchedAt ? (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {row.source ? (
+                    <>
+                      Source:{' '}
+                      <a href={row.source.url} target="_blank" rel="noreferrer" className="underline">
+                        {row.source.label}
+                      </a>
+                    </>
+                  ) : null}
+                  {row.source && row.fetchedAt ? ' · ' : ''}
+                  {row.fetchedAt ? `fetched ${formatFetchedAt(row.fetchedAt)}` : ''}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 function bannerTone(summary: Summary) {
   if (summary.sourceUnavailable) return 'error'
@@ -205,6 +252,8 @@ export function OwnershipViewer() {
 
       {result ? (
         <>
+          <ProfilePanel rows={result.profile} />
+
           <section className={`mt-6 border p-4 ${BANNER_CLASSES[bannerTone(result.summary)]}`}>
             <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {result.summary.status}</p>
             <p className="mt-1 text-sm">{countsLine(result.summary)}</p>

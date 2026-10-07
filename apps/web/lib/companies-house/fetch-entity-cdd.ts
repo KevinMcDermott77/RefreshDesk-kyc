@@ -6,7 +6,7 @@ export type EntityCddData = {
   officers: unknown[]
   pscs: unknown[]
   /** X-Fetched-At of each response, so the ownership walk can report freshness for the root. */
-  fetchedAt?: { profile?: string; pscs?: string }
+  fetchedAt?: { profile?: string; officers?: string; pscs?: string }
 }
 
 async function getOrThrow(path: string, token: string): Promise<KycSearchResponse> {
@@ -32,6 +32,6 @@ export async function fetchEntityCdd(companyNumber: string, authToken?: string):
     companyProfile: (profile.body ?? {}) as Record<string, unknown>,
     officers: asArray(officers.body, 'items'),
     pscs: asArray(pscs.body, 'items'),
-    fetchedAt: { profile: profile.fetchedAt, pscs: pscs.fetchedAt },
+    fetchedAt: { profile: profile.fetchedAt, officers: officers.fetchedAt, pscs: pscs.fetchedAt },
   }
 }

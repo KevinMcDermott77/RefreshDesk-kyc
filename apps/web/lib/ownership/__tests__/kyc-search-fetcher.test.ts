@@ -105,7 +105,7 @@ describe('createKycSearchFetcher', () => {
       '/companies/11111111/officers?fresh=true',
       '/companies/11111111/pscs?fresh=true',
     ])
-    expect(root.fetchedAt).toEqual({ profile: '2026-10-06T09:00:00Z', pscs: '2026-10-06T09:00:00Z' })
+    expect(root.fetchedAt).toEqual({ profile: '2026-10-06T09:00:00Z', officers: '2026-10-06T09:00:00Z', pscs: '2026-10-06T09:00:00Z' })
   })
 
   it('resolves J Sainsbury plc (00185647) as RESOLVED_LISTED via the exemptions endpoint', async () => {

@@ -6,11 +6,13 @@ import { fetchAuthToken } from '@/lib/companies-house/kyc-search-client'
 import { walk, UK_COMPANY_NUMBER } from '@/lib/ownership/walk'
 import { createKycSearchFetcher } from '@/lib/ownership/kyc-search-fetcher'
 import { summarise, toFlow, type FlowEdge, type FlowNode, type WalkSummary } from '@/lib/ownership/to-flow'
+import { evaluateProfile, ownershipSummary, type ProfileRow } from '@/lib/kyc-profile/evaluate'
+import { lookupLei } from '@/lib/kyc-profile/gleif'
 import type { IndirectMethod } from '@/lib/ownership/types'
 
 export type OwnershipViewState = {
   error?: string
-  result?: { nodes: FlowNode[]; edges: FlowEdge[]; summary: WalkSummary }
+  result?: { nodes: FlowNode[]; edges: FlowEdge[]; summary: WalkSummary; profile: ProfileRow[] }
 }
 
 const METHODS: IndirectMethod[] = ['either', 'multiply', 'majority']
@@ -44,12 +46,19 @@ export async function walkOwnershipAction(
   try {
     const token = await fetchAuthToken()
     const cdd = await fetchEntityCdd(companyNumber, token)
-    const walked = await walk(cdd.companyNumber, createKycSearchFetcher(token, cdd), {
-      maxDepth,
-      threshold,
-      indirectMethod,
+    const [walked, gleif] = await Promise.all([
+      walk(cdd.companyNumber, createKycSearchFetcher(token, cdd), { maxDepth, threshold, indirectMethod }),
+      lookupLei(cdd.companyNumber),
+    ])
+    const profile = evaluateProfile({
+      profile: cdd.companyProfile,
+      officers: cdd.officers,
+      gleif: gleif.lookup,
+      gleifFetchedAt: gleif.fetchedAt,
+      ownership: ownershipSummary(walked, threshold),
+      fetchedAt: { profile: cdd.fetchedAt?.profile, officers: cdd.fetchedAt?.officers },
     })
-    return { result: { ...toFlow(walked), summary: summarise(walked) } }
+    return { result: { ...toFlow(walked), summary: summarise(walked), profile } }
   } catch (err) {
     return { error: err instanceof Error ? `Companies House lookup failed: ${err.message}` : 'Companies House lookup failed' }
   }
