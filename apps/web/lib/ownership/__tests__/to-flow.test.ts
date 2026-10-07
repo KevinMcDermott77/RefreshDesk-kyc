@@ -13,7 +13,7 @@ describe('toFlow', () => {
     const plc = nodes.find((n) => n.id === 'GB:00185647')!
     expect(plc.data.tone).toBe('resolved')
     expect(plc.data.resolution).toBe('RESOLVED_LISTED')
-    expect(plc.data.resolutionLabel).toBe('RESOLVED_LISTED')
+    expect(plc.data.resolutionLabel).toBe('Listed company')
     expect(nodes.find((n) => n.id === 'GB:16565950')!.data.resolutionLabel).toBe('Intermediate')
 
     const root = nodes.find((n) => n.id === 'GB:03261722')!
@@ -38,6 +38,16 @@ describe('toFlow', () => {
     expect(person.data.name).toBe('S.A.S.')
     expect(person.data.companyUrl).toBeUndefined()
     expect(JSON.stringify(nodes)).not.toMatch(/Schwarzman|Stephen/)
+  })
+})
+
+describe('friendly labels', () => {
+  it('keeps UNRESOLVED as its code and the individual as "Individual"', async () => {
+    const { fetcher } = fixtureFetcher()
+    const { nodes } = toFlow(await walk('OE005000', fetcher, { maxDepth: 10 }))
+    expect(nodes.find((n) => n.data.subtitle === 'individual')!.data.resolutionLabel).toBe('Individual')
+    const limited = toFlow(await walk('OE005000', fixtureFetcher().fetcher, { maxDepth: 6 })).nodes
+    expect(limited.find((n) => n.data.reasonCode === 'DEPTH_LIMIT_REACHED')!.data.resolutionLabel).toBe('UNRESOLVED')
   })
 })
 

@@ -1,11 +1,18 @@
 'use client'
 
-import { useActionState, useMemo, useState } from 'react'
-import ReactFlow, { Background, Controls, Handle, Position, type NodeProps } from 'reactflow'
+import { useActionState, useMemo, useRef, useState } from 'react'
+import ReactFlow, {
+  Background,
+  Controls,
+  Handle,
+  Position,
+  type NodeProps,
+  type ReactFlowInstance,
+} from 'reactflow'
 import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
-import { formatFetchedAt, formatRange, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
+import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
 const TONE_CLASSES: Record<Tone, string> = {
@@ -28,7 +35,7 @@ function bannerTone(summary: Summary) {
   return summary.status === 'resolved' ? 'good' : 'attention'
 }
 
-const BADGE = 'border border-current px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]'
+const BADGE = 'border border-current px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.06em]'
 
 /** Plain-English list: "5 intermediate · 1 unresolved". */
 function countsLine(summary: Summary): string {
@@ -49,9 +56,9 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
       }`}
     >
       <Handle type="target" position={Position.Top} />
-      <p className="line-clamp-2 text-sm font-semibold leading-tight">{data.name}</p>
-      <p className="text-xs opacity-80">{data.subtitle}</p>
-      <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.06em]">
+      <p className="line-clamp-2 text-[14px] font-semibold leading-tight">{data.name}</p>
+      <p className="text-[12px] opacity-80">{data.subtitle}</p>
+      <div className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold">
         <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
       </div>
@@ -87,7 +94,7 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
       </div>
       <dl className="mt-4 space-y-3">
         <Field label="Resolution">
-          {data.resolutionLabel}
+          {data.resolution}
           {data.reasonCode ? ` · ${data.reasonCode}` : ''}
         </Field>
         {data.reasonCode ? <Field label="What to do">{reasonText(data.reasonCode)}</Field> : null}
@@ -124,6 +131,19 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
   )
 }
 
+const MIN_ZOOM = 0.85
+const MAX_ZOOM = 1.1
+const LEVEL_HEIGHT = 140
+
+/** Fits the chart's width (within the zoom limits), centred, starting at the top owner. */
+function showTop(instance: ReactFlowInstance, nodes: FlowNode[], width: number) {
+  const left = Math.min(...nodes.map((n) => n.position.x))
+  const right = Math.max(...nodes.map((n) => n.position.x + NODE_WIDTH))
+  const top = Math.min(...nodes.map((n) => n.position.y))
+  const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, (width - 40) / (right - left)))
+  instance.setViewport({ zoom, x: width / 2 - ((left + right) / 2) * zoom, y: 24 - top * zoom })
+}
+
 const INPUT = 'mt-1 block w-full border border-[var(--line)] bg-white px-3 py-2 text-sm text-gray-900 dark:bg-gray-900 dark:text-gray-100'
 
 export function OwnershipViewer() {
@@ -131,6 +151,9 @@ export function OwnershipViewer() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const result = state.result
+  const chartRef = useRef<HTMLDivElement>(null)
+  const levels = result ? new Set(result.nodes.map((n) => Math.round(n.position.y / NODE_HEIGHT))).size : 0
+  const chartHeight = Math.max(560, levels * LEVEL_HEIGHT + 80)
   const selected = useMemo(
     () => result?.nodes.find((n) => n.id === selectedId)?.data ?? null,
     [result, selectedId],
@@ -197,19 +220,29 @@ export function OwnershipViewer() {
             ) : null}
           </section>
 
-          <div className="relative mt-4 h-[600px] w-full border border-[var(--line)] bg-white dark:bg-gray-950">
+          <div
+            ref={chartRef}
+            style={{ height: chartHeight }}
+            className="relative mt-4 w-full border border-[var(--line)] bg-white dark:bg-gray-950">
             <ReactFlow
+              key={`${result.nodes[0]?.id}:${result.nodes.length}:${result.edges.length}`}
               nodes={result.nodes}
               edges={result.edges.map((e) => ({
                 ...e,
                 type: 'smoothstep',
-                labelStyle: { fontSize: 11, fill: 'currentColor' },
-                labelBgStyle: { fill: 'var(--panel)' },
+                labelStyle: { fontSize: 12, fill: '#17201c' },
+                labelBgStyle: { fill: '#fffaf1', fillOpacity: 1 },
+                labelBgPadding: [6, 3] as [number, number],
               }))}
               nodeTypes={nodeTypes}
               onNodeClick={(_, node) => setSelectedId(node.id)}
               onPaneClick={() => setSelectedId(null)}
-              fitView
+              minZoom={MIN_ZOOM}
+              maxZoom={MAX_ZOOM}
+              onInit={(instance) => showTop(instance, result.nodes, chartRef.current?.clientWidth ?? 900)}
+              zoomOnScroll={false}
+              panOnScroll={false}
+              preventScrolling={false}
               nodesDraggable={false}
               nodesConnectable={false}
               elementsSelectable

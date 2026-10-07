@@ -13,7 +13,7 @@ export type FlowNodeData = {
   /** Company number, or "individual". */
   subtitle: string
   resolution: Resolution
-  /** What the card shows: the resolution, or "Intermediate" / "Not reached" for PENDING nodes. */
+  /** What the card shows: a friendly label, or "Intermediate" / "Not reached" for PENDING nodes. The code stays in `resolution`. */
   resolutionLabel: string
   tone: Tone
   reasonCode?: ReasonCode
@@ -88,9 +88,16 @@ export function formatFetchedAt(iso: string | undefined): string | undefined {
   }).format(date)
 }
 
+const FRIENDLY_RESOLUTION: Partial<Record<Resolution, string>> = {
+  RESOLVED_INDIVIDUAL: 'Individual',
+  RESOLVED_LISTED: 'Listed company',
+  RESOLVED_REGULATED: 'Regulated firm',
+  RESOLVED_GOVERNMENT: 'Government',
+}
+
 function resolutionLabel(node: OwnershipNode, hasOwners: boolean): string {
-  if (node.resolution !== 'PENDING') return node.resolution
-  return hasOwners ? 'Intermediate' : 'Not reached'
+  if (node.resolution === 'PENDING') return hasOwners ? 'Intermediate' : 'Not reached'
+  return FRIENDLY_RESOLUTION[node.resolution] ?? node.resolution
 }
 
 /** Ids of nodes that have at least one owner edge above them. */
