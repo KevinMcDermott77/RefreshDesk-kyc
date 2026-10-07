@@ -1,0 +1,71 @@
+{
+  "items_per_page": 2,
+  "items": [
+    {
+      "etag": "3519cd2d9966ea0583f958b5cb2b381bae39a22a",
+      "notified_on": "2025-09-12",
+      "name": "Sainsbury's Holdings Limited",
+      "links": {
+        "self": "/company/03261722/persons-with-significant-control/corporate-entity/jE3Og7sjXmm2vYKLLw5QEXzYGBk"
+      },
+      "identification": {
+        "legal_form": "Private Limited Company",
+        "legal_authority": "England And Wales",
+        "country_registered": "England",
+        "place_registered": "Companies House",
+        "registration_number": "16565950"
+      },
+      "ceased": false,
+      "kind": "corporate-entity-person-with-significant-control",
+      "address": {
+        "address_line_1": "Charterhouse Street",
+        "country": "England",
+        "locality": "London",
+        "postal_code": "EC1M 6HA",
+        "premises": "33"
+      },
+      "natures_of_control": [
+        "ownership-of-shares-75-to-100-percent",
+        "voting-rights-75-to-100-percent",
+        "right-to-appoint-and-remove-directors"
+      ]
+    },
+    {
+      "etag": "075b33735eb7bac69b44a699b6674425dc5bc05b",
+      "notified_on": "2016-04-06",
+      "ceased_on": "2025-09-12",
+      "name": "J Sainsbury Plc",
+      "links": {
+        "self": "/company/03261722/persons-with-significant-control/corporate-entity/UBMErVfuvs-Fcd7S6rFGHhr3l_k"
+      },
+      "identification": {
+        "legal_form": "Public Limited Company",
+        "legal_authority": "Companies Act 2006",
+        "country_registered": "England",
+        "place_registered": "Companies House",
+        "registration_number": "00185647"
+      },
+      "ceased": true,
+      "kind": "corporate-entity-person-with-significant-control",
+      "address": {
+        "address_line_1": "Charterhouse Street",
+        "country": "England",
+        "locality": "London",
+        "postal_code": "EC1M 6HA",
+        "premises": "33"
+      },
+      "natures_of_control": [
+        "ownership-of-shares-75-to-100-percent",
+        "voting-rights-75-to-100-percent",
+        "right-to-appoint-and-remove-directors"
+      ]
+    }
+  ],
+  "start_index": 0,
+  "total_results": 2,
+  "active_count": 1,
+  "ceased_count": 1,
+  "links": {
+    "self": "/company/03261722/persons-with-significant-control"
+  }
+}

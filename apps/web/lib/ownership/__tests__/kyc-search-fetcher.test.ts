@@ -47,25 +47,24 @@ describe('createKycSearchFetcher', () => {
 
   const paths = () => fetchMock.mock.calls.map(([url]) => (url as string).slice(BASE.length))
 
-  it('serves the root from memory, fetches PSCs fresh, and records X-Fetched-At per company', async () => {
+  it('serves the root profile from memory, fetches every company\'s raw PSCs live, and records X-Fetched-At per company', async () => {
+    const rootPscs = {
+      items: [
+        {
+          kind: 'corporate-entity-person-with-significant-control',
+          name: 'Parent Ltd',
+          identification: { registration_number: '22222222', country_registered: 'England' },
+          natures_of_control: ['ownership-of-shares-75-to-100-percent'],
+        },
+      ],
+    }
     routes = {
       '/companies/11111111': ok({ company_name: 'ROOT LTD' }, '2026-10-01T08:00:00Z'),
       '/companies/11111111/officers?fresh=true': ok({ items: [] }),
-      '/companies/11111111/pscs?fresh=true': ok(
-        {
-          items: [
-            {
-              kind: 'corporate-entity-person-with-significant-control',
-              name: 'Parent Ltd',
-              identification: { registration_number: '22222222', country_registered: 'England' },
-              natures_of_control: ['ownership-of-shares-75-to-100-percent'],
-            },
-          ],
-        },
-        '2026-10-06T09:00:00Z',
-      ),
+      '/companies/11111111/pscs?fresh=true': ok(rootPscs, '2026-10-06T09:00:00Z'),
+      '/companies/11111111/pscs/raw': ok(rootPscs, '2026-10-06T09:00:00Z'),
       '/companies/22222222': profile('22222222', 'PARENT LTD'),
-      '/companies/22222222/pscs?fresh=true': ok(
+      '/companies/22222222/pscs/raw': ok(
         {
           items: [
             { kind: 'individual-person-with-significant-control', name: 'Owner', natures_of_control: ['ownership-of-shares-75-to-100-percent'] },
@@ -81,9 +80,10 @@ describe('createKycSearchFetcher', () => {
 
     expect(paths()).toEqual([
       '/companies/11111111/exemptions',
+      '/companies/11111111/pscs/raw',
       '/companies/22222222',
       '/companies/22222222/exemptions',
-      '/companies/22222222/pscs?fresh=true',
+      '/companies/22222222/pscs/raw',
     ])
     const byId = new Map(result.nodes.map((node) => [node.id, node]))
     expect(byId.get('GB:11111111')).toMatchObject({ name: 'ROOT LTD', fetchedAt: '2026-10-01T08:00:00Z' })
@@ -123,13 +123,13 @@ describe('createKycSearchFetcher', () => {
       fetchedAt: '2026-10-06T09:00:00Z',
     })
     expect(result.status).toBe('resolved')
-    expect(paths()).not.toContain('/companies/00185647/pscs?fresh=true')
+    expect(paths()).not.toContain('/companies/00185647/pscs/raw')
   })
 
   it('ends PSC_STATEMENT for a company with no PSCs and an active statement', async () => {
     routes = {
       '/companies/33333333': profile('33333333'),
-      '/companies/33333333/pscs?fresh=true': ok({ items: [] }),
+      '/companies/33333333/pscs/raw': ok({ items: [] }),
       '/companies/33333333/pscs/statements': ok({
         items: [{ statement: 'no-individual-or-entity-with-signficant-control', notified_on: '2020-01-01' }],
       }),
@@ -147,7 +147,7 @@ describe('createKycSearchFetcher', () => {
   it('treats 404 on statements and exemptions as none on file: PSC_NONE_FILED', async () => {
     routes = {
       '/companies/44444444': profile('44444444'),
-      '/companies/44444444/pscs?fresh=true': ok({ items: [] }),
+      '/companies/44444444/pscs/raw': ok({ items: [] }),
     }
 
     const result = await walk('44444444', createKycSearchFetcher('token'))
@@ -160,7 +160,7 @@ describe('createKycSearchFetcher', () => {
   it('ends SOURCE_UNAVAILABLE on a 503 and records Retry-After', async () => {
     routes = {
       '/companies/55555555': profile('55555555'),
-      '/companies/55555555/pscs?fresh=true': { status: 503, headers: { 'Retry-After': '30' } },
+      '/companies/55555555/pscs/raw': { status: 503, headers: { 'Retry-After': '30' } },
     }
 
     const result = await walk('55555555', createKycSearchFetcher('token'))
@@ -169,10 +169,35 @@ describe('createKycSearchFetcher', () => {
     expect(result.status).toBe('unresolved')
   })
 
+  // Guards against kyc-search changing the /pscs/raw shape again: the body is a
+  // live response saved on 2026-10-07 and must keep `identification` intact.
+  it('reads a parent registration number from the recorded /pscs/raw response (03261722)', async () => {
+    const raw = JSON.parse(readFileSync(path.join(FIXTURES, 'kyc-search', '03261722-pscs-raw.json'), 'utf8'))
+    const parents = (raw.items as { identification?: { registration_number?: string } }[]).map(
+      (item) => item.identification?.registration_number,
+    )
+    expect(parents.length).toBeGreaterThan(0)
+    expect(parents.every((n) => typeof n === 'string' && n.length > 0)).toBe(true)
+
+    routes = {
+      '/companies/03261722': profile('03261722', 'SAINSBURY HOLDING'),
+      '/companies/03261722/pscs/raw': ok(raw),
+      '/companies/16565950': profile('16565950'),
+      '/companies/16565950/pscs/raw': { status: 404 },
+    }
+
+    const result = await walk('03261722', createKycSearchFetcher('token'))
+
+    // The active PSC (16565950) is followed; the ceased J Sainsbury plc PSC is not.
+    expect(paths()).toContain('/companies/16565950')
+    expect(paths()).not.toContain('/companies/00185647')
+    expect(result.nodes.find((n) => n.companyNumber === '16565950')).toMatchObject({ depth: 1 })
+  })
+
   it('keeps a 5xx on statements as SOURCE_UNAVAILABLE, not PSC_NONE_FILED', async () => {
     routes = {
       '/companies/66666666': profile('66666666'),
-      '/companies/66666666/pscs?fresh=true': ok({ items: [] }),
+      '/companies/66666666/pscs/raw': ok({ items: [] }),
       '/companies/66666666/pscs/statements': { status: 502 },
     }
 
