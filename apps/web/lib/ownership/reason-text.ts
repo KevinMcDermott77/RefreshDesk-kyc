@@ -27,6 +27,8 @@ export const REASON_TEXT: Record<ReasonCode, string> = {
   PSC_LOOK_THROUGH_LIKELY:
     'Register likely looks through non-UK fund entities; request a group structure chart showing intermediate funds, general partners and the fund manager, or resolve at a listed or regulated parent.',
   LISTING_US_UNCONFIRMED: 'Name matches a US-listed company; confirm the listing (ticker shown) before relying on it.',
+  CONSOLIDATION_ONLY:
+    "Linked to the listed/regulated parent by accounting consolidation (GLEIF), not shareholding. Confirm the holding, e.g. the parent's published list of subsidiaries or a group structure chart.",
   SOURCE_UNAVAILABLE: 'Companies House data was unavailable; retry later',
 }
 

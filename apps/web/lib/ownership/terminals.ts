@@ -8,6 +8,8 @@ export type FirdsRow = {
   name?: string
   status?: string
   latestReceived?: boolean
+  /** mrkt_trdng_start_date: when trading on this venue began. */
+  startDate?: string
   /** ISO date or timestamp; a past date means the admission has ended. */
   terminationDate?: string
 }
@@ -44,9 +46,9 @@ export const FIRDS_URL = 'https://registers.esma.europa.eu/solr/esma_registers_f
 export const UPREG_URL = 'https://registers.esma.europa.eu/solr/esma_registers_upreg/select'
 export const ISO_MIC_URL = 'https://www.iso20022.org/sites/default/files/ISO10383_MIC/ISO10383_MIC.csv'
 
-const EEA_AND_GB = new Set([
+const EEA = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT',
-  'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB',
+  'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
 ])
 
 // Rule b trusts an exchange operator's regulated market only for plain market categories. ISO files
@@ -79,8 +81,8 @@ export function matchRegulatedVenue(
     return { rule: 'operating-mic', operatingMic: row.operatingMic, venueName: `${row.name} (operator: ${operator})` }
   }
 
-  // c. ISO says regulated market, in the EEA or GB.
-  if (row.category === 'RMKT' && EEA_AND_GB.has(row.country)) {
+  // c. ISO says regulated market, in the EEA.
+  if (row.category === 'RMKT' && EEA.has(row.country)) {
     return { rule: 'iso-rmkt', operatingMic, venueName: row.name }
   }
   return null
@@ -110,21 +112,20 @@ export async function listedEU(lei: string, lookups: TerminalLookups): Promise<E
   if (rows.length === 0) return null
 
   const [mir, iso] = await Promise.all([lookups.regulatedMarkets(), lookups.isoMics()])
-  // Prefer the most direct rule so the evidence is the strongest available.
-  const order: VenueRule[] = ['mir', 'operating-mic', 'iso-rmkt']
-  // Among equally direct matches, prefer the issuer's home market (ISIN country = venue country).
-  const home = (row: FirdsRow) => (iso.get(row.mic.toUpperCase())?.country === row.isin.slice(0, 2).toUpperCase() ? 0 : 1)
-  let best: { row: FirdsRow; match: VenueMatch } | null = null
-  for (const row of rows) {
+  const matched = rows.flatMap((row) => {
     const match = matchRegulatedVenue(row.mic, mir, iso)
-    if (!match) continue
-    const better =
-      !best ||
-      order.indexOf(match.rule) < order.indexOf(best.match.rule) ||
-      (match.rule === best.match.rule && home(row) < home(best.row))
-    if (better) best = { row, match }
-  }
-  if (!best) return null
+    return match ? [{ row, match }] : []
+  })
+  if (matched.length === 0) return null
+
+  // The primary venue: the issuer's home-country regulated venue (ISIN country = venue country),
+  // then the earliest start of trading, then alphabetical MIC.
+  const isHome = (row: FirdsRow) => iso.get(row.mic.toUpperCase())?.country === row.isin.slice(0, 2).toUpperCase()
+  const started = (row: FirdsRow) => (row.startDate ? Date.parse(row.startDate) : Number.POSITIVE_INFINITY)
+  const home = matched.filter(({ row }) => isHome(row))
+  const best = (home.length > 0 ? home : matched).sort(
+    (a, b) => started(a.row) - started(b.row) || a.row.mic.toUpperCase().localeCompare(b.row.mic.toUpperCase()),
+  )[0]
 
   return {
     kind: 'listed_eu',

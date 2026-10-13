@@ -696,6 +696,23 @@ export async function walk(
     }
   }
 
+  // A consolidation link is not a shareholding: whoever sits below a listed or regulated parent
+  // only through GLEIF links is flagged, all the way down the chain.
+  const isTerminal = (n: OwnershipNode) => n.resolution === 'RESOLVED_LISTED' || n.resolution === 'RESOLVED_REGULATED'
+  for (let changed = true; changed; ) {
+    changed = false
+    for (const edge of edges) {
+      if (edge.source !== 'gleif') continue
+      const parent = nodes.get(edge.parentId)
+      const child = nodes.get(edge.childId)
+      if (!parent || !child || child.secondaryReasons.includes('CONSOLIDATION_ONLY')) continue
+      if (isTerminal(parent) || parent.secondaryReasons.includes('CONSOLIDATION_ONLY')) {
+        child.secondaryReasons.push('CONSOLIDATION_ONLY')
+        changed = true
+      }
+    }
+  }
+
   const all = [...nodes.values()]
   const viaGleif = edges.some((edge) => edge.source === 'gleif')
   return { rootId: root.id, status: overallStatus(all, threshold, viaGleif), nodes: all, edges }

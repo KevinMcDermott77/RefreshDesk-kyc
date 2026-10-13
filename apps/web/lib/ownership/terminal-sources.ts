@@ -47,6 +47,7 @@ export function parseFirds(body: unknown): FirdsRow[] {
         ...(str(doc.status) ? { status: str(doc.status) } : {}),
         latestReceived: String(doc.latest_received_flag) === '1',
         // ESMA's own spelling of the field.
+        ...(str(doc.mrkt_trdng_start_date) ? { startDate: str(doc.mrkt_trdng_start_date) } : {}),
         ...(str(doc.mrkt_trdng_trmination_date) ? { terminationDate: str(doc.mrkt_trdng_trmination_date) } : {}),
       },
     ]
@@ -195,7 +196,7 @@ export function createTerminalLookups(options: Options = {}): TerminalLookups {
             solr(FIRDS_URL, {
               q: `lei:${lei} AND gnr_cfi_code:ES* AND latest_received_flag:1 AND -status:TERM`,
               rows: '200',
-              fl: 'isin,mic,gnr_cfi_code,gnr_full_name,status,latest_received_flag,mrkt_trdng_trmination_date',
+              fl: 'isin,mic,gnr_cfi_code,gnr_full_name,status,latest_received_flag,mrkt_trdng_start_date,mrkt_trdng_trmination_date',
               wt: 'json',
             }),
           ),

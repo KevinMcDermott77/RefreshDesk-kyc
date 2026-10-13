@@ -30,6 +30,16 @@ function checks(over: Partial<TerminalChecks> = {}): TerminalChecks {
 describe('walk with terminal checks — recorded responses', () => {
   const recordedChecks = () => createTerminalChecks(recordedLookups())
 
+  /** The recording holds Nordea, DNB, Allianz and SAP only; any other issuer is looked up as "no instruments, no firm record". */
+  const recordedChecksFor = (...known: string[]) => {
+    const base = recordedLookups()
+    return createTerminalChecks({
+      ...base,
+      firdsEquities: async (lei) => (known.includes(lei) ? base.firdsEquities(lei) : []),
+      upregFirms: async (lei) => (known.includes(lei) ? base.upregFirms(lei) : []),
+    })
+  }
+
   function fetcherFor(scenario: string, terminals: TerminalChecks) {
     return { ...fixtureFetcher({}, replayGleif(scenario).source).fetcher, terminals }
   }
@@ -41,7 +51,7 @@ describe('walk with terminal checks — recorded responses', () => {
     expect(nordea.resolution).toBe('RESOLVED_LISTED')
     expect(nordea.reasonCode).toBeUndefined()
     expect(nordea.secondaryReasons).toContain('GLEIF_EXCEPTION_NATURAL_PERSONS')
-    expect(nordea.evidence?.[0]).toMatchObject({ kind: 'listed_eu', details: { isin: 'FI4000297767', mic: 'XHEL', rule: 'mir' } })
+    expect(nordea.evidence?.[0]).toMatchObject({ kind: 'listed_eu', details: { isin: 'FI4000297767', mic: 'MHEL', rule: 'mir' } })
     expect(result.status).toBe('resolved')
     // A terminal node is not given a "register stop" profile.
     expect(nordea.registerProfile).toBeUndefined()
@@ -63,6 +73,34 @@ describe('walk with terminal checks — recorded responses', () => {
     expect(result.status).toBe('partial')
   })
 
+  it('flags the child of a consolidation link to a listed parent, and keeps the walk partial', async () => {
+    const result = await walk('529900H9Q8LI6GGZB203', fetcherFor('lu-1', recordedChecksFor(LEIS.allianz)))
+    const child = node(result, 'LEI:529900H9Q8LI6GGZB203')
+
+    expect(node(result, ALLIANZ).resolution).toBe('RESOLVED_LISTED')
+    expect(child.secondaryReasons).toEqual(['CONSOLIDATION_ONLY'])
+    expect(child.resolution).toBe('PENDING')
+    expect(result.status).toBe('partial')
+    // The listed parent itself is not flagged.
+    expect(node(result, ALLIANZ).secondaryReasons).not.toContain('CONSOLIDATION_ONLY')
+
+    const summary = summarise(result)
+    expect(summary.pointsToCheck).toEqual([{ id: child.id, name: child.name, code: 'CONSOLIDATION_ONLY' }])
+    expect(summary.unresolved).toEqual([
+      { id: child.id, name: child.name, subtitle: `LEI ${child.lei}`, reasonCode: 'CONSOLIDATION_ONLY' },
+    ])
+  })
+
+  it('flags every node down a chain of consolidation links, but only when the chain ends at a listed or regulated parent', async () => {
+    // Nordea has no parent here, so nothing is flagged for it.
+    const alone = await walk(LEIS.nordea, fetcherFor('nordea', recordedChecks()))
+    expect(alone.nodes.every((n) => !n.secondaryReasons.includes('CONSOLIDATION_ONLY'))).toBe(true)
+
+    // The parent stays unresolved (no terminal): no consolidation flag on the child.
+    const noTerminal = await walk('529900H9Q8LI6GGZB203', fetcherFor('lu-1', checks()))
+    expect(node(noTerminal, 'LEI:529900H9Q8LI6GGZB203').secondaryReasons).toEqual([])
+  })
+
   it('shows the evidence in the flow data and the profile row', async () => {
     const result = await walk(LEIS.nordea, fetcherFor('nordea', recordedChecks()))
     const data = toFlow(result).nodes.find((n) => n.id === NORDEA)!.data
@@ -70,7 +108,7 @@ describe('walk with terminal checks — recorded responses', () => {
 
     const row = listingRow(data.evidence)
     expect(row).toMatchObject({ key: 'listing', mark: 'PASS', source: { label: 'ESMA FIRDS (instrument reference data)' } })
-    expect(row.lines[0]).toContain('FI4000297767 on XHEL')
+    expect(row.lines[0]).toContain('FI4000297767 on MHEL')
   })
 })
 

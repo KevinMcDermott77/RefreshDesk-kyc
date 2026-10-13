@@ -46,12 +46,12 @@ const equity = (mic: string, over: Partial<FirdsRow> = {}): FirdsRow => ({
 })
 
 describe('listedEU — recorded ESMA responses', () => {
-  it('Nordea Bank Abp is listed on Nasdaq Helsinki', async () => {
+  it('Nordea Bank Abp is listed on Nasdaq Helsinki (MHEL and XHEL both began 2018-10-01, so the alphabetical MIC wins)', async () => {
     const evidence = await listedEU(LEIS.nordea, recordedLookups())
     expect(evidence).toMatchObject({
       kind: 'listed_eu',
       source: 'ESMA FIRDS (instrument reference data)',
-      details: { isin: 'FI4000297767', mic: 'XHEL', operatingMic: 'XHEL', venueName: 'Nasdaq Helsinki Oy', rule: 'mir' },
+      details: { isin: 'FI4000297767', mic: 'MHEL', operatingMic: 'XHEL', venueName: 'Nasdaq Helsinki Oy - Auction on Demand', rule: 'mir' },
     })
     expect(evidence!.url).toContain('esma_registers_firds')
     expect(decodeURIComponent(evidence!.url)).toContain(`lei:${LEIS.nordea}`)
@@ -61,23 +61,66 @@ describe('listedEU — recorded ESMA responses', () => {
     expect((await listedEU(LEIS.dnb, recordedLookups()))!.details).toMatchObject({ isin: 'NO0010161896', mic: 'XOSL', rule: 'mir' })
   })
 
-  it('Allianz SE is listed on a Frankfurt regulated-market segment', async () => {
+  it('Allianz SE: the primary venue is Frankfurt', async () => {
     const evidence = await listedEU(LEIS.allianz, recordedLookups())
-    expect(evidence!.details).toMatchObject({ isin: 'DE0008404005', rule: 'mir', operatingMic: 'XFRA' })
+    expect(evidence!.details).toMatchObject({ isin: 'DE0008404005', mic: 'FRAA', operatingMic: 'XFRA', rule: 'mir' })
+    expect(evidence!.details.venueName).toContain('Frankfurt')
   })
 
-  it("prefers the issuer's home market for the evidence", async () => {
-    const mir = new Map([['EQTB', 'Equiduct Berlin'], ['XOSL', 'Oslo Børs Main Market']])
+  it('SAP SE: the primary venue is Frankfurt', async () => {
+    const evidence = await listedEU(LEIS.sap, recordedLookups())
+    expect(evidence!.details).toMatchObject({ isin: 'DE0007164600', mic: 'FRAA', operatingMic: 'XFRA', rule: 'mir' })
+    expect(evidence!.details.venueName).toContain('Frankfurt')
+  })
+
+  describe('primary venue', () => {
+    const mir = new Map([
+      ['EQTB', 'Equiduct Berlin'],
+      ['XOSL', 'Oslo Børs Main Market'],
+      ['MOSL', 'Oslo Børs segment'],
+      ['AOSL', 'Oslo Børs older segment'],
+    ])
     const venues = new Map([
       ['EQTB', iso({ mic: 'EQTB', country: 'DE' })],
       ['XOSL', iso({ mic: 'XOSL', country: 'NO' })],
+      ['MOSL', iso({ mic: 'MOSL', country: 'NO' })],
+      ['AOSL', iso({ mic: 'AOSL', country: 'NO' })],
     ])
-    const lookups = stub({
-      firdsEquities: async () => [equity('EQTB', { isin: 'NO0010096985' }), equity('XOSL', { isin: 'NO0010096985' })],
-      regulatedMarkets: async () => mir,
-      isoMics: async () => venues,
+    const pick = async (rows: FirdsRow[]) =>
+      (await listedEU('A'.repeat(20), stub({ firdsEquities: async () => rows, regulatedMarkets: async () => mir, isoMics: async () => venues })))!.details.mic
+
+    it("prefers the issuer's home-country venue, even when another venue started earlier", async () => {
+      expect(
+        await pick([
+          equity('EQTB', { isin: 'NO0010096985', startDate: '2000-01-01T00:00:00Z' }),
+          equity('XOSL', { isin: 'NO0010096985', startDate: '2018-01-01T00:00:00Z' }),
+        ]),
+      ).toBe('XOSL')
     })
-    expect((await listedEU('A'.repeat(20), lookups))!.details).toMatchObject({ mic: 'XOSL' })
+
+    it('among home venues takes the earliest start of trading', async () => {
+      expect(
+        await pick([
+          equity('XOSL', { isin: 'NO0010096985', startDate: '2018-01-01T00:00:00Z' }),
+          equity('MOSL', { isin: 'NO0010096985', startDate: '2010-05-01T00:00:00Z' }),
+        ]),
+      ).toBe('MOSL')
+    })
+
+    it('breaks a tie alphabetically by MIC', async () => {
+      const same = '2018-01-01T00:00:00Z'
+      expect(
+        await pick([
+          equity('XOSL', { isin: 'NO0010096985', startDate: same }),
+          equity('MOSL', { isin: 'NO0010096985', startDate: same }),
+          equity('AOSL', { isin: 'NO0010096985', startDate: same }),
+        ]),
+      ).toBe('AOSL')
+    })
+
+    it('falls back to any regulated venue when none is in the home country', async () => {
+      expect(await pick([equity('EQTB', { isin: 'NO0010096985' })])).toBe('EQTB')
+    })
   })
 
   it('caches: a second lookup makes no new requests', async () => {
@@ -144,15 +187,17 @@ describe('regulated-venue rules', () => {
     expect(matchRegulatedVenue('MERK', new Map([['XOSL', 'Oslo Børs Main Market']]), venues)).toBeNull()
   })
 
-  it('rule c: ISO says regulated market, in the EEA or GB', () => {
+  it('rule c: ISO says regulated market, in the EEA only', () => {
     const venues = new Map([
       ['XDEU', iso({ mic: 'XDEU', country: 'DE' })],
       ['XGBR', iso({ mic: 'XGBR', country: 'GB' })],
       ['XCAN', iso({ mic: 'XCAN', country: 'CA' })],
+      ['XNOR', iso({ mic: 'XNOR', country: 'NO' })],
       ['XOFF', iso({ mic: 'XOFF', country: 'DE', status: 'EXPIRED' })],
     ])
     expect(matchRegulatedVenue('XDEU', new Map(), venues)).toMatchObject({ rule: 'iso-rmkt' })
-    expect(matchRegulatedVenue('XGBR', new Map(), venues)).toMatchObject({ rule: 'iso-rmkt' })
+    expect(matchRegulatedVenue('XGBR', new Map(), venues)).toBeNull()
+    expect(matchRegulatedVenue('XNOR', new Map(), venues)).toMatchObject({ rule: 'iso-rmkt' })
     expect(matchRegulatedVenue('XCAN', new Map(), venues)).toBeNull()
     expect(matchRegulatedVenue('XOFF', new Map(), venues)).toBeNull()
   })

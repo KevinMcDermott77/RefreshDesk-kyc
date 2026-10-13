@@ -18,6 +18,7 @@ const LEIS = {
   nordea: '529900ODI3047E2LIV03',
   dnb: '549300GKFG0RYRRQ1414',
   allianz: '529900K9B0N5BT694847',
+  sap: '529900D6BF99LW9R2E68',
 }
 const OUT = path.resolve(__dirname, '../../../__fixtures__/terminals')
 

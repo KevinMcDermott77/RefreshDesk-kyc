@@ -23,6 +23,8 @@ export const REASON_CODES = [
   'PSC_LOOK_THROUGH_LIKELY',
   // Secondary only: the name matches a US-listed company; never resolves a branch.
   'LISTING_US_UNCONFIRMED',
+  // Secondary only: linked to a listed or regulated parent by accounting consolidation (GLEIF), not shareholding.
+  'CONSOLIDATION_ONLY',
 ] as const
 
 export const reasonCodeSchema = z.enum(REASON_CODES)

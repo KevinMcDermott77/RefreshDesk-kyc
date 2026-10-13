@@ -226,11 +226,13 @@ export function summarise(result: WalkResult): WalkSummary {
     else if (walkedThrough.has(node.id)) intermediate++
     else notReached++
   }
+  // The gap list: unresolved nodes, plus those linked to a listed/regulated parent by consolidation only.
   const unresolved = result.nodes
-    .filter((node) => node.resolution === 'UNRESOLVED')
+    .filter((node) => node.resolution === 'UNRESOLVED' || node.secondaryReasons.includes('CONSOLIDATION_ONLY'))
     .map((node) => {
       const data = nodeData(node, [], false)
-      return { id: node.id, name: data.name, subtitle: data.subtitle, reasonCode: node.reasonCode }
+      const reasonCode = node.reasonCode ?? (node.secondaryReasons.includes('CONSOLIDATION_ONLY') ? ('CONSOLIDATION_ONLY' as const) : undefined)
+      return { id: node.id, name: data.name, subtitle: data.subtitle, reasonCode }
     })
   return {
     status: result.status,
@@ -249,6 +251,7 @@ export function summarise(result: WalkResult): WalkSummary {
           ...(us ? { detail: `${us.details.ticker} on ${us.details.exchange}` } : {}),
         })
       }
+      if (node.secondaryReasons.includes('CONSOLIDATION_ONLY')) points.push({ id: node.id, name, code: 'CONSOLIDATION_ONLY' })
       return points
     }),
     notReached,
