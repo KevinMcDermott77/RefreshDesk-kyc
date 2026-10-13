@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import type { Fetched, GleifParents, OwnershipFetcher } from '../types'
+import { createGleifSource } from '../gleif-source'
+import type { Fetched, GleifParents, GleifSource, OwnershipFetcher } from '../types'
 
 const FIXTURES = path.resolve(__dirname, '../../../../../__fixtures__')
 
@@ -43,7 +44,7 @@ const NOT_FOUND: Fetched = { status: 404, body: null }
  * in-memory synthetic companies when given. Any lookup with no fixture is
  * recorded in `misses` so tests can assert the walk stayed inside the data.
  */
-export function fixtureFetcher(synthetic?: Record<string, CompanyFixture>) {
+export function fixtureFetcher(synthetic?: Record<string, CompanyFixture>, gleif?: GleifSource) {
   const misses: string[] = []
   const calls: string[] = []
 
@@ -68,6 +69,7 @@ export function fixtureFetcher(synthetic?: Record<string, CompanyFixture>) {
     getPscStatements: async (n) => ch(n, 'psc_statements'),
     getExemptions: async (n) => ch(n, 'exemptions'),
     getGleifParents: async (n) => (synthetic ? (synthetic[n]?.gleif ?? null) : readGleif(n)),
+    ...(gleif ? { gleif } : {}),
   }
 
   return { fetcher, misses, calls }
@@ -94,4 +96,24 @@ export function corporatePsc(registrationNumber: string, natures: string[], extr
 
 export function individualPsc(name: string, natures: string[]) {
   return { kind: 'individual-person-with-significant-control', name, natures_of_control: natures }
+}
+
+/**
+ * Replays the GLEIF responses recorded by scripts/smoke-foreign.ts for a
+ * scenario. A request that was not recorded throws, so a walk that strays
+ * outside the recording fails loudly (and is reported as SOURCE_UNAVAILABLE).
+ */
+export function replayGleif(scenario: string): { source: GleifSource; requested: string[] } {
+  const file = path.join(FIXTURES, 'gleif', 'walks', `${scenario}.json`)
+  const calls = JSON.parse(readFileSync(file, 'utf8')) as Record<string, { status: number; body: unknown }>
+  const requested: string[] = []
+  const source = createGleifSource({
+    async get(p) {
+      requested.push(p)
+      const recorded = calls[p]
+      if (!recorded) throw new Error(`GLEIF request not recorded: ${p}`)
+      return recorded
+    },
+  })
+  return { source, requested }
 }

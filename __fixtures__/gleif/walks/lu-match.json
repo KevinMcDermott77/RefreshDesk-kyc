@@ -1,0 +1,388 @@
+{
+  "/lei-records?filter[entity.registeredAs]=B144833&page[size]=10&filter[entity.legalAddress.country]=LU": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        },
+        "pagination": {
+          "currentPage": 1,
+          "perPage": 10,
+          "from": 1,
+          "to": 1,
+          "total": 1,
+          "lastPage": 1
+        }
+      },
+      "links": {
+        "first": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=B144833&filter%5Bentity.legalAddress.country%5D=LU&page%5Bnumber%5D=1&page%5Bsize%5D=10",
+        "last": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=B144833&filter%5Bentity.legalAddress.country%5D=LU&page%5Bnumber%5D=1&page%5Bsize%5D=10"
+      },
+      "data": [
+        {
+          "type": "lei-records",
+          "id": "529900B1YQQQ0BH7UQ67",
+          "attributes": {
+            "lei": "529900B1YQQQ0BH7UQ67",
+            "entity": {
+              "legalName": {
+                "name": "Allianz Strategic Investments S.a r.l",
+                "language": "fr"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "fr",
+                "addressLines": [
+                  "2A, rue Albert Borschette"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Luxembourg",
+                "region": "LU-LU",
+                "country": "LU",
+                "postalCode": "L-1246"
+              },
+              "headquartersAddress": {
+                "language": "fr",
+                "addressLines": [
+                  "2A, rue Albert Borschette"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Luxembourg",
+                "region": "LU-LU",
+                "country": "LU",
+                "postalCode": "L-1246"
+              },
+              "registeredAt": {
+                "id": "RA000432",
+                "other": null
+              },
+              "registeredAs": "B144833",
+              "jurisdiction": "LU",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "DVXS",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "ACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": "2009-02-23T23:00:00Z",
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2024-08-21T22:00:00Z",
+                      "recordedDate": "2024-08-22T07:32:44Z",
+                      "type": "CHANGE_HQ_ADDRESS",
+                      "status": "COMPLETED"
+                    }
+                  ]
+                },
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2024-08-21T22:00:00Z",
+                      "recordedDate": "2024-08-22T07:32:44Z",
+                      "type": "CHANGE_LEGAL_ADDRESS",
+                      "status": "COMPLETED"
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2020-08-18T11:07:57Z",
+              "lastUpdateDate": "2026-07-24T14:45:34Z",
+              "status": "ISSUED",
+              "nextRenewalDate": "2027-09-13T11:01:55Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000432",
+                "other": null
+              },
+              "validatedAs": "B144833",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": "lu/B144833",
+            "qcc": "QLUEV6A5YJ",
+            "gem": null,
+            "spglobal": [
+              "595367766"
+            ],
+            "conformityFlag": "CONFORMING"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "relationship-record": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/direct-parent-relationship",
+                "lei-record": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/direct-parent"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "relationship-record": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/ultimate-parent-relationship",
+                "lei-record": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67/ultimate-parent"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/529900B1YQQQ0BH7UQ67"
+          }
+        }
+      ]
+    }
+  },
+  "/lei-records/529900B1YQQQ0BH7UQ67/direct-parent": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        }
+      },
+      "data": {
+        "type": "lei-records",
+        "id": "529900K9B0N5BT694847",
+        "attributes": {
+          "lei": "529900K9B0N5BT694847",
+          "entity": {
+            "legalName": {
+              "name": "Allianz SE",
+              "language": "de"
+            },
+            "otherNames": [],
+            "transliteratedOtherNames": [],
+            "legalAddress": {
+              "language": "de",
+              "addressLines": [
+                "Königinstr. 28"
+              ],
+              "addressNumber": null,
+              "addressNumberWithinBuilding": null,
+              "mailRouting": null,
+              "city": "München",
+              "region": "DE-BY",
+              "country": "DE",
+              "postalCode": "80802"
+            },
+            "headquartersAddress": {
+              "language": "de",
+              "addressLines": [
+                "Königinstr. 28"
+              ],
+              "addressNumber": null,
+              "addressNumberWithinBuilding": null,
+              "mailRouting": null,
+              "city": "München",
+              "region": "DE-BY",
+              "country": "DE",
+              "postalCode": "80802"
+            },
+            "registeredAt": {
+              "id": "RA000304",
+              "other": null
+            },
+            "registeredAs": "HRB 164232",
+            "jurisdiction": "DE",
+            "category": "GENERAL",
+            "legalForm": {
+              "id": "SGST",
+              "other": null
+            },
+            "associatedEntity": {
+              "lei": null,
+              "name": null
+            },
+            "status": "ACTIVE",
+            "expiration": {
+              "date": null,
+              "reason": null
+            },
+            "successorEntity": {
+              "lei": null,
+              "name": null
+            },
+            "successorEntities": [],
+            "creationDate": "2006-10-12T22:00:00Z",
+            "subCategory": null,
+            "otherAddresses": [],
+            "eventGroups": [
+              {
+                "groupType": "STANDALONE",
+                "events": [
+                  {
+                    "validationDocuments": "SUPPORTING_DOCUMENTS",
+                    "effectiveDate": "2021-11-01T23:00:00Z",
+                    "recordedDate": "2022-03-29T12:01:47Z",
+                    "type": "MERGERS_AND_ACQUISITIONS",
+                    "status": "COMPLETED"
+                  }
+                ]
+              }
+            ]
+          },
+          "registration": {
+            "initialRegistrationDate": "2013-12-02T15:19:24Z",
+            "lastUpdateDate": "2026-10-06T23:01:34Z",
+            "status": "ISSUED",
+            "nextRenewalDate": "2027-12-04T23:00:00Z",
+            "managingLou": "5299000J2N45DDNE4Y28",
+            "corroborationLevel": "FULLY_CORROBORATED",
+            "validatedAt": {
+              "id": "RA000304",
+              "other": null
+            },
+            "validatedAs": "HRB 164232",
+            "otherValidationAuthorities": []
+          },
+          "bic": [
+            "AZSEDEMMXXX"
+          ],
+          "mic": null,
+          "ocid": null,
+          "qcc": "QDEVJNX63N",
+          "gem": "E100000000394",
+          "spglobal": [
+            "598807"
+          ],
+          "conformityFlag": "CONFORMING"
+        },
+        "relationships": {
+          "managing-lou": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/managing-lou"
+            }
+          },
+          "lei-issuer": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/lei-issuer"
+            }
+          },
+          "field-modifications": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/field-modifications"
+            }
+          },
+          "direct-parent": {
+            "links": {
+              "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/direct-parent-reporting-exception"
+            }
+          },
+          "ultimate-parent": {
+            "links": {
+              "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/ultimate-parent-reporting-exception"
+            }
+          },
+          "direct-children": {
+            "links": {
+              "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/direct-child-relationships",
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/direct-children"
+            }
+          },
+          "ultimate-children": {
+            "links": {
+              "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/ultimate-child-relationships",
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/ultimate-children"
+            }
+          },
+          "managed-funds": {
+            "links": {
+              "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/managed-fund-relationships",
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/managed-funds"
+            }
+          },
+          "isins": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847/isins"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847"
+        }
+      }
+    }
+  },
+  "/lei-records/529900K9B0N5BT694847/direct-parent": {
+    "status": 404,
+    "body": {
+      "errors": [
+        {
+          "status": "404",
+          "title": "Resource not found",
+          "detail": "Related resource not found"
+        }
+      ]
+    }
+  },
+  "/lei-records/529900K9B0N5BT694847/direct-parent-reporting-exception": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        }
+      },
+      "data": {
+        "type": "reporting-exceptions",
+        "id": "529900K9B0N5BT694847|0|c1c8861fa5d69bcaab13ce524d9d7fc98fc4c59a34ebf65e7c82fd6ea5486bc1|DIRECT_ACCOUNTING_CONSOLIDATION_PARENT|",
+        "attributes": {
+          "validFrom": null,
+          "validTo": null,
+          "lei": "529900K9B0N5BT694847",
+          "category": "DIRECT_ACCOUNTING_CONSOLIDATION_PARENT",
+          "reason": "NO_KNOWN_PERSON",
+          "reference": null
+        },
+        "relationships": {
+          "lei-record": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900K9B0N5BT694847"
+            }
+          }
+        }
+      }
+    }
+  }
+}

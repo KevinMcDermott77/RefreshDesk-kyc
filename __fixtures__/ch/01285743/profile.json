@@ -1,0 +1,79 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "31",
+        "month": "12"
+      },
+      "last_accounts": {
+        "made_up_to": "2024-12-31",
+        "period_end_on": "2024-12-31",
+        "period_start_on": "2024-01-01",
+        "type": "full"
+      },
+      "next_accounts": {
+        "due_on": "2026-12-31",
+        "overdue": false,
+        "period_end_on": "2025-12-31",
+        "period_start_on": "2025-01-01"
+      },
+      "next_due": "2026-12-31",
+      "next_made_up_to": "2025-12-31",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "EQUINOR UK LIMITED",
+    "company_number": "01285743",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2025-12-05",
+      "next_due": "2026-12-19",
+      "next_made_up_to": "2026-12-05",
+      "overdue": false
+    },
+    "date_of_creation": "1976-11-10",
+    "etag": "47bc17ca0371c90e60221efbd202fe3d1c062173",
+    "has_been_liquidated": false,
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "last_full_members_list_date": "2016-04-09",
+    "links": {
+      "persons_with_significant_control": "/company/01285743/persons-with-significant-control",
+      "self": "/company/01285743",
+      "charges": "/company/01285743/charges",
+      "filing_history": "/company/01285743/filing-history",
+      "officers": "/company/01285743/officers"
+    },
+    "previous_company_names": [
+      {
+        "ceased_on": "2018-05-16",
+        "effective_from": "1983-12-30",
+        "name": "STATOIL (U.K.) LIMITED"
+      },
+      {
+        "ceased_on": "1983-12-30",
+        "effective_from": "1976-12-31",
+        "name": "SAGA PETROCHEMICALS (U.K.) LIMITED"
+      },
+      {
+        "ceased_on": "1976-12-31",
+        "effective_from": "1976-11-10",
+        "name": "SAGA PETROKJEMI (U.K.) LIMITED"
+      }
+    ],
+    "registered_office_address": {
+      "address_line_1": "1 Kingdom Street",
+      "locality": "London",
+      "postal_code": "W2 6BD"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "06200"
+    ],
+    "type": "ltd",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

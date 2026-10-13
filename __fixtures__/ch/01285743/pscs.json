@@ -1,0 +1,45 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 1,
+    "items": [
+      {
+        "etag": "f3c6e1183e91c25c1cb6bbe1380ef4be5764c003",
+        "notified_on": "2016-12-31",
+        "name": "Equinor Asa",
+        "links": {
+          "self": "/company/01285743/persons-with-significant-control/corporate-entity/HtMqIe_G2ZtSwdtQSbWnHORUzqs",
+          "persons_with_significant_control": {
+            "notifications": "/persons-with-significant-control/2ElWjM1AZQYBw1RLpT_jXMoE-28/notifications"
+          }
+        },
+        "identification": {
+          "legal_form": "Public Limited Company",
+          "legal_authority": "Norwegian",
+          "country_registered": "Norway",
+          "place_registered": "Bronnoysund Register Center",
+          "registration_number": "923609016"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "Forusbeen 50",
+          "country": "Norway",
+          "locality": "Stavanger",
+          "postal_code": "PB 4035",
+          "premises": "Forusbeen"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 1,
+    "active_count": 1,
+    "ceased_count": 0,
+    "links": {
+      "self": "/company/01285743/persons-with-significant-control"
+    }
+  }
+}

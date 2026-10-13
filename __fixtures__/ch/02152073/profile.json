@@ -1,0 +1,72 @@
+{
+  "status": 200,
+  "body": {
+    "accounts": {
+      "accounting_reference_date": {
+        "day": "31",
+        "month": "12"
+      },
+      "last_accounts": {
+        "made_up_to": "2025-12-31",
+        "period_end_on": "2025-12-31",
+        "period_start_on": "2025-01-01",
+        "type": "full"
+      },
+      "next_accounts": {
+        "due_on": "2027-09-30",
+        "overdue": false,
+        "period_end_on": "2026-12-31",
+        "period_start_on": "2026-01-01"
+      },
+      "next_due": "2027-09-30",
+      "next_made_up_to": "2026-12-31",
+      "overdue": false
+    },
+    "can_file": true,
+    "company_name": "SAP (UK) LIMITED",
+    "company_number": "02152073",
+    "company_status": "active",
+    "confirmation_statement": {
+      "last_made_up_to": "2026-03-29",
+      "next_due": "2027-04-12",
+      "next_made_up_to": "2027-03-29",
+      "overdue": false
+    },
+    "date_of_creation": "1987-07-31",
+    "etag": "e5fad71216badbd523034a3a2523bc1c82677cd6",
+    "has_been_liquidated": false,
+    "has_charges": false,
+    "has_insolvency_history": false,
+    "jurisdiction": "england-wales",
+    "last_full_members_list_date": "2016-03-29",
+    "links": {
+      "persons_with_significant_control": "/company/02152073/persons-with-significant-control",
+      "self": "/company/02152073",
+      "charges": "/company/02152073/charges",
+      "filing_history": "/company/02152073/filing-history",
+      "officers": "/company/02152073/officers"
+    },
+    "previous_company_names": [
+      {
+        "ceased_on": "1987-10-14",
+        "effective_from": "1987-07-31",
+        "name": "BORZON LIMITED"
+      }
+    ],
+    "registered_office_address": {
+      "address_line_1": "Clockhouse Place",
+      "address_line_2": "Bedfont Road",
+      "locality": "Feltham",
+      "postal_code": "TW14 8HD",
+      "region": "Middlesex"
+    },
+    "registered_office_is_in_dispute": false,
+    "sic_codes": [
+      "58290",
+      "62020"
+    ],
+    "type": "ltd",
+    "undeliverable_registered_office_address": false,
+    "has_super_secure_pscs": false
+  }
+}

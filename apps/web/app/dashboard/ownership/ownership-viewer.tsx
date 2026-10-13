@@ -95,6 +95,11 @@ function countsLine(summary: Summary): string {
   return parts.join(' · ')
 }
 
+/** "NL" -> flag emoji. */
+function flag(country: string): string {
+  return String.fromCodePoint(...[...country.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+}
+
 function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
   return (
     <div
@@ -106,6 +111,11 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
       <p className="line-clamp-2 text-[14px] font-semibold leading-tight">{data.name}</p>
       {data.subtitle ? <p className="text-[12px] opacity-80">{data.subtitle}</p> : null}
       <div className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold">
+        {data.country ? (
+          <span title={data.country} className="opacity-90">
+            {flag(data.country)} {data.country}
+          </span>
+        ) : null}
         <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
         {data.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY') ? (
@@ -128,6 +138,41 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <dt className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{label}</dt>
       <dd className="mt-0.5 break-words text-sm">{children}</dd>
+    </div>
+  )
+}
+
+function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['registerProfile']> }) {
+  const why = profile.freeBasicData
+    ? profile.uboAccess === 'public'
+      ? 'Ownership is public here, but this tool cannot read the register.'
+      : 'Basic data is free; ownership is not (' + profile.uboAccess.replace(/_/g, ' ') + ').'
+    : 'Register data is paid; ownership is not freely available.'
+  return (
+    <div className="border border-[var(--line)] p-3">
+      <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
+        Register profile · {flag(profile.country)} {profile.country}
+        {profile.notProfiled ? ' · not yet profiled' : ''}
+      </p>
+      <dl className="mt-2 space-y-2">
+        <Field label="Register">
+          <a href={profile.url} target="_blank" rel="noreferrer" className="underline">
+            {profile.registerName}
+          </a>
+        </Field>
+        <Field label="Why not free">{why}</Field>
+        <Field label="Access route">
+          {profile.accessRoutes.length > 0 ? (
+            <ul className="list-inside list-disc">
+              {profile.accessRoutes.map((route) => (
+                <li key={route}>{route}</li>
+              ))}
+            </ul>
+          ) : null}
+        </Field>
+        <Field label="Document to request">{profile.documentToRequest}</Field>
+        <Field label="Note">{profile.note}</Field>
+      </dl>
     </div>
   )
 }
@@ -168,6 +213,8 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
         </Field>
         <Field label="Fetched at">{formatFetchedAt(data.fetchedAt)}</Field>
         <Field label="Retry after">{data.retryAfter}</Field>
+        <Field label="LEI">{data.lei}</Field>
+        {data.registerProfile ? <RegisterProfileBlock profile={data.registerProfile} /> : null}
       </dl>
       {data.companyUrl ? (
         <a
@@ -213,10 +260,10 @@ export function OwnershipViewer() {
 
   return (
     <div className="mt-6">
-      <form action={action} className="grid gap-4 border border-[var(--line)] bg-[var(--panel)] p-4 dark:bg-gray-900 md:grid-cols-5">
+      <form id="ownership-form" action={action} className="grid gap-4 border border-[var(--line)] bg-[var(--panel)] p-4 dark:bg-gray-900 md:grid-cols-5">
         <label className="text-sm font-medium md:col-span-2">
-          Company number
-          <input name="company_number" required placeholder="03261722" className={INPUT} />
+          Company number, LEI or name
+          <input name="entry" required placeholder="03261722, an LEI, or Nordea Bank" className={INPUT} />
         </label>
         <label className="text-sm font-medium">
           Max depth
@@ -243,6 +290,31 @@ export function OwnershipViewer() {
           </button>
         </div>
       </form>
+
+      {state.candidates ? (
+        <section className="mt-4 border border-[var(--line)] bg-[var(--panel)] p-4 text-[var(--foreground)] dark:bg-gray-900 dark:text-gray-100">
+          <h2 className="text-sm font-semibold">Pick the entity (GLEIF matches)</h2>
+          <ul className="mt-2 divide-y divide-[var(--line)]">
+            {state.candidates.map((c) => (
+              <li key={c.lei} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                <span>
+                  <strong>{c.name}</strong> · {c.country ? `${flag(c.country)} ${c.country}` : 'country unknown'} · {c.status}
+                  <span className="block text-xs text-[var(--muted)]">{c.lei}</span>
+                </span>
+                <button
+                  form="ownership-form"
+                  name="picked_lei"
+                  value={c.lei}
+                  disabled={pending}
+                  className="border border-[var(--accent-strong)] px-3 py-1 text-sm font-semibold"
+                >
+                  Walk this one
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {state.error ? (
         <p role="alert" className="mt-4 border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">
@@ -294,9 +366,10 @@ export function OwnershipViewer() {
             <ReactFlow
               key={`${result.nodes[0]?.id}:${result.nodes.length}:${result.edges.length}`}
               nodes={result.nodes}
-              edges={result.edges.map((e) => ({
+              edges={result.edges.map(({ dashed, ...e }) => ({
                 ...e,
                 type: 'smoothstep',
+                ...(dashed ? { style: { strokeDasharray: '6 4' } } : {}),
                 labelStyle: { fontSize: 12, fill: '#17201c' },
                 labelBgStyle: { fill: '#fffaf1', fillOpacity: 1 },
                 labelBgPadding: [6, 3] as [number, number],

@@ -1,0 +1,47 @@
+{
+  "status": 200,
+  "body": {
+    "items_per_page": 1,
+    "items": [
+      {
+        "etag": "23c194cb1488d50002e9a3cbb49c2c723583d734",
+        "notified_on": "2016-04-06",
+        "name": "Sap Se",
+        "links": {
+          "self": "/company/02152073/persons-with-significant-control/corporate-entity/5Wo-9wtAQKE0t8RSerUoenIWON0",
+          "persons_with_significant_control": {
+            "notifications": "/persons-with-significant-control/0fbWSiou4tMN8_OsT09FlfTe3zw/notifications"
+          }
+        },
+        "identification": {
+          "legal_form": "Societas Europaea",
+          "legal_authority": "Laws Of The European Union And German Law",
+          "country_registered": "Germany",
+          "place_registered": "Handelsregister Des Amtsgerichts Mannheim",
+          "registration_number": "Hrb719915"
+        },
+        "ceased": false,
+        "kind": "corporate-entity-person-with-significant-control",
+        "address": {
+          "address_line_1": "16",
+          "country": "Germany",
+          "locality": "Walldorf",
+          "postal_code": "69190",
+          "premises": "Dietmar-Hopp-Allee"
+        },
+        "natures_of_control": [
+          "ownership-of-shares-75-to-100-percent",
+          "voting-rights-75-to-100-percent",
+          "right-to-appoint-and-remove-directors"
+        ]
+      }
+    ],
+    "start_index": 0,
+    "total_results": 1,
+    "active_count": 1,
+    "ceased_count": 0,
+    "links": {
+      "self": "/company/02152073/persons-with-significant-control"
+    }
+  }
+}

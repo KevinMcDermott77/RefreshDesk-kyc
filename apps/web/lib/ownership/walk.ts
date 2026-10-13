@@ -1,11 +1,15 @@
 import { classify, governingBand, maxRanges, multiplyRanges, parseNatures } from './bands'
+import { countryCode } from './countries'
+import { profileFor, stopReasonFor } from './register-profiles'
 import type {
   Fetched,
+  GleifRecord,
   IndirectMethod,
   OwnershipEdge,
   OwnershipFetcher,
   OwnershipNode,
   Range,
+  RegisterProfileRef,
   ReasonCode,
   WalkPolicy,
   WalkResult,
@@ -20,6 +24,10 @@ export const UK_COMPANY_NUMBER = /^([0-9]{8}|[A-Z]{2}[0-9]{6})$/
 const UK_REGISTER = /united kingdom|\buk\b|england|wales|scotland|northern ireland|great britain|companies house/i
 const UK_REGULATED_MARKET_EXEMPTION = 'psc-exempt-as-trading-on-uk-regulated-market'
 const CH_COMPANY_URL = 'https://find-and-update.company-information.service.gov.uk/company/'
+const GLEIF_RECORD_URL = 'https://search.gleif.org/#/record/'
+const LEI_PATTERN = /^[A-Z0-9]{20}$/
+/** GLEIF registration authority id for Companies House. */
+export const COMPANIES_HOUSE_RA = 'RA000585'
 
 const GLEIF_EXCEPTION_REASONS: Record<string, ReasonCode> = {
   NATURAL_PERSONS: 'GLEIF_EXCEPTION_NATURAL_PERSONS',
@@ -33,7 +41,11 @@ const GLEIF_EXCEPTION_REASONS: Record<string, ReasonCode> = {
 type PathRanges = { multiply?: Range; majority?: Range }
 
 type Item = {
+  /** Companies House number; empty for GLEIF items. */
   companyNumber: string
+  /** Set for items walked through GLEIF; `record` is its Level 1 record when already known. */
+  lei?: string
+  record?: GleifRecord
   nodeId: string
   depth: number
   ranges: PathRanges
@@ -144,14 +156,15 @@ function pscName(psc: Psc): string {
   return parts.length > 0 ? parts.join(' ') : 'Unknown'
 }
 
-function overallStatus(nodes: OwnershipNode[], threshold: number): WalkStatus {
+function overallStatus(nodes: OwnershipNode[], threshold: number, viaGleif: boolean): WalkStatus {
   const terminals = nodes.filter((node) => node.resolution !== 'PENDING')
   const materialUnresolved = terminals.some(
     (node) =>
       node.resolution === 'UNRESOLVED' &&
       (!node.effectiveRange || classify(node.effectiveRange, threshold) !== 'below'),
   )
-  if (!materialUnresolved) return 'resolved'
+  // A consolidation link in GLEIF is not a Companies House ownership interest: it can never make a walk fully resolved.
+  if (!materialUnresolved) return viaGleif && terminals.some((node) => node.resolution.startsWith('RESOLVED_')) ? 'partial' : 'resolved'
   return terminals.some((node) => node.resolution.startsWith('RESOLVED_')) ? 'partial' : 'unresolved'
 }
 
@@ -174,12 +187,14 @@ export async function walk(
   const visited = new Map<string, string>()
 
   const rootNumber = rootId.trim().toUpperCase()
+  // An LEI root starts a GLEIF walk; anything else is a Companies House number.
+  const rootLei = LEI_PATTERN.test(rootNumber) ? rootNumber : undefined
   const root: OwnershipNode = {
-    id: companyKey(rootNumber),
+    id: rootLei ? `LEI:${rootLei}` : companyKey(rootNumber),
     name: rootNumber,
     kind: 'corporate',
     jurisdiction: null,
-    companyNumber: rootNumber,
+    ...(rootLei ? { lei: rootLei } : { companyNumber: rootNumber }),
     resolution: 'PENDING',
     ...rangeFields({ multiply: [100, 100], majority: [100, 100] }, method),
     depth: 0,
@@ -190,7 +205,8 @@ export async function walk(
 
   const queue: Item[] = [
     {
-      companyNumber: rootNumber,
+      companyNumber: rootLei ? '' : rootNumber,
+      ...(rootLei ? { lei: rootLei } : {}),
       nodeId: root.id,
       depth: 0,
       ranges: { multiply: [100, 100], majority: [100, 100] },
@@ -218,7 +234,156 @@ export async function walk(
     if (retryAfter) node.retryAfter = retryAfter
   }
 
-  function addPsc(item: Item, psc: Psc, index: number) {
+  function registerProfileRef(country: string | undefined): RegisterProfileRef | undefined {
+    const profile = profileFor(country)
+    if (!profile) return undefined
+    const { registerName, url, freeBasicData, shareholdersPublic, uboAccess, accessRoutes, documentToRequest, note } = profile
+    return {
+      country: profile.country,
+      registerName,
+      url,
+      freeBasicData,
+      shareholdersPublic,
+      uboAccess,
+      accessRoutes,
+      documentToRequest,
+      note,
+      ...(profile.notProfiled ? { notProfiled: true } : {}),
+    }
+  }
+
+  function gleifEdge(parentId: string, childId: string) {
+    edges.push({ parentId, childId, source: 'gleif', basis: 'consolidation', band: null, natures: [] })
+  }
+
+  function gleifNode(record: GleifRecord, depth: number, base: Partial<OwnershipNode> = {}): OwnershipNode {
+    return {
+      id: `LEI:${record.lei}`,
+      name: record.legalName,
+      kind: 'corporate',
+      jurisdiction: record.country ?? record.jurisdiction ?? null,
+      lei: record.lei,
+      resolution: 'PENDING',
+      depth,
+      secondaryReasons: [],
+      evidenceUrl: `${GLEIF_RECORD_URL}${record.lei}`,
+      ...base,
+    }
+  }
+
+  /** A UK Companies House registration held in a GLEIF record, if it has one. */
+  function ukRegistration(record: GleifRecord): string | null {
+    const number = record.registeredAs?.replace(/\s/g, '').toUpperCase()
+    return record.registeredAt === COMPANIES_HOUSE_RA && number && UK_COMPANY_NUMBER.test(number) ? number : null
+  }
+
+  /** Stops a GLEIF walk at `node`: the exception GLEIF reports, else the register's default reason. */
+  function stopGleif(node: OwnershipNode, country: string | undefined, exception?: string) {
+    const exceptionCode = exception ? GLEIF_EXCEPTION_REASONS[exception] : undefined
+    settle(node, 'UNRESOLVED', exceptionCode ?? stopReasonFor(country))
+    const profile = registerProfileRef(country)
+    if (profile) node.registerProfile = profile
+  }
+
+  /** Walks one GLEIF node: follows its direct parent, or stops with a reason. Never resolves a node. */
+  async function processGleif(item: Item, node: OwnershipNode) {
+    const gleif = fetcher.gleif
+    if (!gleif || !item.lei) {
+      unavailable(node)
+      return
+    }
+
+    let record = item.record
+    try {
+      record ??= (await gleif.getRecord(item.lei)) ?? undefined
+    } catch {
+      unavailable(node)
+      return
+    }
+    if (!record) {
+      settle(node, 'UNRESOLVED', 'REGISTER_NOT_PROFILED')
+      return
+    }
+
+    node.name = record.legalName
+    node.lei = record.lei
+    node.jurisdiction = record.country ?? record.jurisdiction ?? null
+    node.evidenceUrl = `${GLEIF_RECORD_URL}${record.lei}`
+    const country = record.country ?? record.jurisdiction
+
+    let result
+    try {
+      result = await gleif.getDirectParent(record.lei)
+    } catch {
+      unavailable(node)
+      return
+    }
+
+    const parent = result.parent
+    if (!parent) {
+      stopGleif(node, country, result.exception)
+      return
+    }
+
+    const uk = ukRegistration(parent)
+    const key = uk ? companyKey(uk) : `LEI:${parent.lei}`
+    if (item.ancestors.has(key)) {
+      settle(node, 'UNRESOLVED', 'CIRCULAR_OWNERSHIP')
+      return
+    }
+    const seen = visited.get(key)
+    if (seen) {
+      gleifEdge(seen, item.nodeId)
+      return
+    }
+
+    const depth = item.depth + 1
+    const created: OwnershipNode = uk
+      ? {
+          id: key,
+          name: parent.legalName,
+          kind: 'corporate',
+          jurisdiction: null,
+          companyNumber: uk,
+          lei: parent.lei,
+          resolution: 'PENDING',
+          depth,
+          secondaryReasons: [],
+          evidenceUrl: `${CH_COMPANY_URL}${uk}`,
+        }
+      : gleifNode(parent, depth)
+    nodes.set(key, created)
+    visited.set(key, key)
+    gleifEdge(key, item.nodeId)
+
+    if (depth >= maxDepth) {
+      settle(created, 'UNRESOLVED', 'DEPTH_LIMIT_REACHED')
+      return
+    }
+
+    // A UK parent continues with the Companies House walker; any other parent with GLEIF.
+    queue.push({
+      companyNumber: uk ?? '',
+      ...(uk ? {} : { lei: parent.lei, record: parent }),
+      nodeId: key,
+      depth,
+      ranges: {},
+      noPrune: item.noPrune,
+      ancestors: new Set([...item.ancestors, key]),
+    })
+  }
+
+  /** Free-text register description of an overseas PSC, and the country code it implies. */
+  function overseasCountry(psc: Psc): { text: boolean; code: string | undefined } {
+    const identification = asRecord(psc.identification)
+    const parts = [identification.country_registered, identification.place_registered, identification.legal_authority]
+      .map(str)
+      .filter((part): part is string => part !== undefined)
+    const code = parts.map(countryCode).find((c): c is string => c !== undefined && c !== 'GB')
+    return { text: parts.length > 0, code }
+  }
+
+  async function addPsc(item: Item, psc: Psc, index: number) {
     const natures = Array.isArray(psc.natures_of_control)
       ? psc.natures_of_control.filter((n): n is string => typeof n === 'string')
       : []
@@ -283,7 +448,70 @@ export async function walk(
 
     const number = ukRegistrationNumber(psc)
     if (!number) {
-      leaf({ kind: 'corporate', resolution: 'UNRESOLVED', reasonCode: 'FOREIGN_ENTITY_UNMATCHED' })
+      const gleif = fetcher.gleif
+      if (!gleif) {
+        leaf({ kind: 'corporate', resolution: 'UNRESOLVED', reasonCode: 'FOREIGN_ENTITY_UNMATCHED' })
+        return
+      }
+
+      // Match on registration number and country only, never on name.
+      const { text, code } = overseasCountry(psc)
+      const registration = str(asRecord(psc.identification).registration_number)?.trim()
+      let matches: GleifRecord[] = []
+      let outage = false
+      if (registration && code) {
+        try {
+          matches = (await gleif.findByRegistration(registration, code)).filter((m) => m.registrationStatus === 'ISSUED')
+        } catch {
+          outage = true
+        }
+      }
+
+      if (matches.length !== 1) {
+        const reasonCode: ReasonCode = outage
+          ? 'SOURCE_UNAVAILABLE'
+          : code
+            ? stopReasonFor(code)
+            : text
+              ? 'REGISTER_NOT_PROFILED'
+              : 'FOREIGN_ENTITY_UNMATCHED'
+        const stop = leaf({ kind: 'corporate', resolution: 'UNRESOLVED', reasonCode })
+        const profile = registerProfileRef(code)
+        if (profile) stop.registerProfile = profile
+        return
+      }
+
+      const match = matches[0]
+      const leiKey = `LEI:${match.lei}`
+      if (item.ancestors.has(leiKey)) {
+        leaf({ kind: 'corporate', resolution: 'UNRESOLVED', reasonCode: 'CIRCULAR_OWNERSHIP' })
+        return
+      }
+      const seenLei = visited.get(leiKey)
+      if (seenLei) {
+        edgeTo(seenLei)
+        return
+      }
+
+      const followed = gleifNode(match, depth, { name: pscName(psc), ...rangeFields(ranges, method) })
+      nodes.set(leiKey, followed)
+      visited.set(leiKey, leiKey)
+      edgeTo(leiKey)
+
+      if (depth >= maxDepth) {
+        settle(followed, 'UNRESOLVED', 'DEPTH_LIMIT_REACHED')
+        return
+      }
+      queue.push({
+        companyNumber: '',
+        lei: match.lei,
+        record: match,
+        nodeId: leiKey,
+        depth,
+        ranges,
+        noPrune,
+        ancestors: new Set([...item.ancestors, leiKey]),
+      })
       return
     }
 
@@ -327,6 +555,11 @@ export async function walk(
   while (queue.length > 0) {
     const item = queue.shift()!
     const node = nodes.get(item.nodeId)!
+
+    if (item.lei) {
+      await processGleif(item, node)
+      continue
+    }
 
     const profile = await safely(() => fetcher.getProfile(item.companyNumber))
     if (profile.status !== 200) {
@@ -372,7 +605,7 @@ export async function walk(
 
     const active = items(pscs).filter((psc) => !isCeased(psc))
     if (active.length > 0) {
-      active.forEach((psc, index) => addPsc(item, psc, index))
+      for (const [index, psc] of active.entries()) await addPsc(item, psc, index)
       continue
     }
 
@@ -390,5 +623,6 @@ export async function walk(
   }
 
   const all = [...nodes.values()]
-  return { rootId: root.id, status: overallStatus(all, threshold), nodes: all, edges }
+  const viaGleif = edges.some((edge) => edge.source === 'gleif')
+  return { rootId: root.id, status: overallStatus(all, threshold, viaGleif), nodes: all, edges }
 }

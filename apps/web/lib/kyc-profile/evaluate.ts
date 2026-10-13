@@ -1,6 +1,6 @@
 import { classify } from '@/lib/ownership/bands'
 import { initials } from '@/lib/ownership/to-flow'
-import type { WalkResult } from '@/lib/ownership/types'
+import type { GleifRecord, WalkResult } from '@/lib/ownership/types'
 
 export type Mark = 'PASS' | 'GAP' | 'INFO'
 
@@ -262,6 +262,79 @@ export function evaluateProfile(input: ProfileInput): ProfileRow[] {
     officersRow(input),
     leiRow(input),
     ownershipRow(input),
+    { key: 'not-covered', label: 'Not covered', mark: 'GAP', lines: [SCREENING_GAP] },
+  ]
+}
+
+const GLEIF_RECORD_URL = 'https://search.gleif.org/#/record/'
+export const NOT_FREE_NOTE = 'Not available from a free source for this jurisdiction'
+
+export type ForeignProfileInput = {
+  /** GLEIF Level 1 record of the target. */
+  record: GleifRecord
+  ownership: OwnershipSummary
+  fetchedAt?: string
+}
+
+/**
+ * The KYC profile for a non-UK target. Identity comes from GLEIF Level 1;
+ * filings and officers have no free source, so they are shown as INFO only.
+ */
+export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[] {
+  const { record } = input
+  const source = { label: 'GLEIF', url: `${GLEIF_RECORD_URL}${record.lei}` }
+  const gleifNote = GLEIF_NOTE
+  const unavailable = (key: 'filings' | 'officers', label: string): ProfileRow => ({
+    key,
+    label,
+    mark: 'INFO',
+    lines: [NOT_FREE_NOTE],
+  })
+
+  const identity: ProfileRow = {
+    key: 'identity',
+    label: 'Identity',
+    mark: record.entityStatus === 'ACTIVE' ? 'PASS' : 'GAP',
+    lines: [
+      `Legal name: ${record.legalName}`,
+      `Legal form: ${record.legalForm ?? 'not provided'}`,
+      `Legal address: ${record.address ?? 'not provided'}`,
+      `Registration authority: ${record.registeredAt ?? 'not provided'}, number ${record.registeredAs ?? 'not provided'}`,
+      `Entity status: ${record.entityStatus ?? 'not provided'}`,
+    ],
+    source,
+    fetchedAt: input.fetchedAt,
+    note: gleifNote,
+    ...(record.entityStatus === 'ACTIVE' ? {} : { note: `Entity status is ${record.entityStatus ?? 'unknown'}, not active. ${gleifNote}` }),
+  }
+
+  const lei: ProfileRow = {
+    key: 'lei',
+    label: 'LEI',
+    mark: record.registrationStatus === 'ISSUED' ? 'PASS' : 'GAP',
+    lines: [
+      `LEI: ${record.lei}`,
+      `Registration status: ${record.registrationStatus}`,
+      `Next renewal: ${record.nextRenewalDate ? formatDate(record.nextRenewalDate) : 'not provided'}`,
+    ],
+    source,
+    fetchedAt: input.fetchedAt,
+    note: gleifNote,
+  }
+
+  return [
+    identity,
+    unavailable('filings', 'Filings'),
+    unavailable('officers', 'Officers'),
+    lei,
+    {
+      key: 'ownership',
+      label: 'Ownership',
+      mark: input.ownership.status === 'resolved' ? 'PASS' : 'GAP',
+      lines: [`Walk status: ${input.ownership.status}`],
+      source,
+      fetchedAt: input.ownership.fetchedAt,
+    },
     { key: 'not-covered', label: 'Not covered', mark: 'GAP', lines: [SCREENING_GAP] },
   ]
 }

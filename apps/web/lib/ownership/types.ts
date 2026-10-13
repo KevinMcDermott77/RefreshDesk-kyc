@@ -53,6 +53,21 @@ export const ownershipEdgeSchema = z.object({
 })
 export type OwnershipEdge = z.infer<typeof ownershipEdgeSchema>
 
+// The register a walk stopped at, for the UI. Mirrors RegisterProfile (register-profiles.ts).
+export const registerProfileRefSchema = z.object({
+  country: z.string(),
+  registerName: z.string(),
+  url: z.string(),
+  freeBasicData: z.boolean(),
+  shareholdersPublic: z.enum(['yes', 'no', 'partial', 'manual']),
+  uboAccess: z.enum(['public', 'legitimate_interest', 'obliged_entity', 'restricted']),
+  accessRoutes: z.array(z.string()),
+  documentToRequest: z.string(),
+  note: z.string(),
+  notProfiled: z.boolean().optional(),
+})
+export type RegisterProfileRef = z.infer<typeof registerProfileRefSchema>
+
 export const ownershipNodeSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -72,6 +87,8 @@ export const ownershipNodeSchema = z.object({
   effectiveRangeMultiply: rangeSchema.optional(),
   effectiveRangeMajority: rangeSchema.optional(),
   evidenceUrl: z.string().optional(),
+  // Set on foreign / GLEIF stop nodes: how the register where the walk stopped is accessed.
+  registerProfile: registerProfileRefSchema.optional(),
   // Edges from the root on the shortest path.
   depth: z.number().int().nonnegative(),
   // Companies House PSC statement code, verbatim (including CH's "signficant" typo).
@@ -126,6 +143,41 @@ export type GleifParents = {
   reportingExceptions: string[]
 }
 
+/** A GLEIF Level 1 record, reduced to what the walk and the profile panel use. */
+export type GleifRecord = {
+  lei: string
+  legalName: string
+  /** ELF code or free text from entity.legalForm. */
+  legalForm?: string
+  /** ISO country of the legal address. */
+  country?: string
+  jurisdiction?: string
+  address?: string
+  /** Registration authority id, e.g. RA000585 for Companies House. */
+  registeredAt?: string
+  registeredAs?: string
+  /** registration.status: ISSUED, LAPSED, RETIRED, ... */
+  registrationStatus: string
+  /** entity.status: ACTIVE, INACTIVE. */
+  entityStatus?: string
+  nextRenewalDate?: string
+}
+
+export type GleifParentResult = {
+  parent?: GleifRecord
+  /** GLEIF reporting-exception reason, verbatim (e.g. NATURAL_PERSONS), when there is no parent. */
+  exception?: string
+}
+
+/** Level 1 / Level 2 GLEIF lookups for the foreign walk. Methods throw when GLEIF is unavailable. */
+export interface GleifSource {
+  /** null when the LEI does not exist. */
+  getRecord(lei: string): Promise<GleifRecord | null>
+  /** Records whose registration number and country match; the caller decides what counts as a unique match. */
+  findByRegistration(registeredAs: string, country: string): Promise<GleifRecord[]>
+  getDirectParent(lei: string): Promise<GleifParentResult>
+}
+
 export interface OwnershipFetcher {
   getProfile(companyNumber: string): Promise<Fetched>
   getPscs(companyNumber: string): Promise<Fetched>
@@ -133,4 +185,6 @@ export interface OwnershipFetcher {
   getExemptions(companyNumber: string): Promise<Fetched>
   /** Returns null when the company has no LEI. */
   getGleifParents(companyNumber: string): Promise<GleifParents | null>
+  /** Absent in fetchers that cannot reach GLEIF: the walk then stays on Companies House. */
+  gleif?: GleifSource
 }

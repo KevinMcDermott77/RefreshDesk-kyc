@@ -1,5 +1,7 @@
 import { kycSearchGet } from '@/lib/companies-house/kyc-search-client'
 import type { EntityCddData } from '@/lib/companies-house/fetch-entity-cdd'
+import { createGleifSource } from './gleif-source'
+import { gleifHttp } from '@/lib/kyc-profile/gleif'
 import type { OwnershipFetcher } from './types'
 
 /**
@@ -27,5 +29,7 @@ export function createKycSearchFetcher(token: string, root?: EntityCddData): Own
     getPscStatements: async (n) => get(`/companies/${n}/pscs/statements`),
     getExemptions: async (n) => get(`/companies/${n}/exemptions`),
     getGleifParents: async () => null,
+    // GLEIF is public: foreign owners are matched and followed directly, not through kyc-search.
+    gleif: createGleifSource(gleifHttp),
   }
 }

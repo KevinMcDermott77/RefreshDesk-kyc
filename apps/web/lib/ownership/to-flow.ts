@@ -1,6 +1,8 @@
 import dagre from '@dagrejs/dagre'
 import { governingBand, parseNatures } from './bands'
-import type { OwnershipNode, Range, ReasonCode, Resolution, WalkResult } from './types'
+import type { OwnershipNode, Range, ReasonCode, RegisterProfileRef, Resolution, WalkResult } from './types'
+
+export const GLEIF_EDGE_LABEL = 'consolidates (GLEIF)'
 
 export const NODE_WIDTH = 260
 export const NODE_HEIGHT = 108
@@ -21,6 +23,10 @@ export type FlowNodeData = {
   effectiveRangeMultiply?: Range
   effectiveRangeMajority?: Range
   natures: string[]
+  /** ISO country of a foreign or GLEIF node. */
+  country?: string
+  lei?: string
+  registerProfile?: RegisterProfileRef
   secondaryReasons: ReasonCode[]
   statementCode?: string
   fetchedAt?: string
@@ -40,6 +46,8 @@ export type FlowEdge = {
   source: string
   target: string
   label?: string
+  /** A GLEIF consolidation link rather than a Companies House interest. */
+  dashed?: boolean
 }
 
 const TITLES = new Set(['mr', 'mrs', 'ms', 'miss', 'mx', 'dr', 'prof', 'sir', 'dame', 'lord', 'lady', 'rev'])
@@ -107,11 +115,18 @@ function ownersOf(result: WalkResult): Set<string> {
   return new Set(result.edges.map((edge) => edge.childId))
 }
 
+/** The ISO country of a foreign node (never of an individual). */
+function countryOf(node: OwnershipNode): { country?: string } {
+  if (node.kind === 'individual') return {}
+  const country = node.registerProfile?.country ?? (node.jurisdiction && /^[A-Z]{2}$/.test(node.jurisdiction) ? node.jurisdiction : undefined)
+  return country && country !== 'GB' ? { country } : {}
+}
+
 function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): FlowNodeData {
   const individual = node.kind === 'individual'
   return {
     name: individual ? initials(node.name) : node.name,
-    subtitle: individual ? '' : (node.companyNumber ?? node.kind.replace('_', ' ')),
+    subtitle: individual ? '' : (node.companyNumber ?? (node.lei ? `LEI ${node.lei}` : node.kind.replace('_', ' '))),
     resolution: node.resolution,
     resolutionLabel: resolutionLabel(node, hasOwners),
     tone: toneOf(node.resolution),
@@ -120,6 +135,9 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
     effectiveRangeMultiply: node.effectiveRangeMultiply,
     effectiveRangeMajority: node.effectiveRangeMajority,
     natures,
+    ...(node.registerProfile ? { registerProfile: node.registerProfile } : {}),
+    ...(node.lei ? { lei: node.lei } : {}),
+    ...countryOf(node),
     secondaryReasons: node.secondaryReasons,
     statementCode: node.statementCode,
     fetchedAt: node.fetchedAt,
@@ -176,7 +194,8 @@ export function toFlow(result: WalkResult): { nodes: FlowNode[]; edges: FlowEdge
     id: `e${index}:${edge.parentId}>${edge.childId}`,
     source: edge.parentId,
     target: edge.childId,
-    label: edgeLabel(edge.band, edge.natures),
+    label: edge.source === 'gleif' ? GLEIF_EDGE_LABEL : edgeLabel(edge.band, edge.natures),
+    ...(edge.source === 'gleif' ? { dashed: true } : {}),
   }))
 
   return { nodes, edges }

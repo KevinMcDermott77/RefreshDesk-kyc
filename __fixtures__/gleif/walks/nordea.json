@@ -1,0 +1,209 @@
+{
+  "/lei-records/529900ODI3047E2LIV03": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        }
+      },
+      "data": {
+        "type": "lei-records",
+        "id": "529900ODI3047E2LIV03",
+        "attributes": {
+          "lei": "529900ODI3047E2LIV03",
+          "entity": {
+            "legalName": {
+              "name": "Nordea Bank Abp",
+              "language": "fi"
+            },
+            "otherNames": [
+              {
+                "name": "Nordea Bank Oyj",
+                "language": "fi",
+                "type": "TRADING_OR_OPERATING_NAME"
+              }
+            ],
+            "transliteratedOtherNames": [],
+            "legalAddress": {
+              "language": "fi",
+              "addressLines": [
+                "Hamnbanegatan 5"
+              ],
+              "addressNumber": null,
+              "addressNumberWithinBuilding": null,
+              "mailRouting": null,
+              "city": "Helsinki",
+              "region": "FI-18",
+              "country": "FI",
+              "postalCode": "00020"
+            },
+            "headquartersAddress": {
+              "language": "fi",
+              "addressLines": [
+                "Hamnbanegatan 5"
+              ],
+              "addressNumber": null,
+              "addressNumberWithinBuilding": null,
+              "mailRouting": null,
+              "city": "Helsinki",
+              "region": "FI-18",
+              "country": "FI",
+              "postalCode": "00020"
+            },
+            "registeredAt": {
+              "id": "RA000188",
+              "other": null
+            },
+            "registeredAs": "2858394-9",
+            "jurisdiction": "FI",
+            "category": "GENERAL",
+            "legalForm": {
+              "id": "K6VE",
+              "other": null
+            },
+            "associatedEntity": {
+              "lei": null,
+              "name": null
+            },
+            "status": "ACTIVE",
+            "expiration": {
+              "date": null,
+              "reason": null
+            },
+            "successorEntity": {
+              "lei": null,
+              "name": null
+            },
+            "successorEntities": [],
+            "creationDate": "2017-09-27T00:00:00Z",
+            "subCategory": null,
+            "otherAddresses": [],
+            "eventGroups": []
+          },
+          "registration": {
+            "initialRegistrationDate": "2017-12-29T06:44:48Z",
+            "lastUpdateDate": "2026-09-21T08:16:39Z",
+            "status": "ISSUED",
+            "nextRenewalDate": "2027-11-02T15:01:47Z",
+            "managingLou": "529900T8BM49AURSDO55",
+            "corroborationLevel": "FULLY_CORROBORATED",
+            "validatedAt": {
+              "id": "RA000188",
+              "other": null
+            },
+            "validatedAs": "2858394-9",
+            "otherValidationAuthorities": []
+          },
+          "bic": [
+            "NDEADEFFXXX",
+            "NDEADKKKXXX",
+            "NDEAFIHHXXX",
+            "NDEAGB2LXXX",
+            "NDEANOKKXXX",
+            "NDEASESSXXX",
+            "NDEAUS3NXXX"
+          ],
+          "mic": [
+            "XNOR"
+          ],
+          "ocid": "fi/2858394-9",
+          "qcc": "QFIU9MRR9S",
+          "gem": null,
+          "spglobal": [
+            "99505"
+          ],
+          "conformityFlag": "CONFORMING"
+        },
+        "relationships": {
+          "managing-lou": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/managing-lou"
+            }
+          },
+          "lei-issuer": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/lei-issuer"
+            }
+          },
+          "field-modifications": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/field-modifications"
+            }
+          },
+          "direct-parent": {
+            "links": {
+              "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-parent-reporting-exception"
+            }
+          },
+          "ultimate-parent": {
+            "links": {
+              "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-parent-reporting-exception"
+            }
+          },
+          "direct-children": {
+            "links": {
+              "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-child-relationships",
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-children"
+            }
+          },
+          "ultimate-children": {
+            "links": {
+              "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-child-relationships",
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-children"
+            }
+          },
+          "isins": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/isins"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03"
+        }
+      }
+    }
+  },
+  "/lei-records/529900ODI3047E2LIV03/direct-parent": {
+    "status": 404,
+    "body": {
+      "errors": [
+        {
+          "status": "404",
+          "title": "Resource not found",
+          "detail": "Related resource not found"
+        }
+      ]
+    }
+  },
+  "/lei-records/529900ODI3047E2LIV03/direct-parent-reporting-exception": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        }
+      },
+      "data": {
+        "type": "reporting-exceptions",
+        "id": "529900ODI3047E2LIV03|7|d03ddde863c9ef3305a6c4c8d358aee405da5a6dcf36ddec499903912fef4c27|DIRECT_ACCOUNTING_CONSOLIDATION_PARENT|",
+        "attributes": {
+          "validFrom": null,
+          "validTo": null,
+          "lei": "529900ODI3047E2LIV03",
+          "category": "DIRECT_ACCOUNTING_CONSOLIDATION_PARENT",
+          "reason": "NATURAL_PERSONS",
+          "reference": null
+        },
+        "relationships": {
+          "lei-record": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03"
+            }
+          }
+        }
+      }
+    }
+  }
+}
