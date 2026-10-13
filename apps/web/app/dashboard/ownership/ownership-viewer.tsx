@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useMemo, useRef, useState } from 'react'
+import { startTransition, useActionState, useMemo, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   Controls,
@@ -14,6 +14,7 @@ import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
 import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
+import { pickedFormData } from './picker'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
 const TONE_CLASSES: Record<Tone, string> = {
@@ -278,6 +279,16 @@ const INPUT = 'mt-1 block w-full border border-[var(--line)] bg-white px-3 py-2 
 export function OwnershipViewer() {
   const [state, action, pending] = useActionState<OwnershipViewState, FormData>(walkOwnershipAction, {})
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const entryRef = useRef<HTMLInputElement>(null)
+
+  /** Walks a GLEIF pick directly, so an empty search box does not block it. */
+  function walkPicked(lei: string) {
+    if (!formRef.current) return
+    const data = pickedFormData(new FormData(formRef.current), lei)
+    if (entryRef.current) entryRef.current.value = lei
+    startTransition(() => action(data))
+  }
 
   const result = state.result
   const chartRef = useRef<HTMLDivElement>(null)
@@ -290,10 +301,10 @@ export function OwnershipViewer() {
 
   return (
     <div className="mt-6">
-      <form id="ownership-form" action={action} className="grid gap-4 border border-[var(--line)] bg-[var(--panel)] p-4 dark:bg-gray-900 md:grid-cols-5">
+      <form ref={formRef} action={action} className="grid gap-4 border border-[var(--line)] bg-[var(--panel)] p-4 dark:bg-gray-900 md:grid-cols-5">
         <label className="text-sm font-medium md:col-span-2">
           Company number, LEI or name
-          <input name="entry" required placeholder="03261722, an LEI, or Nordea Bank" className={INPUT} />
+          <input ref={entryRef} name="entry" required placeholder="03261722, an LEI, or Nordea Bank" className={INPUT} />
         </label>
         <label className="text-sm font-medium">
           Max depth
@@ -336,9 +347,8 @@ export function OwnershipViewer() {
                   <span className="block text-xs text-[var(--muted)]">{c.lei}</span>
                 </span>
                 <button
-                  form="ownership-form"
-                  name="picked_lei"
-                  value={c.lei}
+                  type="button"
+                  onClick={() => walkPicked(c.lei)}
                   disabled={pending}
                   className="border border-[var(--accent-strong)] px-3 py-1 text-sm font-semibold"
                 >
