@@ -48,7 +48,7 @@ describe('GLEIF walk — recorded responses', () => {
     ])
     // Allianz SE reports "no known person": a GLEIF exception, with DE's register attached.
     expect(node(result, ALLIANZ)).toMatchObject({ resolution: 'UNRESOLVED', reasonCode: 'GLEIF_NO_KNOWN_PERSON' })
-    expect(node(result, ALLIANZ).registerProfile).toMatchObject({ country: 'DE', uboAccess: 'obliged_entity' })
+    expect(node(result, ALLIANZ).registerProfile).toMatchObject({ country: 'DE', uboAccess: 'restricted' })
   })
 
   it('turns a GLEIF reporting exception into its GLEIF reason code', async () => {
@@ -100,19 +100,25 @@ describe('GLEIF walk — recorded responses', () => {
     expect(node(result, ALLIANZ).reasonCode).toBe('GLEIF_NO_KNOWN_PERSON')
   })
 
-  it("stops a foreign PSC with no GLEIF match at its country's register profile code", async () => {
-    // GLEIF holds Equinor ASA as "923 609 016"; CH has "923609016". No match, so no guess.
-    const equinor = replayGleif('uk-01285743')
-    const result = await walk('01285743', fixtureFetcher(undefined, equinor.source).fetcher)
+  it('follows Equinor ASA although CH has "923609016" and GLEIF "923 609 016"', async () => {
+    const { source, requested } = replayGleif('uk-01285743')
+    const result = await walk('01285743', fixtureFetcher(undefined, source).fetcher)
     expectValid(result)
-    const psc = node(result, 'GB:01285743/psc/0')
-    expect(psc).toMatchObject({ resolution: 'UNRESOLVED', reasonCode: 'UBO_REGISTER_RESTRICTED' })
-    expect(psc.registerProfile).toMatchObject({ country: 'NO', registerName: expect.stringContaining('Brønnøysund') })
+    expect(requested.some((p) => p.includes('registeredAs]=923%20609%20016'))).toBe(true)
+    expect(node(result, 'LEI:OW6OFBNCKXC4US5C7523')).toMatchObject({
+      name: 'EQUINOR ASA',
+      depth: 1,
+      reasonCode: 'GLEIF_EXCEPTION_NATURAL_PERSONS',
+    })
+    expect(result.edges[0]).toMatchObject({ source: 'ch', band: [75, 100] })
+  })
 
-    const sap = replayGleif('uk-02152073')
-    const sapResult = await walk('02152073', fixtureFetcher(undefined, sap.source).fetcher)
-    expect(node(sapResult, 'GB:02152073/psc/0')).toMatchObject({ reasonCode: 'UBO_REGISTER_RESTRICTED' })
-    expect(node(sapResult, 'GB:02152073/psc/0').registerProfile?.country).toBe('DE')
+  it('follows SAP SE although CH has "Hrb719915" and GLEIF "HRB 719915"', async () => {
+    const { source, requested } = replayGleif('uk-02152073')
+    const result = await walk('02152073', fixtureFetcher(undefined, source).fetcher)
+    expectValid(result)
+    expect(requested.some((p) => p.includes('registeredAs]=HRB%20719915'))).toBe(true)
+    expect(node(result, 'LEI:529900D6BF99LW9R2E68')).toMatchObject({ name: 'SAP SE', reasonCode: 'GLEIF_NO_KNOWN_PERSON' })
   })
 
   it('never lets a GLEIF edge resolve anything', async () => {
@@ -184,7 +190,7 @@ describe('GLEIF walk — synthetic cases', () => {
   it('does not search when the PSC has a country but no registration number', async () => {
     const { psc, searches } = await run({ country_registered: 'Netherlands' })
     expect(searches).toEqual([])
-    expect(psc).toMatchObject({ reasonCode: 'UBO_REGISTER_RESTRICTED' })
+    expect(psc).toMatchObject({ reasonCode: 'REGISTER_PAYWALLED' })
     expect(psc.registerProfile?.country).toBe('NL')
   })
 
@@ -199,11 +205,47 @@ describe('GLEIF walk — synthetic cases', () => {
     const identification = { country_registered: 'Netherlands', registration_number: '12345678' }
 
     const several = await run(identification, [record('A'.repeat(20), 'ISSUED'), record('B'.repeat(20), 'ISSUED')])
-    expect(several.psc.reasonCode).toBe('UBO_REGISTER_RESTRICTED')
+    expect(several.psc.reasonCode).toBe('REGISTER_PAYWALLED')
 
     const lapsed = await run(identification, [record('A'.repeat(20), 'LAPSED')])
-    expect(lapsed.psc.reasonCode).toBe('UBO_REGISTER_RESTRICTED')
+    expect(lapsed.psc.reasonCode).toBe('REGISTER_PAYWALLED')
     expect(lapsed.searches).toEqual(['12345678|NL'])
+  })
+
+  it('does not follow when two normalised matches sit in different registration authorities', async () => {
+    const make = (lei: string, registeredAt: string, registeredAs: string): GleifRecord => ({
+      lei,
+      legalName: 'Foreign Parent GmbH',
+      country: 'DE',
+      registeredAt,
+      registeredAs,
+      registrationStatus: 'ISSUED',
+    })
+    // HRB numbers are only unique per court: "HRB 719915" and "HRB-719915" are two companies.
+    const { psc, result } = await run({ country_registered: 'Germany', registration_number: 'Hrb719915' }, [
+      make('A'.repeat(20), 'RA000296', 'HRB 719915'),
+      make('B'.repeat(20), 'RA000297', 'HRB-719915'),
+    ])
+    expect(psc).toMatchObject({ resolution: 'UNRESOLVED', reasonCode: 'FREE_MANUAL_RETRIEVAL' })
+    expect(result.nodes.some((n) => n.id.startsWith('LEI:'))).toBe(false)
+  })
+
+  it('ignores a returned record whose registration number does not normalise to the PSC\'s', async () => {
+    const other: GleifRecord = {
+      lei: 'C'.repeat(20),
+      legalName: 'Someone Else',
+      country: 'NO',
+      registeredAs: '111 222 333',
+      registrationStatus: 'ISSUED',
+    }
+    const { psc } = await run({ country_registered: 'Norway', registration_number: '923609016' }, [other])
+    expect(psc.reasonCode).toBe('SHAREHOLDERS_NOT_FILED')
+  })
+
+  it('records Cayman\'s second reason as secondary only', async () => {
+    const { psc } = await run({ country_registered: 'Cayman Islands', registration_number: 'MC-1' })
+    expect(psc).toMatchObject({ reasonCode: 'REGISTER_PAYWALLED', secondaryReasons: ['UBO_REGISTER_RESTRICTED'] })
+    expect(psc.registerProfile?.country).toBe('KY')
   })
 
   it('reports GLEIF being down as SOURCE_UNAVAILABLE', async () => {
@@ -240,11 +282,33 @@ describe('register profiles', () => {
     expect(Object.keys(REGISTER_PROFILES)).toHaveLength(17)
   })
 
+  it('marks only the unconfirmed profiles as unverified', () => {
+    const unverified = Object.values(REGISTER_PROFILES).filter((p) => !p.verified).map((p) => p.country).sort()
+    expect(unverified).toEqual(['CH', 'FI', 'GG', 'JE', 'SE', 'VG'])
+  })
+
+  it('uses the verified default reason codes', () => {
+    const codes = Object.fromEntries(Object.values(REGISTER_PROFILES).map((p) => [p.country, p.defaultReasonCode]))
+    expect(codes).toMatchObject({
+      IE: 'UBO_REGISTER_RESTRICTED',
+      LU: 'UBO_REGISTER_RESTRICTED',
+      NL: 'REGISTER_PAYWALLED',
+      DE: 'FREE_MANUAL_RETRIEVAL',
+      FR: 'SHAREHOLDERS_NOT_FILED',
+      ES: 'REGISTER_PAYWALLED',
+      DK: 'UBO_REGISTER_RESTRICTED',
+      NO: 'SHAREHOLDERS_NOT_FILED',
+      US: 'REGISTER_PAYWALLED',
+      KY: 'REGISTER_PAYWALLED',
+    })
+    expect(REGISTER_PROFILES.KY.secondaryReasonCodes).toEqual(['UBO_REGISTER_RESTRICTED'])
+  })
+
   it('treats an unknown country as REGISTER_NOT_PROFILED', () => {
     expect(stopReasonFor('BM')).toBe('REGISTER_NOT_PROFILED')
     expect(stopReasonFor(undefined)).toBe('REGISTER_NOT_PROFILED')
     expect(profileFor('BM')).toBeUndefined()
-    expect(stopReasonFor('de')).toBe('UBO_REGISTER_RESTRICTED')
+    expect(stopReasonFor('de')).toBe('FREE_MANUAL_RETRIEVAL')
   })
 })
 

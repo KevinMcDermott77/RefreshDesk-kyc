@@ -61,8 +61,12 @@ export const registerProfileRefSchema = z.object({
   freeBasicData: z.boolean(),
   shareholdersPublic: z.enum(['yes', 'no', 'partial', 'manual']),
   uboAccess: z.enum(['public', 'legitimate_interest', 'obliged_entity', 'restricted']),
-  accessRoutes: z.array(z.string()),
+  accessRoutes: z.array(
+    z.object({ route: z.enum(['public', 'obliged_entity', 'aggregator', 'paid_extract']), detail: z.string().optional() }),
+  ),
   documentToRequest: z.string(),
+  lastVerified: z.string(),
+  verified: z.boolean(),
   note: z.string(),
   notProfiled: z.boolean().optional(),
 })

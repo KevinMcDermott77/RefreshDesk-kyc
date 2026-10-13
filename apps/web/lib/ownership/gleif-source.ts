@@ -1,4 +1,5 @@
 import type { GleifHttp } from '@/lib/kyc-profile/gleif'
+import { registrationVariants, sameRegistration } from './registration-number'
 import type { GleifParentResult, GleifRecord, GleifSource } from './types'
 
 function rec(value: unknown): Record<string, unknown> {
@@ -60,12 +61,22 @@ export function createGleifSource(http: GleifHttp): GleifSource & {
     },
 
     async findByRegistration(registeredAs, country) {
-      const base = `/lei-records?filter[entity.registeredAs]=${encode(registeredAs)}&page[size]=10`
-      const byAddress = await http.get(`${base}&filter[entity.legalAddress.country]=${encode(country)}`)
-      const found = byAddress.status === 200 ? parseList(byAddress.body) : []
-      if (found.length > 0) return found
-      const byJurisdiction = await http.get(`${base}&filter[entity.jurisdiction]=${encode(country)}`)
-      return byJurisdiction.status === 200 ? parseList(byJurisdiction.body) : []
+      // GLEIF filters on the exact stored string, so query each spelling and compare normalised.
+      const search = async (filter: string) => {
+        const found = new Map<string, GleifRecord>()
+        for (const variant of registrationVariants(registeredAs)) {
+          const response = await http.get(
+            `/lei-records?filter[entity.registeredAs]=${encode(variant)}&page[size]=10&${filter}=${encode(country)}`,
+          )
+          if (response.status !== 200) continue
+          for (const record of parseList(response.body)) {
+            if (sameRegistration(record.registeredAs, registeredAs)) found.set(record.lei, record)
+          }
+        }
+        return [...found.values()]
+      }
+      const byAddress = await search('filter[entity.legalAddress.country]')
+      return byAddress.length > 0 ? byAddress : search('filter[entity.jurisdiction]')
     },
 
     async getDirectParent(lei): Promise<GleifParentResult> {

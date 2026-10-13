@@ -142,6 +142,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+const ROUTE_LABELS = {
+  public: 'Public (free)',
+  obliged_entity: 'Obliged-entity access',
+  aggregator: 'Commercial data aggregator',
+  paid_extract: 'Paid register extract',
+} as const
+
 function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['registerProfile']> }) {
   const why = profile.freeBasicData
     ? profile.uboAccess === 'public'
@@ -153,6 +160,7 @@ function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['
       <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
         Register profile · {flag(profile.country)} {profile.country}
         {profile.notProfiled ? ' · not yet profiled' : ''}
+        {profile.verified ? ` · verified ${profile.lastVerified}` : ' · unverified'}
       </p>
       <dl className="mt-2 space-y-2">
         <Field label="Register">
@@ -164,8 +172,11 @@ function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['
         <Field label="Access route">
           {profile.accessRoutes.length > 0 ? (
             <ul className="list-inside list-disc">
-              {profile.accessRoutes.map((route) => (
-                <li key={route}>{route}</li>
+              {profile.accessRoutes.map(({ route, detail }) => (
+                <li key={`${route}:${detail ?? ''}`}>
+                  {ROUTE_LABELS[route]}
+                  {detail ? ` (${detail})` : ''}
+                </li>
               ))}
             </ul>
           ) : null}

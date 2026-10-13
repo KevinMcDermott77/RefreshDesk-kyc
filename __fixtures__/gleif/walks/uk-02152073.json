@@ -22,7 +22,7 @@
       "data": []
     }
   },
-  "/lei-records?filter[entity.registeredAs]=Hrb719915&page[size]=10&filter[entity.jurisdiction]=DE": {
+  "/lei-records?filter[entity.registeredAs]=HRB719915&page[size]=10&filter[entity.legalAddress.country]=DE": {
     "status": 200,
     "body": {
       "meta": {
@@ -39,10 +39,217 @@
         }
       },
       "links": {
-        "first": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=Hrb719915&filter%5Bentity.jurisdiction%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10",
-        "last": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=Hrb719915&filter%5Bentity.jurisdiction%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10"
+        "first": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=HRB719915&filter%5Bentity.legalAddress.country%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10",
+        "last": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=HRB719915&filter%5Bentity.legalAddress.country%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10"
       },
       "data": []
+    }
+  },
+  "/lei-records?filter[entity.registeredAs]=HRB%20719915&page[size]=10&filter[entity.legalAddress.country]=DE": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        },
+        "pagination": {
+          "currentPage": 1,
+          "perPage": 10,
+          "from": 1,
+          "to": 1,
+          "total": 1,
+          "lastPage": 1
+        }
+      },
+      "links": {
+        "first": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=HRB+719915&filter%5Bentity.legalAddress.country%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10",
+        "last": "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=HRB+719915&filter%5Bentity.legalAddress.country%5D=DE&page%5Bnumber%5D=1&page%5Bsize%5D=10"
+      },
+      "data": [
+        {
+          "type": "lei-records",
+          "id": "529900D6BF99LW9R2E68",
+          "attributes": {
+            "lei": "529900D6BF99LW9R2E68",
+            "entity": {
+              "legalName": {
+                "name": "SAP SE",
+                "language": "de"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "de",
+                "addressLines": [
+                  "Dietmar-Hopp-Allee 16"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Walldorf",
+                "region": "DE-BW",
+                "country": "DE",
+                "postalCode": "69190"
+              },
+              "headquartersAddress": {
+                "language": "de",
+                "addressLines": [
+                  "Dietmar-Hopp-Allee 16"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Walldorf",
+                "region": "DE-BW",
+                "country": "DE",
+                "postalCode": "69190"
+              },
+              "registeredAt": {
+                "id": "RA000296",
+                "other": null
+              },
+              "registeredAs": "HRB 719915",
+              "jurisdiction": "DE",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "SGST",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "ACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": "2014-07-06T22:00:00Z",
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": []
+            },
+            "registration": {
+              "initialRegistrationDate": "2014-01-27T10:55:08Z",
+              "lastUpdateDate": "2025-12-05T13:35:00Z",
+              "status": "ISSUED",
+              "nextRenewalDate": "2027-01-26T23:00:00Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000296",
+                "other": null
+              },
+              "validatedAs": "HRB 719915",
+              "otherValidationAuthorities": []
+            },
+            "bic": [
+              "SAPDDEFFXXX"
+            ],
+            "mic": null,
+            "ocid": "de/B8535_HRB719915",
+            "qcc": "QDEDFTMY3U",
+            "gem": null,
+            "spglobal": [
+              "126475"
+            ],
+            "conformityFlag": "CONFORMING"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/direct-parent-reporting-exception"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/ultimate-parent-reporting-exception"
+              }
+            },
+            "direct-children": {
+              "links": {
+                "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/direct-child-relationships",
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/direct-children"
+              }
+            },
+            "ultimate-children": {
+              "links": {
+                "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/ultimate-child-relationships",
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/ultimate-children"
+              }
+            },
+            "isins": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68/isins"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68"
+          }
+        }
+      ]
+    }
+  },
+  "/lei-records/529900D6BF99LW9R2E68/direct-parent": {
+    "status": 404,
+    "body": {
+      "errors": [
+        {
+          "status": "404",
+          "title": "Resource not found",
+          "detail": "Related resource not found"
+        }
+      ]
+    }
+  },
+  "/lei-records/529900D6BF99LW9R2E68/direct-parent-reporting-exception": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T00:00:00Z"
+        }
+      },
+      "data": {
+        "type": "reporting-exceptions",
+        "id": "529900D6BF99LW9R2E68|0|7d6f7e92fda90b7638050f1e8d18a1eea0f17f292be46b7210bf2b884908db18|DIRECT_ACCOUNTING_CONSOLIDATION_PARENT|",
+        "attributes": {
+          "validFrom": null,
+          "validTo": null,
+          "lei": "529900D6BF99LW9R2E68",
+          "category": "DIRECT_ACCOUNTING_CONSOLIDATION_PARENT",
+          "reason": "NO_KNOWN_PERSON",
+          "reference": null
+        },
+        "relationships": {
+          "lei-record": {
+            "links": {
+              "related": "https://api.gleif.org/api/v1/lei-records/529900D6BF99LW9R2E68"
+            }
+          }
+        }
+      }
     }
   }
 }

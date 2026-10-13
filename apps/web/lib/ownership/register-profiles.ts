@@ -3,6 +3,10 @@ import type { ReasonCode } from './types'
 export type SharesPublic = 'yes' | 'no' | 'partial' | 'manual'
 export type UboAccess = 'public' | 'legitimate_interest' | 'obliged_entity' | 'restricted'
 
+/** How a firm would get at a register's ownership data. */
+export type AccessRouteKind = 'public' | 'obliged_entity' | 'aggregator' | 'paid_extract'
+export type AccessRoute = { route: AccessRouteKind; detail?: string }
+
 export type RegisterProfile = {
   /** ISO 3166-1 alpha-2. */
   country: string
@@ -12,13 +16,16 @@ export type RegisterProfile = {
   freeBasicData: boolean
   shareholdersPublic: SharesPublic
   uboAccess: UboAccess
-  /** How a firm with a subscription or obliged-entity status would get the data. */
-  accessRoutes: string[]
+  accessRoutes: AccessRoute[]
   /** Why the walk stops here when nothing more specific (e.g. a GLEIF exception) applies. */
   defaultReasonCode: ReasonCode
+  /** Further reasons that apply at the same stop; recorded as secondary. */
+  secondaryReasonCodes?: ReasonCode[]
   /** What to ask the client for. */
   documentToRequest: string
   lastVerified: string
+  /** false where part of the profile is unconfirmed; shown as "unverified". */
+  verified: boolean
   note: string
   /** The jurisdiction is recognised but its register has not been profiled. */
   notProfiled?: boolean
@@ -28,11 +35,7 @@ const VERIFIED = '2026-10-05'
 
 /**
  * Register profiles by ISO country code. Unknown countries have no entry: use
- * profileFor(), which reports REGISTER_NOT_PROFILED for them.
- *
- * Content is a working summary of how each register is accessed, not legal
- * advice. Since the CJEU's 2022 WM/Sovim ruling most EU beneficial ownership
- * registers are no longer open to the public.
+ * stopReasonFor(), which reports REGISTER_NOT_PROFILED for them.
  */
 export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
   GB: {
@@ -40,13 +43,14 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     registerName: 'Companies House',
     url: 'https://find-and-update.company-information.service.gov.uk',
     freeBasicData: true,
-    shareholdersPublic: 'yes',
+    shareholdersPublic: 'partial',
     uboAccess: 'public',
-    accessRoutes: ['Companies House PSC register (free)'],
+    accessRoutes: [{ route: 'public' }],
     defaultReasonCode: 'FREE_MANUAL_RETRIEVAL',
     documentToRequest: 'Confirmation statement and PSC register extract',
     lastVerified: VERIFIED,
-    note: 'Walked directly via Companies House, not through GLEIF.',
+    verified: true,
+    note: 'Shareholders appear only in confirmation statement PDFs. The PSC register is public. UK companies are walked via Companies House, not GLEIF.',
   },
   IE: {
     country: 'IE',
@@ -54,38 +58,41 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     url: 'https://core.cro.ie',
     freeBasicData: true,
     shareholdersPublic: 'partial',
-    uboAccess: 'obliged_entity',
-    accessRoutes: ['RBO access as an obliged entity (rbo.gov.ie)', 'CRO document purchase: annual return (B1) lists shareholders'],
+    uboAccess: 'legitimate_interest',
+    accessRoutes: [{ route: 'obliged_entity' }, { route: 'aggregator' }],
     defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Latest annual return (B1) and RBO extract or beneficial ownership declaration',
+    documentToRequest: 'UBO declaration and CRO extract',
     lastVerified: VERIFIED,
-    note: 'CRO search is free; filed documents carry a fee. The RBO is no longer public.',
+    verified: true,
+    note: 'CRO search, the Open Services API and the open data portal are free; document copies are paid and shareholder information is in those paid documents. RBO access needs a legitimate interest since June 2023; designated persons keep access.',
   },
   LU: {
     country: 'LU',
-    registerName: 'Luxembourg Business Registers (LBR): RCS and RBE',
+    registerName: 'Luxembourg Business Registers (LBR): RCS / RESA and RBE',
     url: 'https://www.lbr.lu',
     freeBasicData: true,
     shareholdersPublic: 'partial',
     uboAccess: 'obliged_entity',
-    accessRoutes: ['RBE access as a professional / obliged entity', 'RCS extract and filed articles from LBR (fee)'],
+    accessRoutes: [{ route: 'obliged_entity' }, { route: 'aggregator' }],
     defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'RCS extract, latest articles of association, shareholder register and RBE extract',
+    documentToRequest: 'UBO declaration and RCS extract',
     lastVerified: VERIFIED,
-    note: 'RBE access restricted to professionals and legitimate interest since 2022. Many funds and S.a r.l. file no shareholder list.',
+    verified: true,
+    note: 'Free, no login. S.a r.l. partners appear on the RCS extract; S.A. shareholders are not public (unverified detail). The RBE is restricted to authorities, obliged entities and those with a legitimate interest (Law of 23 January 2025).',
   },
   NL: {
     country: 'NL',
-    registerName: 'KvK Handelsregister and UBO-register',
+    registerName: 'KVK (Kamer van Koophandel) Handelsregister and UBO-register',
     url: 'https://www.kvk.nl',
     freeBasicData: true,
-    shareholdersPublic: 'partial',
-    uboAccess: 'obliged_entity',
-    accessRoutes: ['KvK UBO-register access as an obliged entity', 'KvK extract (fee) shows a sole shareholder of a BV'],
-    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'KvK extract, shareholder register and UBO-register extract',
+    shareholdersPublic: 'no',
+    uboAccess: 'restricted',
+    accessRoutes: [{ route: 'paid_extract' }, { route: 'aggregator' }],
+    defaultReasonCode: 'REGISTER_PAYWALLED',
+    documentToRequest: 'KVK extract and shareholder register',
     lastVerified: VERIFIED,
-    note: 'Basic KvK data is free; the UBO-register is closed to the public since 2022.',
+    verified: true,
+    note: 'Search is free; extracts are paid; the open dataset is anonymised. Shareholders are not public and the UBO-register is restricted.',
   },
   DE: {
     country: 'DE',
@@ -93,64 +100,69 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     url: 'https://www.handelsregister.de',
     freeBasicData: true,
     shareholdersPublic: 'partial',
-    uboAccess: 'obliged_entity',
-    accessRoutes: ['Handelsregister: GmbH shareholder list (Gesellschafterliste)', 'Transparenzregister access as an obliged entity'],
-    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Current Handelsregister extract, Gesellschafterliste and Transparenzregister extract',
+    uboAccess: 'restricted',
+    accessRoutes: [{ route: 'public', detail: 'GmbH shareholder list (Gesellschafterliste)' }, { route: 'obliged_entity' }],
+    defaultReasonCode: 'FREE_MANUAL_RETRIEVAL',
+    documentToRequest: 'Gesellschafterliste (reviewer downloads it) or, for an AG, the share register',
     lastVerified: VERIFIED,
-    note: 'Shareholder lists are filed for GmbH, not for AG. Transparenzregister is no longer open to the public.',
+    verified: true,
+    note: 'Free since 1 August 2022 but there is no API. The GmbH Gesellschafterliste is free as a scanned PDF; AG shareholders are not filed. The Transparenzregister has been restricted since November 2022.',
   },
   FR: {
     country: 'FR',
-    registerName: 'Registre du commerce et des sociétés (RCS) and Registre des bénéficiaires effectifs (RBE)',
+    registerName: 'INPI Registre national des entreprises (RNE) and RBE',
     url: 'https://data.inpi.fr',
     freeBasicData: true,
-    shareholdersPublic: 'partial',
+    shareholdersPublic: 'no',
     uboAccess: 'obliged_entity',
-    accessRoutes: ['RBE access as an obliged entity via Infogreffe', 'Kbis extract and filed statutes (fee)'],
-    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Kbis extract, statutes, share register (registre des mouvements de titres) and RBE extract',
+    accessRoutes: [{ route: 'obliged_entity' }],
+    defaultReasonCode: 'SHAREHOLDERS_NOT_FILED',
+    documentToRequest: 'Certified share register and UBO declaration',
     lastVerified: VERIFIED,
-    note: 'SAS shareholders are generally not on the public register.',
+    verified: true,
+    note: 'Free with an account, including actes and statuts. SA and SAS shareholders are not filed. The RBE is open to obliged entities and those with a legitimate interest.',
   },
   ES: {
     country: 'ES',
-    registerName: 'Registro Mercantil',
+    registerName: 'Registro Mercantil and Titularidades Reales',
     url: 'https://www.registradores.org',
     freeBasicData: false,
-    shareholdersPublic: 'partial',
-    uboAccess: 'obliged_entity',
-    accessRoutes: ['Nota simple from the Registro Mercantil (fee)', 'Registro Central de Titularidades Reales as an obliged entity'],
+    shareholdersPublic: 'no',
+    uboAccess: 'legitimate_interest',
+    accessRoutes: [{ route: 'paid_extract', detail: 'nota informativa from about EUR 2.60; no official API' }],
     defaultReasonCode: 'REGISTER_PAYWALLED',
-    documentToRequest: 'Nota simple, libro registro de socios and titularidad real declaration',
+    documentToRequest: 'Nota simple and certified shareholder register',
     lastVerified: VERIFIED,
-    note: 'Registry data is paid. A sole shareholder of an S.L. is recorded.',
+    verified: true,
+    note: 'Paid. Shareholders are generally not public; a single-member SLU is disclosed. Titularidades Reales needs a legitimate interest.',
   },
   DK: {
     country: 'DK',
     registerName: 'CVR (Det Centrale Virksomhedsregister)',
     url: 'https://datacvr.virk.dk',
     freeBasicData: true,
-    shareholdersPublic: 'yes',
-    uboAccess: 'public',
-    accessRoutes: ['CVR search (free): owners of 5% or more and real owners'],
-    defaultReasonCode: 'FREE_MANUAL_RETRIEVAL',
-    documentToRequest: 'CVR ownership extract (retrievable free) or the company\'s ownership chart',
+    shareholdersPublic: 'partial',
+    uboAccess: 'restricted',
+    accessRoutes: [{ route: 'public', detail: 'legal owners of 5% or more' }, { route: 'obliged_entity' }],
+    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
+    documentToRequest: 'Beneficial owner declaration (CVR shows legal owners of 5% or more)',
     lastVerified: VERIFIED,
-    note: 'Ownership is shown in CVR free of charge, so it can be retrieved manually. Confirm current access before relying on it.',
+    verified: true,
+    note: 'Free. Legal owners (5%+) are public. Beneficial owners have not been public since 1 September 2025: access is by MitID and declaration, or an API contract.',
   },
   NO: {
     country: 'NO',
-    registerName: 'Brønnøysund Register Centre (Enhetsregisteret)',
+    registerName: 'Brønnøysund Register Centre (Brreg)',
     url: 'https://www.brreg.no',
     freeBasicData: true,
     shareholdersPublic: 'no',
-    uboAccess: 'legitimate_interest',
-    accessRoutes: ['Register of Beneficial Owners on showing legitimate interest, or as an obliged entity'],
-    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Shareholder register (aksjeeierbok) and beneficial owner declaration',
+    uboAccess: 'restricted',
+    accessRoutes: [],
+    defaultReasonCode: 'SHAREHOLDERS_NOT_FILED',
+    documentToRequest: 'Shareholder register extract',
     lastVerified: VERIFIED,
-    note: 'Basic data is open; shareholders of private companies are not in the public register.',
+    verified: true,
+    note: 'Free under NLOD, no key. Brreg does not hold shareholders (they sit with the company register and the tax authority). The beneficial ownership register is live but not public.',
   },
   SE: {
     country: 'SE',
@@ -158,12 +170,13 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     url: 'https://bolagsverket.se',
     freeBasicData: true,
     shareholdersPublic: 'no',
-    uboAccess: 'obliged_entity',
-    accessRoutes: ['Beneficial ownership register access as an obliged entity'],
+    uboAccess: 'restricted',
+    accessRoutes: [],
     defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Share register (aktiebok) and beneficial owner declaration',
+    documentToRequest: 'Share register and beneficial owner declaration',
     lastVerified: VERIFIED,
-    note: 'The share register is held by the company, not published.',
+    verified: false,
+    note: 'The high-value-dataset API is free with OAuth registration. Shareholders not held and UBO restricted: both unverified.',
   },
   FI: {
     country: 'FI',
@@ -171,71 +184,54 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     url: 'https://www.prh.fi',
     freeBasicData: true,
     shareholdersPublic: 'no',
-    uboAccess: 'legitimate_interest',
-    accessRoutes: ['PRH beneficial owner register on legitimate interest or as an obliged entity'],
+    uboAccess: 'restricted',
+    accessRoutes: [],
     defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Share register (osakeluettelo) and beneficial owner declaration',
+    documentToRequest: 'Share register and beneficial owner declaration',
     lastVerified: VERIFIED,
-    note: 'Basic data is open; ownership details are restricted.',
+    verified: false,
+    note: 'The open JSON API is free. Shareholders not held and UBO restricted: both unverified.',
   },
   US: {
     country: 'US',
-    registerName: 'State Secretary of State registers (no federal ownership register)',
-    url: 'https://www.sec.gov/search-filings',
-    freeBasicData: true,
+    registerName: 'SEC EDGAR and state registries',
+    url: 'https://www.sec.gov/edgar/search',
+    freeBasicData: false,
     shareholdersPublic: 'no',
     uboAccess: 'restricted',
-    accessRoutes: ['State corporate registry search (entity status only)', 'SEC EDGAR for listed companies'],
-    defaultReasonCode: 'SHAREHOLDERS_NOT_FILED',
-    documentToRequest: 'Stock ledger or cap table, and a beneficial ownership certification',
+    accessRoutes: [{ route: 'public', detail: 'SEC EDGAR, SEC filers only' }, { route: 'paid_extract', detail: 'state registries' }],
+    defaultReasonCode: 'REGISTER_PAYWALLED',
+    documentToRequest: 'Certificate of good standing and ownership chart',
     lastVerified: VERIFIED,
-    note: 'State registries do not publish shareholders or beneficial owners; listed companies file with the SEC.',
+    verified: true,
+    note: 'EDGAR is free for SEC filers only; state registries are paid. There is no public beneficial ownership register: the FinCEN March 2025 interim rule exempts domestic companies, and BOI was never public.',
   },
   KY: {
     country: 'KY',
-    registerName: 'Cayman Islands General Registry (CORIS)',
+    registerName: 'Cayman Islands General Registry',
     url: 'https://www.ciregistry.gov.ky',
     freeBasicData: false,
     shareholdersPublic: 'no',
-    uboAccess: 'restricted',
-    accessRoutes: ['Beneficial ownership register held by the corporate services provider; competent authorities only'],
-    defaultReasonCode: 'UBO_REGISTER_RESTRICTED',
-    documentToRequest: 'Register of members, register of directors and a certified ownership chart',
+    uboAccess: 'legitimate_interest',
+    accessRoutes: [{ route: 'paid_extract', detail: 'general search US$36.59' }],
+    defaultReasonCode: 'REGISTER_PAYWALLED',
+    secondaryReasonCodes: ['UBO_REGISTER_RESTRICTED'],
+    documentToRequest: 'Register of members and beneficial ownership confirmation from the registered office',
     lastVerified: VERIFIED,
-    note: 'Registry searches are paid and show no shareholders.',
+    verified: true,
+    note: 'Paid. Shareholders are not public. The BO register is open on legitimate interest only since 28 February 2025, for a fee, with evidence of a money laundering / terrorist financing link.',
   },
-  JE: {
-    country: 'JE',
-    registerName: 'Jersey Financial Services Commission registry',
-    url: 'https://www.jerseyfsc.org',
-    freeBasicData: true,
-    shareholdersPublic: 'no',
-    uboAccess: 'restricted',
-    accessRoutes: [],
-    defaultReasonCode: 'REGISTER_NOT_PROFILED',
-    documentToRequest: 'Certified ownership chart and register of members',
-    lastVerified: VERIFIED,
-    note: 'Not yet profiled.',
-    notProfiled: true,
-  },
-  GG: {
-    country: 'GG',
-    registerName: 'Guernsey Registry',
-    url: 'https://www.greg.gg',
-    freeBasicData: true,
-    shareholdersPublic: 'no',
-    uboAccess: 'restricted',
-    accessRoutes: [],
-    defaultReasonCode: 'REGISTER_NOT_PROFILED',
-    documentToRequest: 'Certified ownership chart and register of members',
-    lastVerified: VERIFIED,
-    note: 'Not yet profiled.',
-    notProfiled: true,
-  },
-  VG: {
-    country: 'VG',
-    registerName: 'BVI Registry of Corporate Affairs',
-    url: 'https://www.bvifsc.vg',
+  JE: notProfiled('JE', 'Jersey Financial Services Commission registry', 'https://www.jerseyfsc.org'),
+  GG: notProfiled('GG', 'Guernsey Registry', 'https://www.greg.gg'),
+  VG: notProfiled('VG', 'BVI Registry of Corporate Affairs', 'https://www.bvifsc.vg'),
+  CH: notProfiled('CH', 'Swiss commercial registers (Zefix)', 'https://www.zefix.ch'),
+}
+
+function notProfiled(country: string, registerName: string, url: string): RegisterProfile {
+  return {
+    country,
+    registerName,
+    url,
     freeBasicData: false,
     shareholdersPublic: 'no',
     uboAccess: 'restricted',
@@ -243,23 +239,10 @@ export const REGISTER_PROFILES: Record<string, RegisterProfile> = {
     defaultReasonCode: 'REGISTER_NOT_PROFILED',
     documentToRequest: 'Certified ownership chart and register of members',
     lastVerified: VERIFIED,
+    verified: false,
     note: 'Not yet profiled.',
     notProfiled: true,
-  },
-  CH: {
-    country: 'CH',
-    registerName: 'Swiss commercial registers (Zefix)',
-    url: 'https://www.zefix.ch',
-    freeBasicData: true,
-    shareholdersPublic: 'no',
-    uboAccess: 'restricted',
-    accessRoutes: [],
-    defaultReasonCode: 'REGISTER_NOT_PROFILED',
-    documentToRequest: 'Share register and certified ownership chart',
-    lastVerified: VERIFIED,
-    note: 'Not yet profiled.',
-    notProfiled: true,
-  },
+  }
 }
 
 /** The profile for an ISO country code, if one exists. */

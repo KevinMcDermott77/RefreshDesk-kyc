@@ -1,5 +1,6 @@
 import { classify, governingBand, maxRanges, multiplyRanges, parseNatures } from './bands'
 import { countryCode } from './countries'
+import { sameRegistration } from './registration-number'
 import { profileFor, stopReasonFor } from './register-profiles'
 import type {
   Fetched,
@@ -237,7 +238,7 @@ export async function walk(
   function registerProfileRef(country: string | undefined): RegisterProfileRef | undefined {
     const profile = profileFor(country)
     if (!profile) return undefined
-    const { registerName, url, freeBasicData, shareholdersPublic, uboAccess, accessRoutes, documentToRequest, note } = profile
+    const { registerName, url, freeBasicData, shareholdersPublic, uboAccess, accessRoutes, documentToRequest, lastVerified, verified, note } = profile
     return {
       country: profile.country,
       registerName,
@@ -247,6 +248,8 @@ export async function walk(
       uboAccess,
       accessRoutes,
       documentToRequest,
+      lastVerified,
+      verified,
       note,
       ...(profile.notProfiled ? { notProfiled: true } : {}),
     }
@@ -283,6 +286,14 @@ export async function walk(
     settle(node, 'UNRESOLVED', exceptionCode ?? stopReasonFor(country))
     const profile = registerProfileRef(country)
     if (profile) node.registerProfile = profile
+    addSecondary(node, country)
+  }
+
+  /** Records the register's further reasons (e.g. Cayman: paywalled, and UBO restricted) as secondary. */
+  function addSecondary(node: OwnershipNode, country: string | undefined) {
+    for (const code of profileFor(country)?.secondaryReasonCodes ?? []) {
+      if (code !== node.reasonCode && !node.secondaryReasons.includes(code)) node.secondaryReasons.push(code)
+    }
   }
 
   /** Walks one GLEIF node: follows its direct parent, or stops with a reason. Never resolves a node. */
@@ -461,7 +472,9 @@ export async function walk(
       let outage = false
       if (registration && code) {
         try {
-          matches = (await gleif.findByRegistration(registration, code)).filter((m) => m.registrationStatus === 'ISSUED')
+          matches = (await gleif.findByRegistration(registration, code)).filter(
+            (m) => m.registrationStatus === 'ISSUED' && sameRegistration(m.registeredAs, registration),
+          )
         } catch {
           outage = true
         }
@@ -478,6 +491,7 @@ export async function walk(
         const stop = leaf({ kind: 'corporate', resolution: 'UNRESOLVED', reasonCode })
         const profile = registerProfileRef(code)
         if (profile) stop.registerProfile = profile
+        addSecondary(stop, code)
         return
       }
 
