@@ -51,7 +51,7 @@ describe('walk with terminal checks — recorded responses', () => {
     expect(nordea.resolution).toBe('RESOLVED_LISTED')
     expect(nordea.reasonCode).toBeUndefined()
     expect(nordea.secondaryReasons).toContain('GLEIF_EXCEPTION_NATURAL_PERSONS')
-    expect(nordea.evidence?.[0]).toMatchObject({ kind: 'listed_eu', details: { isin: 'FI4000297767', mic: 'MHEL', rule: 'mir' } })
+    expect(nordea.evidence?.[0]).toMatchObject({ kind: 'listed_eu', details: { isin: 'FI4000297767', mic: 'XHEL', rule: 'mir' } })
     expect(result.status).toBe('resolved')
     // A terminal node is not given a "register stop" profile.
     expect(nordea.registerProfile).toBeUndefined()
@@ -104,11 +104,11 @@ describe('walk with terminal checks — recorded responses', () => {
   it('shows the evidence in the flow data and the profile row', async () => {
     const result = await walk(LEIS.nordea, fetcherFor('nordea', recordedChecks()))
     const data = toFlow(result).nodes.find((n) => n.id === NORDEA)!.data
-    expect(data).toMatchObject({ resolutionLabel: 'Listed company', evidence: [{ kind: 'listed_eu' }] })
+    expect(data).toMatchObject({ resolutionLabel: 'Listed company', evidence: [{ kind: 'listed_eu' }, { kind: 'regulated_eu' }] })
 
     const row = listingRow(data.evidence)
     expect(row).toMatchObject({ key: 'listing', mark: 'PASS', source: { label: 'ESMA FIRDS (instrument reference data)' } })
-    expect(row.lines[0]).toContain('FI4000297767 on MHEL')
+    expect(row.lines[0]).toContain('FI4000297767 on XHEL')
   })
 })
 

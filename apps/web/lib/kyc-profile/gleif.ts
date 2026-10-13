@@ -102,7 +102,7 @@ const defaultLimiter = createLimiter()
 export type GleifResponse = { status: number; body: unknown }
 
 /** GET against the GLEIF API (path after /api/v1). 200 and 404 are returned; anything else throws. */
-export type GleifHttp = { get(path: string): Promise<GleifResponse> }
+export type GleifHttp = { get(path: string, options?: { ttlMs?: number }): Promise<GleifResponse> }
 
 const httpCache = new Map<string, { response: GleifResponse; expires: number }>()
 const API = 'https://api.gleif.org/api/v1'
@@ -118,7 +118,7 @@ export function createGleifHttp(
 ): GleifHttp {
   const { fetchImpl = fetch, now = Date.now, sleep, limiter = defaultLimiter, cache: store = httpCache } = options
   return {
-    async get(path) {
+    async get(path, getOptions) {
       const hit = store.get(path)
       if (hit && hit.expires > now()) return hit.response
 
@@ -131,7 +131,7 @@ export function createGleifHttp(
         throw new Error(`GLEIF request failed (${response.status}): ${path}`)
       }
       const result: GleifResponse = { status: response.status, body: await response.json().catch(() => null) }
-      store.set(path, { response: result, expires: now() + CACHE_MS })
+      store.set(path, { response: result, expires: now() + (getOptions?.ttlMs ?? CACHE_MS) })
       return result
     },
   }

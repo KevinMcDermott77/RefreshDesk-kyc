@@ -57,6 +57,17 @@ const OPERATING_MIC_CATEGORIES = new Set(['RMKT', 'NSPD'])
 
 export type VenueRule = 'mir' | 'operating-mic' | 'iso-rmkt'
 
+const RULE_TEXT: Record<string, string> = {
+  mir: 'ESMA regulated-market list',
+  'operating-mic': 'Operated by an exchange on the ESMA regulated-market list',
+  'iso-rmkt': 'ISO 10383 regulated market (EEA)',
+}
+
+/** Plain-English name of the rule that matched a venue; unknown values are returned as they are. */
+export function ruleText(rule: string): string {
+  return RULE_TEXT[rule] ?? rule
+}
+
 export type VenueMatch = { rule: VenueRule; operatingMic: string; venueName: string }
 
 /** Whether `mic` is a regulated market, and which rule says so. Rules are tried in order a, b, c. */
@@ -119,12 +130,17 @@ export async function listedEU(lei: string, lookups: TerminalLookups): Promise<E
   if (matched.length === 0) return null
 
   // The primary venue: the issuer's home-country regulated venue (ISIN country = venue country),
+  // preferring a main market (a MIC that is its own operating MIC) over a segment,
   // then the earliest start of trading, then alphabetical MIC.
   const isHome = (row: FirdsRow) => iso.get(row.mic.toUpperCase())?.country === row.isin.slice(0, 2).toUpperCase()
   const started = (row: FirdsRow) => (row.startDate ? Date.parse(row.startDate) : Number.POSITIVE_INFINITY)
   const home = matched.filter(({ row }) => isHome(row))
+  const isMainMarket = ({ row, match }: (typeof matched)[number]) => (match.operatingMic === row.mic.toUpperCase() ? 0 : 1)
   const best = (home.length > 0 ? home : matched).sort(
-    (a, b) => started(a.row) - started(b.row) || a.row.mic.toUpperCase().localeCompare(b.row.mic.toUpperCase()),
+    (a, b) =>
+      isMainMarket(a) - isMainMarket(b) ||
+      started(a.row) - started(b.row) ||
+      a.row.mic.toUpperCase().localeCompare(b.row.mic.toUpperCase()),
   )[0]
 
   return {

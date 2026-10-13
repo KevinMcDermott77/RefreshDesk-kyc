@@ -46,12 +46,12 @@ const equity = (mic: string, over: Partial<FirdsRow> = {}): FirdsRow => ({
 })
 
 describe('listedEU — recorded ESMA responses', () => {
-  it('Nordea Bank Abp is listed on Nasdaq Helsinki (MHEL and XHEL both began 2018-10-01, so the alphabetical MIC wins)', async () => {
+  it('Nordea Bank Abp is listed on Nasdaq Helsinki, main market XHEL rather than its MHEL segment', async () => {
     const evidence = await listedEU(LEIS.nordea, recordedLookups())
     expect(evidence).toMatchObject({
       kind: 'listed_eu',
       source: 'ESMA FIRDS (instrument reference data)',
-      details: { isin: 'FI4000297767', mic: 'MHEL', operatingMic: 'XHEL', venueName: 'Nasdaq Helsinki Oy - Auction on Demand', rule: 'mir' },
+      details: { isin: 'FI4000297767', mic: 'XHEL', operatingMic: 'XHEL', venueName: 'Nasdaq Helsinki Oy', rule: 'mir' },
     })
     expect(evidence!.url).toContain('esma_registers_firds')
     expect(decodeURIComponent(evidence!.url)).toContain(`lei:${LEIS.nordea}`)
@@ -105,6 +105,19 @@ describe('listedEU — recorded ESMA responses', () => {
           equity('MOSL', { isin: 'NO0010096985', startDate: '2010-05-01T00:00:00Z' }),
         ]),
       ).toBe('MOSL')
+    })
+
+    it('prefers a main market (its own operating MIC) over a segment, even one that started earlier', async () => {
+      const segments = new Map([
+        ['XOSL', iso({ mic: 'XOSL', country: 'NO' })],
+        ['MOSL', iso({ mic: 'MOSL', operatingMic: 'XOSL', category: 'NSPD', country: 'NO' })],
+      ])
+      const rows = [
+        equity('MOSL', { isin: 'NO0010096985', startDate: '2010-01-01T00:00:00Z' }),
+        equity('XOSL', { isin: 'NO0010096985', startDate: '2018-01-01T00:00:00Z' }),
+      ]
+      const lookups = stub({ firdsEquities: async () => rows, regulatedMarkets: async () => new Map([['XOSL', 'Oslo Børs'], ['MOSL', 'Oslo Børs segment']]), isoMics: async () => segments })
+      expect((await listedEU('A'.repeat(20), lookups))!.details).toMatchObject({ mic: 'XOSL', operatingMic: 'XOSL' })
     })
 
     it('breaks a tie alphabetically by MIC', async () => {

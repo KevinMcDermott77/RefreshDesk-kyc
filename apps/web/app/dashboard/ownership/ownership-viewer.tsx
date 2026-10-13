@@ -14,6 +14,7 @@ import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
 import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
+import { ruleText } from '@/lib/ownership/terminals'
 import { pickedFormData } from './picker'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
@@ -236,7 +237,7 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
             <ul className="mt-1 text-sm">
               {Object.entries(e.details).map(([key, value]) => (
                 <li key={key}>
-                  <span className="text-[var(--muted)]">{key}:</span> {value}
+                  <span className="text-[var(--muted)]">{key}:</span> {key === 'rule' ? ruleText(value) : value}
                 </li>
               ))}
             </ul>

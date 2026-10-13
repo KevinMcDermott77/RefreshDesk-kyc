@@ -1,0 +1,159 @@
+{
+  "/entity-legal-forms/K6VE": {
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "entity-legal-forms",
+        "id": "K6VE",
+        "attributes": {
+          "code": "K6VE",
+          "country": "Finland",
+          "jurisdiction": null,
+          "countryCode": "FI",
+          "subdivisionCode": null,
+          "dateCreated": "2019-07-05",
+          "status": "ACTV",
+          "names": [
+            {
+              "localName": "Julkinen osakeyhtiö",
+              "language": "Finnish",
+              "languageCode": "fi",
+              "transliteratedName": "Julkinen osakeyhtiö"
+            },
+            {
+              "localName": "Publikt aktiebolag",
+              "language": "Swedish",
+              "languageCode": "sv",
+              "transliteratedName": "Publikt aktiebolag"
+            }
+          ]
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/entity-legal-forms/K6VE"
+        }
+      }
+    }
+  },
+  "/entity-legal-forms/8888": {
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "entity-legal-forms",
+        "id": "8888",
+        "attributes": {
+          "code": "8888",
+          "country": null,
+          "jurisdiction": null,
+          "countryCode": null,
+          "subdivisionCode": null,
+          "dateCreated": "2017-11-30",
+          "status": "ACTV",
+          "names": [
+            {
+              "localName": null,
+              "language": null,
+              "languageCode": null,
+              "transliteratedName": null
+            }
+          ]
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/entity-legal-forms/8888"
+        }
+      }
+    }
+  },
+  "/entity-legal-forms/ZZZZ": {
+    "status": 404,
+    "body": {
+      "errors": [
+        {
+          "status": "404",
+          "title": "Not Found",
+          "detail": "Resource entity-legal-forms with id ZZZZ does not exist."
+        }
+      ]
+    }
+  },
+  "/registration-authorities/RA000188": {
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "registration-authorities",
+        "id": "RA000188",
+        "attributes": {
+          "code": "RA000188",
+          "internationalName": "The Business Information System (BIS)",
+          "localName": "Yritys- ja yhteisötietojärjestelmä (YTJ)",
+          "internationalOrganizationName": "Finnish Patent and Registration Office",
+          "localOrganizationName": "Patentti- ja Rekisterihallitus",
+          "website": "http://www.prh.fi/en/kaupparekisteri.html",
+          "jurisdictions": [
+            {
+              "country": "Finland",
+              "countryCode": "FI",
+              "jurisdiction": "Finland"
+            }
+          ]
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/registration-authorities/RA000188"
+        }
+      }
+    }
+  },
+  "/registration-authorities/RA000585": {
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "registration-authorities",
+        "id": "RA000585",
+        "attributes": {
+          "code": "RA000585",
+          "internationalName": "Companies Register",
+          "localName": "Companies Register",
+          "internationalOrganizationName": "Companies House",
+          "localOrganizationName": "Companies House",
+          "website": "www.companieshouse.gov.uk",
+          "jurisdictions": [
+            {
+              "country": "United Kingdom of Great Britain and Northern Ireland",
+              "countryCode": "GB",
+              "jurisdiction": "England and Wales"
+            }
+          ]
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/registration-authorities/RA000585"
+        }
+      }
+    }
+  },
+  "/registration-authorities/RA999999": {
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "registration-authorities",
+        "id": "RA999999",
+        "attributes": {
+          "code": "RA999999",
+          "internationalName": "No Registration Authority available",
+          "localName": null,
+          "internationalOrganizationName": null,
+          "localOrganizationName": null,
+          "website": null,
+          "jurisdictions": [
+            {
+              "country": null,
+              "countryCode": null,
+              "jurisdiction": null
+            }
+          ]
+        },
+        "links": {
+          "self": "https://api.gleif.org/api/v1/registration-authorities/RA999999"
+        }
+      }
+    }
+  }
+}

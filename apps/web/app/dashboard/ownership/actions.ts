@@ -5,7 +5,7 @@ import { fetchEntityCdd } from '@/lib/companies-house/fetch-entity-cdd'
 import { fetchAuthToken } from '@/lib/companies-house/kyc-search-client'
 import { walk } from '@/lib/ownership/walk'
 import { createKycSearchFetcher, sharedTerminals } from '@/lib/ownership/kyc-search-fetcher'
-import { createGleifSource, isHistoric } from '@/lib/ownership/gleif-source'
+import { createGleifSource, createReferenceNames, isHistoric } from '@/lib/ownership/gleif-source'
 import { resolveEntry } from '@/lib/ownership/resolve-entry'
 import { summarise, toFlow, type FlowEdge, type FlowNode, type WalkSummary } from '@/lib/ownership/to-flow'
 import {
@@ -98,8 +98,14 @@ export async function walkOwnershipAction(
     if (resolution.kind === 'lei') {
       const { record } = resolution
       const walked = await walk(record.lei, createKycSearchFetcher(token), policy)
+      const names = createReferenceNames(gleifHttp)
+      const [legalForm, registrationAuthority] = await Promise.all([
+        record.legalForm ? names.legalForm(record.legalForm) : undefined,
+        record.registeredAt ? names.registrationAuthority(record.registeredAt) : undefined,
+      ])
       const profile = evaluateForeignProfile({
         record,
+        labels: { legalForm, registrationAuthority },
         listing: walked.nodes.find((n) => n.id === walked.rootId)?.evidence,
         ownership: ownershipSummary(walked, threshold),
         fetchedAt: new Date().toISOString(),

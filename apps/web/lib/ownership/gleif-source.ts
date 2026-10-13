@@ -142,4 +142,44 @@ export function createGleifSource(http: GleifHttp): GleifSource & {
   }
 }
 
+export const REFERENCE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * "Julkinen osakeyhtiö (K6VE)": the local name and the ELF code, with GLEIF's transliterated
+ * name when it differs from the local one. A code GLEIF cannot name is shown as the code alone.
+ */
+export function describeLegalForm(code: string, body: unknown): string {
+  const names = rec(rec(rec(body).data).attributes).names
+  const first = (Array.isArray(names) ? names : []).map(rec).find((n) => str(n.localName))
+  const local = str(first?.localName)
+  if (!local) return code
+  const transliterated = str(first?.transliteratedName)
+  return `${local}${transliterated && transliterated !== local ? ` / ${transliterated}` : ''} (${code})`
+}
+
+/** "The Business Information System (BIS), Finnish Patent and Registration Office (RA000188)". */
+export function describeAuthority(code: string, body: unknown): string {
+  const attributes = rec(rec(rec(body).data).attributes)
+  const name = str(attributes.internationalName)
+  if (!name) return code
+  const organisation = str(attributes.internationalOrganizationName)
+  return `${name}${organisation && organisation !== name ? `, ${organisation}` : ''} (${code})`
+}
+
+/** Legal form and registration authority names for the profile panel. Cached 30 days; the code stands in when GLEIF has no name. */
+export function createReferenceNames(http: GleifHttp) {
+  const lookup = async (kind: string, code: string, describe: (code: string, body: unknown) => string) => {
+    try {
+      const response = await http.get(`/${kind}/${encode(code)}`, { ttlMs: REFERENCE_TTL_MS })
+      return response.status === 200 ? describe(code, response.body) : code
+    } catch {
+      return code
+    }
+  }
+  return {
+    legalForm: (code: string) => lookup('entity-legal-forms', code, describeLegalForm),
+    registrationAuthority: (code: string) => lookup('registration-authorities', code, describeAuthority),
+  }
+}
+
 export type GleifSourceWithSearch = ReturnType<typeof createGleifSource>

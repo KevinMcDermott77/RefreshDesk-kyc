@@ -1,5 +1,6 @@
 import { classify } from '@/lib/ownership/bands'
 import { initials } from '@/lib/ownership/to-flow'
+import { ruleText } from '@/lib/ownership/terminals'
 import type { Evidence, GleifRecord, WalkResult } from '@/lib/ownership/types'
 
 export type Mark = 'PASS' | 'GAP' | 'INFO'
@@ -27,6 +28,8 @@ export type OwnershipSummary = {
   owners: string[]
   /** Initials of individuals whose band straddles the threshold. */
   possibleOwners: string[]
+  /** A listed company at the target or the top of the chain: beneficial owners need not be identified. */
+  listed?: { alsoAuthorised?: { register: string; authority: string } }
   fetchedAt?: string
 }
 
@@ -228,7 +231,7 @@ export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string)
   }
   const lines = found.map((e) =>
     e.kind === 'listed_eu'
-      ? `Listed on a regulated market: ${e.details.isin} on ${e.details.mic} (${e.details.venueName}), rule: ${e.details.rule}`
+      ? `Listed on a regulated market: ${e.details.isin} on ${e.details.mic} (${e.details.venueName}), ${ruleText(e.details.rule)}`
       : `Authorised: ${e.details.register}, ${e.details.authority}, ${e.details.status}${e.details.fileMonth ? `, file ${e.details.fileMonth}` : ''}`,
   )
   return {
@@ -241,13 +244,27 @@ export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string)
   }
 }
 
+export const LISTED_OWNERSHIP_NOTE =
+  "Listed on an EEA/UK regulated market. Beneficial owners need not be identified (MLR 2017 reg. 28(5)); confirm against your firm's policy."
+
+/** The listed-company lines for the ownership row: the rule, and any authorisation found as well. */
+function listedLines(listed: NonNullable<OwnershipSummary['listed']>): string[] {
+  return [
+    LISTED_OWNERSHIP_NOTE,
+    ...(listed.alsoAuthorised ? [`Also authorised: ${listed.alsoAuthorised.register}, ${listed.alsoAuthorised.authority}`] : []),
+  ]
+}
+
 function ownershipRow(input: ProfileInput): ProfileRow {
-  const { status, threshold, owners, possibleOwners } = input.ownership
+  const { status, threshold, owners, possibleOwners, listed } = input.ownership
   const lines = [
     `Walk status: ${status}`,
-    owners.length > 0
-      ? `${owners.length} beneficial ${owners.length === 1 ? 'owner' : 'owners'} at or above ${threshold}%: ${owners.join(', ')}`
-      : `No beneficial owners identified at or above ${threshold}%`,
+    ...(listed ? listedLines(listed) : []),
+    ...(owners.length > 0
+      ? [`${owners.length} beneficial ${owners.length === 1 ? 'owner' : 'owners'} at or above ${threshold}%: ${owners.join(', ')}`]
+      : listed
+        ? []
+        : [`No beneficial owners identified at or above ${threshold}%`]),
     ...(possibleOwners.length > 0
       ? [`${possibleOwners.length} possible (band straddles ${threshold}%): ${possibleOwners.join(', ')}`]
       : []),
@@ -274,11 +291,23 @@ export function ownershipSummary(result: WalkResult, threshold: number): Ownersh
       .map((node) => initials(node.name))
   const fetched = result.nodes.map((node) => node.fetchedAt).filter((t): t is string => !!t)
   const oldest = fetched.sort((a, b) => Date.parse(a) - Date.parse(b))[0]
+  // The root if it is listed, else the first listed node up the chain.
+  const listedNode =
+    result.nodes.find((node) => node.id === result.rootId && node.resolution === 'RESOLVED_LISTED') ??
+    [...result.nodes].sort((a, b) => a.depth - b.depth).find((node) => node.resolution === 'RESOLVED_LISTED')
+  const authorised = listedNode?.evidence?.find((e) => e.kind === 'regulated_eu')
   return {
     status: result.status,
     threshold,
     owners: named('above'),
     possibleOwners: named('straddles'),
+    ...(listedNode
+      ? {
+          listed: {
+            ...(authorised ? { alsoAuthorised: { register: authorised.details.register, authority: authorised.details.authority } } : {}),
+          },
+        }
+      : {}),
     fetchedAt: oldest,
   }
 }
@@ -304,6 +333,8 @@ export type ForeignProfileInput = {
   record: GleifRecord
   ownership: OwnershipSummary
   listing?: Evidence[]
+  /** Resolved names for the legal form (ELF) and registration authority (RA) codes. */
+  labels?: { legalForm?: string; registrationAuthority?: string }
   fetchedAt?: string
 }
 
@@ -328,9 +359,9 @@ export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[]
     mark: record.entityStatus === 'ACTIVE' ? 'PASS' : 'GAP',
     lines: [
       `Legal name: ${record.legalName}`,
-      `Legal form: ${record.legalForm ?? 'not provided'}`,
+      `Legal form: ${input.labels?.legalForm ?? record.legalForm ?? 'not provided'}`,
       `Legal address: ${record.address ?? 'not provided'}`,
-      `Registration authority: ${record.registeredAt ?? 'not provided'}, number ${record.registeredAs ?? 'not provided'}`,
+      `Registration authority: ${input.labels?.registrationAuthority ?? record.registeredAt ?? 'not provided'}, number ${record.registeredAs ?? 'not provided'}`,
       `Entity status: ${record.entityStatus ?? 'not provided'}`,
     ],
     source,
@@ -363,7 +394,7 @@ export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[]
       key: 'ownership',
       label: 'Ownership',
       mark: input.ownership.status === 'resolved' ? 'PASS' : 'GAP',
-      lines: [`Walk status: ${input.ownership.status}`],
+      lines: [`Walk status: ${input.ownership.status}`, ...(input.ownership.listed ? listedLines(input.ownership.listed) : [])],
       source,
       fetchedAt: input.ownership.fetchedAt,
     },

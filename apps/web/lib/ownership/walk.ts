@@ -336,9 +336,9 @@ export async function walk(
     }
 
     const listed = await check(() => terminals.listedEU(record.lei))
-    const regulated = listed ? null : await check(() => terminals.regulatedEU(record.lei))
-    const found = listed ?? regulated
-    if (found) addEvidence(node, found)
+    const regulated = await check(() => terminals.regulatedEU(record.lei))
+    if (listed) addEvidence(node, listed)
+    if (regulated) addEvidence(node, regulated)
 
     const terminal = listed ? 'RESOLVED_LISTED' : regulated && acceptRegulated ? 'RESOLVED_REGULATED' : null
     if (!terminal) return false
