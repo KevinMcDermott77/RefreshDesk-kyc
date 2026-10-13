@@ -5,7 +5,7 @@ import { fetchEntityCdd } from '@/lib/companies-house/fetch-entity-cdd'
 import { fetchAuthToken } from '@/lib/companies-house/kyc-search-client'
 import { walk } from '@/lib/ownership/walk'
 import { createKycSearchFetcher, sharedTerminals } from '@/lib/ownership/kyc-search-fetcher'
-import { createGleifSource } from '@/lib/ownership/gleif-source'
+import { createGleifSource, isHistoric } from '@/lib/ownership/gleif-source'
 import { resolveEntry } from '@/lib/ownership/resolve-entry'
 import { summarise, toFlow, type FlowEdge, type FlowNode, type WalkSummary } from '@/lib/ownership/to-flow'
 import {
@@ -18,7 +18,15 @@ import { fetchRawProfile } from '@/lib/kyc-profile/fetch-raw'
 import { gleifHttp, lookupLei } from '@/lib/kyc-profile/gleif'
 import type { Evidence, IndirectMethod, WalkPolicy } from '@/lib/ownership/types'
 
-export type EntryCandidate = { lei: string; name: string; country?: string; status: string }
+export type EntryCandidate = {
+  lei: string
+  name: string
+  country?: string
+  registrationStatus: string
+  entityStatus?: string
+  /** Inactive entity or retired registration. */
+  historic: boolean
+}
 
 export type OwnershipViewState = {
   error?: string
@@ -77,7 +85,9 @@ export async function walkOwnershipAction(
         lei: r.lei,
         name: r.legalName,
         country: r.country,
-        status: r.entityStatus ?? r.registrationStatus,
+        registrationStatus: r.registrationStatus,
+        entityStatus: r.entityStatus,
+        historic: isHistoric(r),
       })),
     }
   }

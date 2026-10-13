@@ -13,7 +13,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fetchAuthToken, kycSearchGet } from '@/lib/companies-house/kyc-search-client'
 import { gleifHttp, type GleifHttp, type GleifResponse } from '@/lib/kyc-profile/gleif'
-import { createGleifSource, parseRecord } from '@/lib/ownership/gleif-source'
+import { createGleifSource, isHistoric, parseRecord } from '@/lib/ownership/gleif-source'
+import { resolveEntry } from '@/lib/ownership/resolve-entry'
 import { createKycSearchFetcher } from '@/lib/ownership/kyc-search-fetcher'
 import { walk } from '@/lib/ownership/walk'
 import type { OwnershipFetcher, WalkResult } from '@/lib/ownership/types'
@@ -94,6 +95,27 @@ async function recordCompany(number: string, token: string) {
 async function main() {
   const token = await fetchAuthToken()
   const withGleif = (http: GleifHttp): OwnershipFetcher => ({ ...createKycSearchFetcher(token), gleif: createGleifSource(http) })
+
+  // A name typed into the form: the picks GLEIF offers, then a walk of the first one.
+  {
+    const { http, calls } = recorder()
+    const picks = await resolveEntry('Nordea Bank', createGleifSource(http))
+    log('\n=== name entry "Nordea Bank"')
+    if (picks.kind !== 'candidates') {
+      log(`  not a candidate list: ${JSON.stringify(picks)}`)
+    } else {
+      for (const r of picks.candidates) {
+        log(`  ${r.lei}  ${r.legalName}  ${r.country ?? '?'}  ${r.entityStatus}/${r.registrationStatus}${isHistoric(r) ? '  (historic entity)' : ''}`)
+      }
+      await scenario('name-nordea-bank', picks.candidates[0].lei, withGleif)
+    }
+    if (RECORD) {
+      const dir = path.join(ROOT, 'gleif', 'search')
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(path.join(dir, 'nordea-bank.json'), JSON.stringify(calls, null, 2) + '\n')
+      log(`  recorded ${Object.keys(calls).length} GLEIF search responses`)
+    }
+  }
 
   // (a) Nordic banks, found by GLEIF search.
   for (const [name, query] of [['nordea', 'Nordea Bank Abp'], ['dnb', 'DNB Bank ASA']] as const) {

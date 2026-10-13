@@ -49,6 +49,34 @@ function parseList(body: unknown): GleifRecord[] {
 
 const encode = (value: string) => encodeURIComponent(value)
 
+/** LEIs behind a (fuzzy)completions response, in GLEIF's relevance order, without repeats. */
+function leiIds(response: { body: unknown }, limit: number): string[] {
+  const ids: string[] = []
+  const data = rec(response.body).data
+  for (const item of Array.isArray(data) ? data : []) {
+    const id = str(rec(rec(rec(rec(item).relationships)['lei-records']).data).id)
+    if (id && !ids.includes(id)) ids.push(id)
+    if (ids.length >= limit) break
+  }
+  return ids
+}
+
+/** 0 active and ISSUED, 1 LAPSED, 2 everything else (retired, inactive, ...). */
+export function standing(record: GleifRecord): 0 | 1 | 2 {
+  if (record.registrationStatus === 'ISSUED' && record.entityStatus === 'ACTIVE') return 0
+  return record.registrationStatus === 'LAPSED' ? 1 : 2
+}
+
+/** An inactive entity or a retired, duplicate, annulled or merged registration: shown, greyed out as historic. */
+export function isHistoric(record: GleifRecord): boolean {
+  return record.entityStatus === 'INACTIVE' || ['RETIRED', 'DUPLICATE', 'ANNULLED', 'MERGED'].includes(record.registrationStatus)
+}
+
+/** Stable: GLEIF's relevance order is kept within each standing. */
+export function sortByStanding(records: GleifRecord[]): GleifRecord[] {
+  return records.map((record, index) => ({ record, index })).sort((a, b) => standing(a.record) - standing(b.record) || a.index - b.index).map((x) => x.record)
+}
+
 /** GLEIF Level 1 / Level 2 access for the walker, over a rate-limited, cached HTTP client. */
 export function createGleifSource(http: GleifHttp): GleifSource & {
   /** Fuzzy legal-name search; up to `limit` matches with their records. */
@@ -97,19 +125,18 @@ export function createGleifSource(http: GleifHttp): GleifSource & {
   return {
     ...source,
     async searchByName(query, limit = 10) {
-      const completions = await http.get(`/fuzzycompletions?field=entity.legalName&q=${encode(query)}`)
-      const ids: string[] = []
-      const data = rec(completions.body).data
-      for (const item of Array.isArray(data) ? data : []) {
-        const id = str(rec(rec(rec(rec(item).relationships)['lei-records']).data).id)
-        if (id && !ids.includes(id)) ids.push(id)
-        if (ids.length >= limit) break
+      // Full-text autocompletion first; the legal-name fuzzy search only when that finds nothing.
+      let ids = leiIds(await http.get(`/autocompletions?field=fulltext&q=${encode(query)}`), limit)
+      if (ids.length === 0) {
+        ids = leiIds(await http.get(`/fuzzycompletions?field=entity.legalName&q=${encode(query)}`), limit)
       }
       if (ids.length === 0) return []
+
+      // One batched call for name, country and statuses, then live entities first.
       const records = await http.get(`/lei-records?filter[lei]=${ids.join(',')}&page[size]=${limit}`)
       const byLei = new Map(parseList(records.body).map((r) => [r.lei, r]))
-      // Keep GLEIF's relevance order.
-      return ids.map((id) => byLei.get(id)).filter((r): r is GleifRecord => r !== undefined)
+      const found = ids.map((id) => byLei.get(id)).filter((r): r is GleifRecord => r !== undefined)
+      return sortByStanding(found)
     },
   }
 }

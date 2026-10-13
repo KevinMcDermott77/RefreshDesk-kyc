@@ -331,9 +331,14 @@ export function OwnershipViewer() {
           <h2 className="text-sm font-semibold">Pick the entity (GLEIF matches)</h2>
           <ul className="mt-2 divide-y divide-[var(--line)]">
             {state.candidates.map((c) => (
-              <li key={c.lei} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+              <li
+                key={c.lei}
+                className={`flex flex-wrap items-center justify-between gap-2 py-2 text-sm ${c.historic ? 'opacity-60' : ''}`}
+              >
                 <span>
-                  <strong>{c.name}</strong> · {c.country ? `${flag(c.country)} ${c.country}` : 'country unknown'} · {c.status}
+                  <strong>{c.name}</strong> · {c.country ? `${flag(c.country)} ${c.country}` : 'country unknown'} ·{' '}
+                  {[c.entityStatus, c.registrationStatus].filter(Boolean).join(' · ')}
+                  {c.historic ? <span className={`${BADGE} ml-2`}>historic entity</span> : null}
                   <span className="block text-xs text-[var(--muted)]">{c.lei}</span>
                 </span>
                 <button

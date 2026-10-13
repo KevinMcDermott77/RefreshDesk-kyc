@@ -1,0 +1,1634 @@
+{
+  "/autocompletions?field=fulltext&q=Nordea%20Bank": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank AB",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> AB"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "6SCPQ280AIY8EP3XFW53"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "NORDEA BANK AB",
+            "highlighting": "<b>NORDEA</b> <b>BANK</b> AB"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "213800HW2E5VN9FK1Y53"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank Abp",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> Abp"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "529900ODI3047E2LIV03"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank S.A.",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> S.A."
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "549300HRD8DR1Q6K8X60"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank Norge ASA",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> Norge ASA"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "8UFQZZDNYQPXONCJED72"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "NORDEA BANK POLSKA SA",
+            "highlighting": "<b>NORDEA</b> <b>BANK</b> POLSKA SA"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "259400EV0A1UV44K6750"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "NORDEA DIRECT BANK ASA",
+            "highlighting": "<b>NORDEA</b> DIRECT <b>BANK</b> ASA"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "5967007LIEEXZX8S6851"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank Danmark A/S",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> Danmark A/S"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "549300LX0YIEPRTY0Z32"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Bank Finland Abp",
+            "highlighting": "<b>Nordea</b> <b>Bank</b> Finland Abp"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "CXW2O4H2U3MBVXMY1773"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773"
+              }
+            }
+          }
+        },
+        {
+          "type": "autocompletions",
+          "attributes": {
+            "value": "Nordea Private Banking Focus Finland",
+            "highlighting": "<b>Nordea</b> Private <b>Bank</b>ing Focus Finland"
+          },
+          "relationships": {
+            "lei-records": {
+              "data": {
+                "type": "lei-records",
+                "id": "549300HM4BZ6RGV40H80"
+              },
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HM4BZ6RGV40H80"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "/lei-records?filter[lei]=6SCPQ280AIY8EP3XFW53,213800HW2E5VN9FK1Y53,529900ODI3047E2LIV03,549300HRD8DR1Q6K8X60,8UFQZZDNYQPXONCJED72,259400EV0A1UV44K6750,5967007LIEEXZX8S6851,549300LX0YIEPRTY0Z32,CXW2O4H2U3MBVXMY1773,549300HM4BZ6RGV40H80&page[size]=10": {
+    "status": 200,
+    "body": {
+      "meta": {
+        "goldenCopy": {
+          "publishDate": "2026-10-13T08:00:00Z"
+        },
+        "pagination": {
+          "currentPage": 1,
+          "perPage": 10,
+          "from": 1,
+          "to": 10,
+          "total": 10,
+          "lastPage": 1
+        }
+      },
+      "links": {
+        "first": "https://api.gleif.org/api/v1/lei-records?filter%5Blei%5D=6SCPQ280AIY8EP3XFW53%2C213800HW2E5VN9FK1Y53%2C529900ODI3047E2LIV03%2C549300HRD8DR1Q6K8X60%2C8UFQZZDNYQPXONCJED72%2C259400EV0A1UV44K6750%2C5967007LIEEXZX8S6851%2C549300LX0YIEPRTY0Z32%2CCXW2O4H2U3MBVXMY1773%2C549300HM4BZ6RGV40H80&page%5Bnumber%5D=1&page%5Bsize%5D=10",
+        "last": "https://api.gleif.org/api/v1/lei-records?filter%5Blei%5D=6SCPQ280AIY8EP3XFW53%2C213800HW2E5VN9FK1Y53%2C529900ODI3047E2LIV03%2C549300HRD8DR1Q6K8X60%2C8UFQZZDNYQPXONCJED72%2C259400EV0A1UV44K6750%2C5967007LIEEXZX8S6851%2C549300LX0YIEPRTY0Z32%2CCXW2O4H2U3MBVXMY1773%2C549300HM4BZ6RGV40H80&page%5Bnumber%5D=1&page%5Bsize%5D=10"
+      },
+      "data": [
+        {
+          "type": "lei-records",
+          "id": "529900ODI3047E2LIV03",
+          "attributes": {
+            "lei": "529900ODI3047E2LIV03",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank Abp",
+                "language": "fi"
+              },
+              "otherNames": [
+                {
+                  "name": "Nordea Bank Oyj",
+                  "language": "fi",
+                  "type": "TRADING_OR_OPERATING_NAME"
+                }
+              ],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "fi",
+                "addressLines": [
+                  "Hamnbanegatan 5"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Helsinki",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "headquartersAddress": {
+                "language": "fi",
+                "addressLines": [
+                  "Hamnbanegatan 5"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Helsinki",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "registeredAt": {
+                "id": "RA000188",
+                "other": null
+              },
+              "registeredAs": "2858394-9",
+              "jurisdiction": "FI",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "K6VE",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "ACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": "2017-09-27T00:00:00Z",
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": []
+            },
+            "registration": {
+              "initialRegistrationDate": "2017-12-29T06:44:48Z",
+              "lastUpdateDate": "2026-09-21T08:16:39Z",
+              "status": "ISSUED",
+              "nextRenewalDate": "2027-11-02T15:01:47Z",
+              "managingLou": "529900T8BM49AURSDO55",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000188",
+                "other": null
+              },
+              "validatedAs": "2858394-9",
+              "otherValidationAuthorities": []
+            },
+            "bic": [
+              "NDEADEFFXXX",
+              "NDEADKKKXXX",
+              "NDEAFIHHXXX",
+              "NDEAGB2LXXX",
+              "NDEANOKKXXX",
+              "NDEASESSXXX",
+              "NDEAUS3NXXX"
+            ],
+            "mic": [
+              "XNOR"
+            ],
+            "ocid": "fi/2858394-9",
+            "qcc": "QFIU9MRR9S",
+            "gem": null,
+            "spglobal": [
+              "99505"
+            ],
+            "conformityFlag": "CONFORMING"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-parent-reporting-exception"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-parent-reporting-exception"
+              }
+            },
+            "direct-children": {
+              "links": {
+                "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-child-relationships",
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/direct-children"
+              }
+            },
+            "ultimate-children": {
+              "links": {
+                "relationship-records": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-child-relationships",
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/ultimate-children"
+              }
+            },
+            "isins": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03/isins"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/529900ODI3047E2LIV03"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "5967007LIEEXZX8S6851",
+          "attributes": {
+            "lei": "5967007LIEEXZX8S6851",
+            "entity": {
+              "legalName": {
+                "name": "NORDEA DIRECT BANK ASA",
+                "language": "no"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "no",
+                "addressLines": [
+                  "Essendrops gate 7"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Oslo",
+                "region": null,
+                "country": "NO",
+                "postalCode": "0101"
+              },
+              "headquartersAddress": {
+                "language": "no",
+                "addressLines": [
+                  "Essendrops gate 7"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Oslo",
+                "region": null,
+                "country": "NO",
+                "postalCode": "0101"
+              },
+              "registeredAt": {
+                "id": "RA000472",
+                "other": null
+              },
+              "registeredAs": "990323429",
+              "jurisdiction": "NO",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "IQGE",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "ACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": "2006-09-22T10:00:00Z",
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": []
+            },
+            "registration": {
+              "initialRegistrationDate": "2014-12-31T00:00:00Z",
+              "lastUpdateDate": "2023-01-07T18:00:49Z",
+              "status": "LAPSED",
+              "nextRenewalDate": "2023-01-07T09:38:04Z",
+              "managingLou": "529900F6BNUR3RJ2WH29",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000472",
+                "other": null
+              },
+              "validatedAs": "990323429",
+              "otherValidationAuthorities": []
+            },
+            "bic": [
+              "GJASNO21XXX"
+            ],
+            "mic": null,
+            "ocid": "no/990323429",
+            "qcc": "QNOYCD06H3",
+            "gem": null,
+            "spglobal": [
+              "34103234"
+            ],
+            "conformityFlag": "NON_CONFORMING"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "relationship-record": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/direct-parent-relationship",
+                "lei-record": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/direct-parent"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "relationship-record": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/ultimate-parent-relationship",
+                "lei-record": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/ultimate-parent"
+              }
+            },
+            "direct-children": {
+              "links": {
+                "relationship-records": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/direct-child-relationships",
+                "related": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851/direct-children"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/5967007LIEEXZX8S6851"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "549300HM4BZ6RGV40H80",
+          "attributes": {
+            "lei": "549300HM4BZ6RGV40H80",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Private Banking Focus Finland",
+                "language": "fi"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "fi",
+                "addressLines": [
+                  "C/O Nordea Investment Fund Company Finland Ltd",
+                  "Keskuskatu 3A"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Helsinki",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "headquartersAddress": {
+                "language": "fi",
+                "addressLines": [
+                  "Keskuskatu 3A"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Helsinki",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "registeredAt": {
+                "id": "RA999999",
+                "other": null
+              },
+              "registeredAs": null,
+              "jurisdiction": "FI",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "9999",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2014-09-23T00:00:00Z",
+                      "recordedDate": "2022-03-24T19:41:39Z",
+                      "type": "DISSOLUTION",
+                      "status": "COMPLETED"
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2014-02-05T04:30:00Z",
+              "lastUpdateDate": "2023-08-02T10:35:00Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2015-09-19T12:30:00Z",
+              "managingLou": "549300O897ZC5H7CY412",
+              "corroborationLevel": "ENTITY_SUPPLIED_ONLY",
+              "validatedAt": {
+                "id": "RA999999",
+                "other": null
+              },
+              "validatedAs": null,
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": null,
+            "gem": null,
+            "spglobal": [
+              "231878298"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HM4BZ6RGV40H80/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HM4BZ6RGV40H80/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HM4BZ6RGV40H80/field-modifications"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/549300HM4BZ6RGV40H80"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "213800HW2E5VN9FK1Y53",
+          "attributes": {
+            "lei": "213800HW2E5VN9FK1Y53",
+            "entity": {
+              "legalName": {
+                "name": "NORDEA BANK AB",
+                "language": "en"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "en",
+                "addressLines": [
+                  "SMÅLANDSGATAN 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "STOCKHOLM",
+                "region": null,
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "headquartersAddress": {
+                "language": "en",
+                "addressLines": [
+                  "SMÅLANDSGATAN 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "STOCKHOLM",
+                "region": null,
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "registeredAt": {
+                "id": "RA000544",
+                "other": null
+              },
+              "registeredAs": "516406-0120",
+              "jurisdiction": "SE",
+              "category": "FUND",
+              "legalForm": {
+                "id": "XJHM",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "NULL",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "6SCPQ280AIY8EP3XFW53",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "6SCPQ280AIY8EP3XFW53"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": []
+            },
+            "registration": {
+              "initialRegistrationDate": "2014-01-30T00:00:00Z",
+              "lastUpdateDate": "2022-03-21T13:37:55Z",
+              "status": "DUPLICATE",
+              "nextRenewalDate": "2015-01-30T00:00:00Z",
+              "managingLou": "213800WAVVOPS85N2205",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000544",
+                "other": null
+              },
+              "validatedAs": "516406-0120",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": null,
+            "gem": null,
+            "spglobal": null,
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/direct-parent-reporting-exception"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/213800HW2E5VN9FK1Y53"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "259400EV0A1UV44K6750",
+          "attributes": {
+            "lei": "259400EV0A1UV44K6750",
+            "entity": {
+              "legalName": {
+                "name": "NORDEA BANK POLSKA SA",
+                "language": "pl-PL"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "pl-PL",
+                "addressLines": [
+                  "GDYNIA KIELECKA 2"
+                ],
+                "addressNumber": "2",
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "GDYNIA",
+                "region": "PL-22",
+                "country": "PL",
+                "postalCode": "81-303"
+              },
+              "headquartersAddress": {
+                "language": "pl-PL",
+                "addressLines": [
+                  "GDYNIA KIELECKA 2"
+                ],
+                "addressNumber": "2",
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "GDYNIA",
+                "region": "PL-22",
+                "country": "PL",
+                "postalCode": "81-303"
+              },
+              "registeredAt": {
+                "id": "RA000484",
+                "other": null
+              },
+              "registeredAs": "0000021828",
+              "jurisdiction": "PL",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "FJ0E",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "P4GTT6GF1W40CVIMFR43",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "P4GTT6GF1W40CVIMFR43"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2014-11-02T23:00:00Z",
+                      "recordedDate": "2022-03-01T09:09:59Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED",
+                      "affectedFields": [
+                        {
+                          "value": "P4GTT6GF1W40CVIMFR43",
+                          "xpath": "/lei:LEIData/lei:LEIRecords/lei:LEIRecord/lei:Entity/lei:SuccessorEntity/lei:SuccessorLEI"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2014-01-22T18:40:11Z",
+              "lastUpdateDate": "2024-09-07T09:06:18Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2015-01-28T18:40:10Z",
+              "managingLou": "259400L3KBYEVNHEJF55",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000484",
+                "other": null
+              },
+              "validatedAs": "0000021828",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": "pl/0000021828",
+            "qcc": null,
+            "gem": null,
+            "spglobal": [
+              "9682297"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750/field-modifications"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/259400EV0A1UV44K6750"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "549300HRD8DR1Q6K8X60",
+          "attributes": {
+            "lei": "549300HRD8DR1Q6K8X60",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank S.A.",
+                "language": "fr"
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": "fr",
+                "addressLines": [
+                  "39 Avenue John F. Kennedy"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Luxembourg",
+                "region": "LU-LU",
+                "country": "LU",
+                "postalCode": "1855"
+              },
+              "headquartersAddress": {
+                "language": "fr",
+                "addressLines": [
+                  "39 Avenue John F. Kennedy"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Luxembourg",
+                "region": "LU-LU",
+                "country": "LU",
+                "postalCode": "1855"
+              },
+              "registeredAt": {
+                "id": "RA000432",
+                "other": null
+              },
+              "registeredAs": "B14157",
+              "jurisdiction": "LU",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "5GGB",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "ACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": null,
+                "name": null
+              },
+              "successorEntities": [],
+              "creationDate": "1976-10-14T00:00:00Z",
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": []
+            },
+            "registration": {
+              "initialRegistrationDate": "2013-04-04T18:40:41Z",
+              "lastUpdateDate": "2026-07-29T12:41:33Z",
+              "status": "ISSUED",
+              "nextRenewalDate": "2027-09-06T14:26:57Z",
+              "managingLou": "529900T8BM49AURSDO55",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000432",
+                "other": null
+              },
+              "validatedAs": "B14157",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": "lu/B14157",
+            "qcc": "QLU9FFUS16",
+            "gem": null,
+            "spglobal": [
+              "41692579"
+            ],
+            "conformityFlag": "CONFORMING"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60/direct-parent-reporting-exception"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60/ultimate-parent-reporting-exception"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/549300HRD8DR1Q6K8X60"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "549300LX0YIEPRTY0Z32",
+          "attributes": {
+            "lei": "549300LX0YIEPRTY0Z32",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank Danmark A/S",
+                "language": null
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": null,
+                "addressLines": [
+                  "Strandgade 3"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "København K",
+                "region": "DK-84",
+                "country": "DK",
+                "postalCode": "1401"
+              },
+              "headquartersAddress": {
+                "language": null,
+                "addressLines": [
+                  "Smålandsgatan 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Stockholm",
+                "region": "SE-AB",
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "registeredAt": {
+                "id": "RA000170",
+                "other": null
+              },
+              "registeredAs": "13522197",
+              "jurisdiction": "DK",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "ZRPO",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "6SCPQ280AIY8EP3XFW53",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "6SCPQ280AIY8EP3XFW53"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2016-12-31T23:00:00Z",
+                      "recordedDate": "2022-03-29T12:02:56Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED",
+                      "affectedFields": [
+                        {
+                          "value": "6SCPQ280AIY8EP3XFW53",
+                          "xpath": "/lei:LEIData/lei:LEIRecords/lei:LEIRecord/lei:Entity/lei:SuccessorEntity/lei:SuccessorLEI"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2013-03-01T14:00:08Z",
+              "lastUpdateDate": "2022-03-29T12:02:56Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2017-09-02T12:00:07Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000170",
+                "other": null
+              },
+              "validatedAs": "13522197",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": "QDKPVK2UWE",
+            "gem": null,
+            "spglobal": [
+              "2112267"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32/field-modifications"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/549300LX0YIEPRTY0Z32"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "CXW2O4H2U3MBVXMY1773",
+          "attributes": {
+            "lei": "CXW2O4H2U3MBVXMY1773",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank Finland Abp",
+                "language": null
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": null,
+                "addressLines": [
+                  "Satamaradankatu 5"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Nordea",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "headquartersAddress": {
+                "language": null,
+                "addressLines": [
+                  "Satamaradankatu 5"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Nordea",
+                "region": "FI-18",
+                "country": "FI",
+                "postalCode": "00020"
+              },
+              "registeredAt": {
+                "id": "RA000188",
+                "other": null
+              },
+              "registeredAs": "1680235-8",
+              "jurisdiction": "FI",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "K6VE",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "6SCPQ280AIY8EP3XFW53",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "6SCPQ280AIY8EP3XFW53"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2016-12-31T23:00:00Z",
+                      "recordedDate": "2022-03-29T12:04:27Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED",
+                      "affectedFields": [
+                        {
+                          "value": "6SCPQ280AIY8EP3XFW53",
+                          "xpath": "/lei:LEIData/lei:LEIRecords/lei:LEIRecord/lei:Entity/lei:SuccessorEntity/lei:SuccessorLEI"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2012-06-27T15:57:37Z",
+              "lastUpdateDate": "2022-03-29T12:04:27Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2017-09-02T12:00:03Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000188",
+                "other": null
+              },
+              "validatedAs": "1680235-8",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": "QFI7NSCMQT",
+            "gem": null,
+            "spglobal": [
+              "222705328"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773/field-modifications"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/CXW2O4H2U3MBVXMY1773"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "8UFQZZDNYQPXONCJED72",
+          "attributes": {
+            "lei": "8UFQZZDNYQPXONCJED72",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank Norge ASA",
+                "language": null
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": null,
+                "addressLines": [
+                  "Essendrops gate 7"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Oslo",
+                "region": "NO-03",
+                "country": "NO",
+                "postalCode": "0368"
+              },
+              "headquartersAddress": {
+                "language": null,
+                "addressLines": [
+                  "Smålandsgatan 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Stockholm",
+                "region": "SE-AB",
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "registeredAt": {
+                "id": "RA000472",
+                "other": null
+              },
+              "registeredAs": "911044110",
+              "jurisdiction": "NO",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "IQGE",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "6SCPQ280AIY8EP3XFW53",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "6SCPQ280AIY8EP3XFW53"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2016-12-31T23:00:00Z",
+                      "recordedDate": "2022-03-29T12:04:19Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED",
+                      "affectedFields": [
+                        {
+                          "value": "6SCPQ280AIY8EP3XFW53",
+                          "xpath": "/lei:LEIData/lei:LEIRecords/lei:LEIRecord/lei:Entity/lei:SuccessorEntity/lei:SuccessorLEI"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2012-06-06T15:53:52Z",
+              "lastUpdateDate": "2022-03-29T12:04:19Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2017-09-02T11:59:59Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000472",
+                "other": null
+              },
+              "validatedAs": "911044110",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": null,
+            "gem": null,
+            "spglobal": [
+              "8288208"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72/field-modifications"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/8UFQZZDNYQPXONCJED72"
+          }
+        },
+        {
+          "type": "lei-records",
+          "id": "6SCPQ280AIY8EP3XFW53",
+          "attributes": {
+            "lei": "6SCPQ280AIY8EP3XFW53",
+            "entity": {
+              "legalName": {
+                "name": "Nordea Bank AB",
+                "language": null
+              },
+              "otherNames": [],
+              "transliteratedOtherNames": [],
+              "legalAddress": {
+                "language": null,
+                "addressLines": [
+                  "Smålandsgatan 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Stockholm",
+                "region": "SE-AB",
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "headquartersAddress": {
+                "language": null,
+                "addressLines": [
+                  "Smålandsgatan 17"
+                ],
+                "addressNumber": null,
+                "addressNumberWithinBuilding": null,
+                "mailRouting": null,
+                "city": "Stockholm",
+                "region": "SE-AB",
+                "country": "SE",
+                "postalCode": "105 71"
+              },
+              "registeredAt": {
+                "id": "RA000544",
+                "other": null
+              },
+              "registeredAs": "516406-0120",
+              "jurisdiction": "SE",
+              "category": "GENERAL",
+              "legalForm": {
+                "id": "XJHM",
+                "other": null
+              },
+              "associatedEntity": {
+                "lei": null,
+                "name": null
+              },
+              "status": "INACTIVE",
+              "expiration": {
+                "date": null,
+                "reason": null
+              },
+              "successorEntity": {
+                "lei": "529900ODI3047E2LIV03",
+                "name": null
+              },
+              "successorEntities": [
+                {
+                  "lei": "529900ODI3047E2LIV03"
+                }
+              ],
+              "creationDate": null,
+              "subCategory": null,
+              "otherAddresses": [],
+              "eventGroups": [
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2018-09-30T22:00:00Z",
+                      "recordedDate": "2022-03-29T12:04:18Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED",
+                      "affectedFields": [
+                        {
+                          "value": "529900ODI3047E2LIV03",
+                          "xpath": "/lei:LEIData/lei:LEIRecords/lei:LEIRecord/lei:Entity/lei:SuccessorEntity/lei:SuccessorLEI"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "groupType": "STANDALONE",
+                  "events": [
+                    {
+                      "validationDocuments": "SUPPORTING_DOCUMENTS",
+                      "effectiveDate": "2016-12-31T23:00:00Z",
+                      "recordedDate": "2022-03-29T12:02:56Z",
+                      "type": "MERGERS_AND_ACQUISITIONS",
+                      "status": "COMPLETED"
+                    }
+                  ]
+                }
+              ]
+            },
+            "registration": {
+              "initialRegistrationDate": "2012-06-06T15:53:27Z",
+              "lastUpdateDate": "2022-03-29T12:04:18Z",
+              "status": "RETIRED",
+              "nextRenewalDate": "2019-09-06T22:00:00Z",
+              "managingLou": "5299000J2N45DDNE4Y28",
+              "corroborationLevel": "FULLY_CORROBORATED",
+              "validatedAt": {
+                "id": "RA000544",
+                "other": null
+              },
+              "validatedAs": "516406-0120",
+              "otherValidationAuthorities": []
+            },
+            "bic": null,
+            "mic": null,
+            "ocid": null,
+            "qcc": null,
+            "gem": null,
+            "spglobal": [
+              "548832265"
+            ],
+            "conformityFlag": "NOT_APPLICABLE"
+          },
+          "relationships": {
+            "managing-lou": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/managing-lou"
+              }
+            },
+            "lei-issuer": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/lei-issuer"
+              }
+            },
+            "field-modifications": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/field-modifications"
+              }
+            },
+            "direct-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/direct-parent-reporting-exception"
+              }
+            },
+            "ultimate-parent": {
+              "links": {
+                "reporting-exception": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/ultimate-parent-reporting-exception"
+              }
+            },
+            "successor-entity": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/successor-entity"
+              }
+            },
+            "successor-entities": {
+              "links": {
+                "related": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53/successor-entities"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.gleif.org/api/v1/lei-records/6SCPQ280AIY8EP3XFW53"
+          }
+        }
+      ]
+    }
+  }
+}
