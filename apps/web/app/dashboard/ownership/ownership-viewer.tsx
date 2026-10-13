@@ -118,6 +118,9 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
         ) : null}
         <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
+        {data.secondaryReasons.includes('LISTING_US_UNCONFIRMED') ? (
+          <span className={`${BADGE} border-amber-600 text-amber-800 dark:border-amber-400 dark:text-amber-300`}>US listing?</span>
+        ) : null}
         {data.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY') ? (
           <span className={`${BADGE} border-amber-600 text-amber-800 dark:border-amber-400 dark:text-amber-300`}>
             Look-through likely
@@ -141,6 +144,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   )
 }
+
+const EVIDENCE_LABELS = {
+  listed_eu: 'listed on an EU regulated market',
+  regulated_eu: 'authorised / supervised',
+  us_listing: 'US name match (unconfirmed)',
+} as const
 
 const ROUTE_LABELS = {
   public: 'Public (free)',
@@ -225,6 +234,21 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
         <Field label="Fetched at">{formatFetchedAt(data.fetchedAt)}</Field>
         <Field label="Retry after">{data.retryAfter}</Field>
         <Field label="LEI">{data.lei}</Field>
+        {data.evidence?.map((e) => (
+          <div key={e.kind + e.url} className="border border-[var(--line)] p-3">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Evidence · {EVIDENCE_LABELS[e.kind]}</p>
+            <ul className="mt-1 text-sm">
+              {Object.entries(e.details).map(([key, value]) => (
+                <li key={key}>
+                  <span className="text-[var(--muted)]">{key}:</span> {value}
+                </li>
+              ))}
+            </ul>
+            <a href={e.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-sm underline">
+              {e.source} <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        ))}
         {data.registerProfile ? <RegisterProfileBlock profile={data.registerProfile} /> : null}
       </dl>
       {data.companyUrl ? (
@@ -362,8 +386,8 @@ export function OwnershipViewer() {
               <h2 className="text-sm font-semibold uppercase tracking-[0.1em]">Points to check</h2>
               <ul className="mt-2 space-y-1 text-sm">
                 {result.summary.pointsToCheck.map((p) => (
-                  <li key={p.id}>
-                    <strong>{p.name}</strong> <span className={BADGE}>{p.code}</span> {reasonText(p.code)}
+                  <li key={`${p.id}:${p.code}`}>
+                    <strong>{p.name}</strong> <span className={BADGE}>{p.code}</span> {reasonText(p.code)}{p.detail ? ` (${p.detail})` : ""}
                   </li>
                 ))}
               </ul>

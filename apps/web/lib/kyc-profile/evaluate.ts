@@ -1,11 +1,11 @@
 import { classify } from '@/lib/ownership/bands'
 import { initials } from '@/lib/ownership/to-flow'
-import type { GleifRecord, WalkResult } from '@/lib/ownership/types'
+import type { Evidence, GleifRecord, WalkResult } from '@/lib/ownership/types'
 
 export type Mark = 'PASS' | 'GAP' | 'INFO'
 
 export type ProfileRow = {
-  key: 'identity' | 'filings' | 'officers' | 'lei' | 'ownership' | 'not-covered'
+  key: 'identity' | 'filings' | 'officers' | 'lei' | 'listing' | 'ownership' | 'not-covered'
   label: string
   mark: Mark
   lines: string[]
@@ -37,6 +37,9 @@ export type ProfileInput = {
   gleif: GleifLookup
   gleifFetchedAt?: string
   ownership: OwnershipSummary
+  /** Terminal-check evidence for the target; undefined when not checked. */
+  listing?: Evidence[]
+  listingFetchedAt?: string
   fetchedAt: { profile?: string; officers?: string }
 }
 
@@ -212,6 +215,32 @@ function leiRow(input: ProfileInput): ProfileRow {
   }
 }
 
+export const NO_LISTING_NOTE = 'No EU regulated-market listing or authorisation found'
+
+/** Whether the target is listed on an EU regulated market or authorised, with the evidence. */
+export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string): ProfileRow {
+  const found = (evidence ?? []).filter((e) => e.kind === 'listed_eu' || e.kind === 'regulated_eu')
+  const us = (evidence ?? []).find((e) => e.kind === 'us_listing')
+  const usLine = us ? [`US name match, unconfirmed: ${us.details.ticker} on ${us.details.exchange}`] : []
+
+  if (found.length === 0) {
+    return { key: 'listing', label: 'Listing / regulation', mark: 'INFO', lines: [NO_LISTING_NOTE, ...usLine], fetchedAt }
+  }
+  const lines = found.map((e) =>
+    e.kind === 'listed_eu'
+      ? `Listed on a regulated market: ${e.details.isin} on ${e.details.mic} (${e.details.venueName}), rule: ${e.details.rule}`
+      : `Authorised: ${e.details.register}, ${e.details.authority}, ${e.details.status}${e.details.fileMonth ? `, file ${e.details.fileMonth}` : ''}`,
+  )
+  return {
+    key: 'listing',
+    label: 'Listing / regulation',
+    mark: 'PASS',
+    lines: [...lines, ...usLine],
+    source: { label: found[0].source, url: found[0].url },
+    fetchedAt,
+  }
+}
+
 function ownershipRow(input: ProfileInput): ProfileRow {
   const { status, threshold, owners, possibleOwners } = input.ownership
   const lines = [
@@ -261,6 +290,7 @@ export function evaluateProfile(input: ProfileInput): ProfileRow[] {
     filingsRow(input),
     officersRow(input),
     leiRow(input),
+    listingRow(input.listing, input.listingFetchedAt),
     ownershipRow(input),
     { key: 'not-covered', label: 'Not covered', mark: 'GAP', lines: [SCREENING_GAP] },
   ]
@@ -273,6 +303,7 @@ export type ForeignProfileInput = {
   /** GLEIF Level 1 record of the target. */
   record: GleifRecord
   ownership: OwnershipSummary
+  listing?: Evidence[]
   fetchedAt?: string
 }
 
@@ -327,6 +358,7 @@ export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[]
     unavailable('filings', 'Filings'),
     unavailable('officers', 'Officers'),
     lei,
+    listingRow(input.listing, input.fetchedAt),
     {
       key: 'ownership',
       label: 'Ownership',

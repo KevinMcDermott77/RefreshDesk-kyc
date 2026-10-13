@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre'
 import { governingBand, parseNatures } from './bands'
-import type { OwnershipNode, Range, ReasonCode, RegisterProfileRef, Resolution, WalkResult } from './types'
+import type { Evidence, OwnershipNode, Range, ReasonCode, RegisterProfileRef, Resolution, WalkResult } from './types'
 
 export const GLEIF_EDGE_LABEL = 'consolidates (GLEIF)'
 
@@ -27,6 +27,7 @@ export type FlowNodeData = {
   country?: string
   lei?: string
   registerProfile?: RegisterProfileRef
+  evidence?: Evidence[]
   secondaryReasons: ReasonCode[]
   statementCode?: string
   fetchedAt?: string
@@ -137,6 +138,7 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
     natures,
     ...(node.registerProfile ? { registerProfile: node.registerProfile } : {}),
     ...(node.lei ? { lei: node.lei } : {}),
+    ...(node.evidence?.length ? { evidence: node.evidence } : {}),
     ...countryOf(node),
     secondaryReasons: node.secondaryReasons,
     statementCode: node.statementCode,
@@ -207,7 +209,7 @@ export type WalkSummary = {
   counts: Partial<Record<Resolution, number>>
   intermediate: number
   /** Non-blocking observations (secondary flags); they never change the overall status. */
-  pointsToCheck: { id: string; name: string; code: ReasonCode }[]
+  pointsToCheck: { id: string; name: string; code: ReasonCode; detail?: string }[]
   notReached: number
   sourceUnavailable: boolean
   unresolved: { id: string; name: string; subtitle: string; reasonCode: ReasonCode | undefined }[]
@@ -234,9 +236,21 @@ export function summarise(result: WalkResult): WalkSummary {
     status: result.status,
     counts,
     intermediate,
-    pointsToCheck: result.nodes
-      .filter((node) => node.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY'))
-      .map((node) => ({ id: node.id, name: nodeData(node, [], false).name, code: 'PSC_LOOK_THROUGH_LIKELY' as const })),
+    pointsToCheck: result.nodes.flatMap((node) => {
+      const name = nodeData(node, [], false).name
+      const points: WalkSummary['pointsToCheck'] = []
+      if (node.secondaryReasons.includes('PSC_LOOK_THROUGH_LIKELY')) points.push({ id: node.id, name, code: 'PSC_LOOK_THROUGH_LIKELY' })
+      if (node.secondaryReasons.includes('LISTING_US_UNCONFIRMED')) {
+        const us = node.evidence?.find((e) => e.kind === 'us_listing')
+        points.push({
+          id: node.id,
+          name,
+          code: 'LISTING_US_UNCONFIRMED',
+          ...(us ? { detail: `${us.details.ticker} on ${us.details.exchange}` } : {}),
+        })
+      }
+      return points
+    }),
     notReached,
     sourceUnavailable: result.nodes.some((node) => node.reasonCode === 'SOURCE_UNAVAILABLE'),
     unresolved,

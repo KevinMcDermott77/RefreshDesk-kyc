@@ -4,6 +4,7 @@ import { sameRegistration } from './registration-number'
 import { profileFor, stopReasonFor } from './register-profiles'
 import type {
   Fetched,
+  Evidence,
   GleifRecord,
   IndirectMethod,
   OwnershipEdge,
@@ -181,6 +182,7 @@ export async function walk(
   const maxDepth = policy.maxDepth ?? DEFAULT_MAX_DEPTH
   const threshold = policy.threshold ?? DEFAULT_THRESHOLD
   const method = policy.indirectMethod ?? DEFAULT_INDIRECT_METHOD
+  const acceptRegulated = policy.acceptRegulatedAsTerminal ?? true
 
   const nodes = new Map<string, OwnershipNode>()
   const edges: OwnershipEdge[] = []
@@ -296,6 +298,62 @@ export async function walk(
     }
   }
 
+  function addEvidence(node: OwnershipNode, evidence: Evidence) {
+    node.evidence = [...(node.evidence ?? []), evidence]
+  }
+
+  function addSecondaryCode(node: OwnershipNode, code: ReasonCode) {
+    if (!node.secondaryReasons.includes(code)) node.secondaryReasons.push(code)
+  }
+
+  /**
+   * Listing and authorisation checks, run before a GLEIF node's parent is followed.
+   * A listing always ends the walk; an authorisation does when the policy accepts it.
+   * Either overrides a GLEIF reporting exception, which is kept as a secondary reason.
+   * A US name match is only ever a secondary flag.
+   */
+  async function applyTerminals(node: OwnershipNode, record: GleifRecord): Promise<boolean> {
+    const terminals = fetcher.terminals
+    if (!terminals) return false
+
+    try {
+      const us = await terminals.usListing(record.legalName)
+      if (us) {
+        addEvidence(node, us)
+        addSecondaryCode(node, 'LISTING_US_UNCONFIRMED')
+      }
+    } catch {
+      // The US file is supporting evidence only.
+    }
+
+    async function check(run: () => Promise<Evidence | null>): Promise<Evidence | null> {
+      try {
+        return await run()
+      } catch {
+        addSecondaryCode(node, 'SOURCE_UNAVAILABLE')
+        return null
+      }
+    }
+
+    const listed = await check(() => terminals.listedEU(record.lei))
+    const regulated = listed ? null : await check(() => terminals.regulatedEU(record.lei))
+    const found = listed ?? regulated
+    if (found) addEvidence(node, found)
+
+    const terminal = listed ? 'RESOLVED_LISTED' : regulated && acceptRegulated ? 'RESOLVED_REGULATED' : null
+    if (!terminal) return false
+
+    settle(node, terminal)
+    try {
+      const exception = (await fetcher.gleif?.getDirectParent(record.lei))?.exception
+      const code = exception ? GLEIF_EXCEPTION_REASONS[exception] : undefined
+      if (code) addSecondaryCode(node, code)
+    } catch {
+      // Only the exception is lost; the node is resolved.
+    }
+    return true
+  }
+
   /** Walks one GLEIF node: follows its direct parent, or stops with a reason. Never resolves a node. */
   async function processGleif(item: Item, node: OwnershipNode) {
     const gleif = fetcher.gleif
@@ -321,6 +379,8 @@ export async function walk(
     node.jurisdiction = record.country ?? record.jurisdiction ?? null
     node.evidenceUrl = `${GLEIF_RECORD_URL}${record.lei}`
     const country = record.country ?? record.jurisdiction
+
+    if (await applyTerminals(node, record)) return
 
     let result
     try {

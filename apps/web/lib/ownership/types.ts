@@ -21,6 +21,8 @@ export const REASON_CODES = [
   'SOURCE_UNAVAILABLE',
   // Secondary only: an individual's 75%+ holding probably hides non-UK fund entities the PSC regime looks through.
   'PSC_LOOK_THROUGH_LIKELY',
+  // Secondary only: the name matches a US-listed company; never resolves a branch.
+  'LISTING_US_UNCONFIRMED',
 ] as const
 
 export const reasonCodeSchema = z.enum(REASON_CODES)
@@ -52,6 +54,15 @@ export const ownershipEdgeSchema = z.object({
   natures: z.array(z.string()),
 })
 export type OwnershipEdge = z.infer<typeof ownershipEdgeSchema>
+
+/** What a terminal check found, with where to verify it. */
+export const evidenceSchema = z.object({
+  kind: z.enum(['listed_eu', 'regulated_eu', 'us_listing']),
+  source: z.string(),
+  url: z.string(),
+  details: z.record(z.string(), z.string()),
+})
+export type Evidence = z.infer<typeof evidenceSchema>
 
 // The register a walk stopped at, for the UI. Mirrors RegisterProfile (register-profiles.ts).
 export const registerProfileRefSchema = z.object({
@@ -93,6 +104,8 @@ export const ownershipNodeSchema = z.object({
   evidenceUrl: z.string().optional(),
   // Set on foreign / GLEIF stop nodes: how the register where the walk stopped is accessed.
   registerProfile: registerProfileRefSchema.optional(),
+  // Listing / authorisation evidence from the terminal checks.
+  evidence: z.array(evidenceSchema).optional(),
   // Edges from the root on the shortest path.
   depth: z.number().int().nonnegative(),
   // Companies House PSC statement code, verbatim (including CH's "signficant" typo).
@@ -129,6 +142,8 @@ export type WalkPolicy = {
   maxDepth?: number
   threshold?: number
   indirectMethod?: IndirectMethod
+  /** An authorised credit institution or MiFID firm ends the walk. Default true. */
+  acceptRegulatedAsTerminal?: boolean
 }
 
 /** A raw upstream response: HTTP status plus parsed JSON body (null when empty). */
@@ -182,6 +197,14 @@ export interface GleifSource {
   getDirectParent(lei: string): Promise<GleifParentResult>
 }
 
+/** Listing and authorisation checks run on GLEIF nodes. Each returns null when nothing is found and throws when a source is down. */
+export interface TerminalChecks {
+  listedEU(lei: string): Promise<Evidence | null>
+  regulatedEU(lei: string): Promise<Evidence | null>
+  /** Null when no SEC User-Agent is configured. Never resolves anything. */
+  usListing(name: string): Promise<Evidence | null>
+}
+
 export interface OwnershipFetcher {
   getProfile(companyNumber: string): Promise<Fetched>
   getPscs(companyNumber: string): Promise<Fetched>
@@ -191,4 +214,5 @@ export interface OwnershipFetcher {
   getGleifParents(companyNumber: string): Promise<GleifParents | null>
   /** Absent in fetchers that cannot reach GLEIF: the walk then stays on Companies House. */
   gleif?: GleifSource
+  terminals?: TerminalChecks
 }

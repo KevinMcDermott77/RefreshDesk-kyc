@@ -1,6 +1,8 @@
 import { kycSearchGet } from '@/lib/companies-house/kyc-search-client'
 import type { EntityCddData } from '@/lib/companies-house/fetch-entity-cdd'
 import { createGleifSource } from './gleif-source'
+import { createTerminalLookups } from './terminal-sources'
+import { createTerminalChecks } from './terminals'
 import { gleifHttp } from '@/lib/kyc-profile/gleif'
 import type { OwnershipFetcher } from './types'
 
@@ -16,6 +18,9 @@ import type { OwnershipFetcher } from './types'
  * file") and CH 429 to 503 with Retry-After (SOURCE_UNAVAILABLE). Statements,
  * exemptions and raw PSCs are always live. kyc-search has no GLEIF data.
  */
+// One cache for the process: the registers change monthly or daily at most.
+export const sharedTerminals = createTerminalChecks(createTerminalLookups())
+
 export function createKycSearchFetcher(token: string, root?: EntityCddData): OwnershipFetcher {
   const get = (path: string) => kycSearchGet(path, token)
   const isRoot = (n: string) => root?.companyNumber === n
@@ -31,5 +36,6 @@ export function createKycSearchFetcher(token: string, root?: EntityCddData): Own
     getGleifParents: async () => null,
     // GLEIF is public: foreign owners are matched and followed directly, not through kyc-search.
     gleif: createGleifSource(gleifHttp),
+    terminals: sharedTerminals,
   }
 }

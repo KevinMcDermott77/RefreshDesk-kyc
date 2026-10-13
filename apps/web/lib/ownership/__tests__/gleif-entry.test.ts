@@ -102,7 +102,7 @@ describe('evaluateForeignProfile', () => {
     expect(byKey.lei.mark).toBe('PASS')
     expect(byKey.lei.note).toMatch(/does not endorse/)
     expect(byKey.ownership.mark).toBe('GAP')
-    expect(rows.map((r) => r.key)).toEqual(['identity', 'filings', 'officers', 'lei', 'ownership', 'not-covered'])
+    expect(rows.map((r) => r.key)).toEqual(['identity', 'filings', 'officers', 'lei', 'listing', 'ownership', 'not-covered'])
   })
 
   it('flags an inactive entity or lapsed LEI as a GAP', () => {

@@ -46,7 +46,8 @@ function print(result: WalkResult) {
   const byId = new Map(result.nodes.map((n) => [n.id, n]))
   for (const n of [...result.nodes].sort((a, b) => a.depth - b.depth)) {
     const person = n.kind === 'individual' ? '(individual)' : JSON.stringify(n.name)
-    log(`  d${n.depth} ${n.id} ${person} ${n.resolution}${n.reasonCode ? ' ' + n.reasonCode : ''}${n.registerProfile ? ' [' + n.registerProfile.country + ' ' + n.registerProfile.registerName + ']' : ''}${n.jurisdiction ? ' j=' + n.jurisdiction : ''}`)
+    log(`  d${n.depth} ${n.id} ${person} ${n.resolution}${n.reasonCode ? ' ' + n.reasonCode : ''}${n.registerProfile ? ' [' + n.registerProfile.country + ' ' + n.registerProfile.registerName + ']' : ''}${n.jurisdiction ? ' j=' + n.jurisdiction : ''}${n.secondaryReasons.length ? ' secondary=' + n.secondaryReasons.join(',') : ''}`)
+    for (const e of n.evidence ?? []) log(`       evidence ${e.kind}: ${JSON.stringify(e.details)}`)
   }
   for (const e of result.edges) {
     log(`  edge ${byId.get(e.parentId)?.name ?? e.parentId} -> ${byId.get(e.childId)?.name ?? e.childId}  ${e.source}/${e.basis} band=${e.band ? e.band.join('-') : '-'}`)
@@ -103,6 +104,9 @@ async function main() {
     }
     await scenario(name, match.lei, withGleif)
   }
+
+  // Allianz SE, by LEI (listed on German regulated markets).
+  await scenario('allianz', '529900K9B0N5BT694847', withGleif)
 
   // (b) Luxembourg entities: children of Allianz SE in LU, then whatever GLEIF reports above them.
   const [allianz] = await createGleifSource(gleifHttp).searchByName('Allianz SE', 3)
