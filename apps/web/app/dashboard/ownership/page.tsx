@@ -11,8 +11,8 @@ export default function OwnershipPage() {
           </Link>
           <h1 className="mt-2 text-3xl font-semibold">Ownership chain</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Walks the Companies House PSC register upwards from a company. Runs live; nothing is saved. Individuals
-            are shown as initials only.
+            Walks ownership upwards using Companies House, GLEIF and EU registers (ESMA, ECB). Runs live; nothing is
+            saved. Individuals are shown as initials only.
           </p>
         </header>
         <OwnershipViewer />

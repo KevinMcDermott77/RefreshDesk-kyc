@@ -95,11 +95,6 @@ function countsLine(summary: Summary): string {
   return parts.join(' · ')
 }
 
-/** "NL" -> flag emoji. */
-function flag(country: string): string {
-  return String.fromCodePoint(...[...country.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
-}
-
 function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
   return (
     <div
@@ -113,7 +108,7 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
       <div className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold">
         {data.country ? (
           <span title={data.country} className="opacity-90">
-            {flag(data.country)} {data.country}
+            {data.country}
           </span>
         ) : null}
         <span className="opacity-80">{data.resolutionLabel}</span>
@@ -167,7 +162,7 @@ function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['
   return (
     <div className="border border-[var(--line)] p-3">
       <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
-        Register profile · {flag(profile.country)} {profile.country}
+        Register profile · {profile.country}
         {profile.notProfiled ? ' · not yet profiled' : ''}
         {profile.verified ? ` · verified ${profile.lastVerified}` : ' · unverified'}
       </p>
@@ -336,8 +331,7 @@ export function OwnershipViewer() {
                 className={`flex flex-wrap items-center justify-between gap-2 py-2 text-sm ${c.historic ? 'opacity-60' : ''}`}
               >
                 <span>
-                  <strong>{c.name}</strong> · {c.country ? `${flag(c.country)} ${c.country}` : 'country unknown'} ·{' '}
-                  {[c.entityStatus, c.registrationStatus].filter(Boolean).join(' · ')}
+                  <strong>{c.name}</strong> · {c.country ?? 'country unknown'} · {c.entityStatus ?? '—'} · {c.registrationStatus}
                   {c.historic ? <span className={`${BADGE} ml-2`}>historic entity</span> : null}
                   <span className="block text-xs text-[var(--muted)]">{c.lei}</span>
                 </span>

@@ -37,7 +37,8 @@ export function parseRecord(item: unknown): GleifRecord | null {
     ...(str(rec(entity.registeredAt).id) ? { registeredAt: str(rec(entity.registeredAt).id) } : {}),
     ...(str(entity.registeredAs) ? { registeredAs: str(entity.registeredAs) } : {}),
     registrationStatus: str(registration.status) ?? 'UNKNOWN',
-    ...(str(entity.status) ? { entityStatus: str(entity.status) } : {}),
+    // GLEIF sends the string "NULL" for an entity with no status.
+    ...(str(entity.status) && str(entity.status) !== 'NULL' ? { entityStatus: str(entity.status) } : {}),
     ...(str(registration.nextRenewalDate) ? { nextRenewalDate: str(registration.nextRenewalDate) } : {}),
   }
 }

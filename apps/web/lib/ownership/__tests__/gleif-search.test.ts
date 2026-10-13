@@ -51,6 +51,12 @@ describe('name search — recorded autocompletions for "Nordea Bank"', () => {
     expect(isHistoric(byName('NORDEA DIRECT BANK ASA'))).toBe(false)
   })
 
+  it('treats the NULL entity status GLEIF sends as missing', async () => {
+    const found = await replay().source.searchByName('Nordea Bank', 10)
+    const duplicate = found.find((r) => r.registrationStatus === 'DUPLICATE')!
+    expect(duplicate.entityStatus).toBeUndefined()
+  })
+
   it('uses autocompletions?field=fulltext and one batched lei-records call, no fuzzy search', async () => {
     const { source, requested } = replay()
     await source.searchByName('Nordea Bank', 10)
