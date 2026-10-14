@@ -106,12 +106,8 @@ export async function saveFilingsAction(
       return { error: registerError?.message ?? 'Failed to register document', saved }
     }
 
-    const { data: approvedId, error: approveError } = await supabase.rpc('approve_filing_document', {
-      p_document_id: documentId,
-    })
-    console.log(`[saveFilings] ${filing.transactionId}: approve_filing_document →`, { approvedId, approveError })
-
-    if (approveError) return { error: approveError.message, saved }
+    // The filing now waits as 'pending'. An admin approves it separately (approveFilingAction),
+    // and with four-eyes on, not the person who saved it.
 
     saved.push(filing.transactionId)
   }
@@ -120,4 +116,28 @@ export async function saveFilingsAction(
   revalidatePath(`/dashboard/clients/${clientId}/filings`)
 
   return { saved }
+}
+
+export type ApproveFilingState = { error?: string; approved?: boolean }
+
+/** Approves a pending filing. The database enforces admin-only and the four-eyes rule. */
+export async function approveFilingAction(
+  _prev: ApproveFilingState,
+  formData: FormData,
+): Promise<ApproveFilingState> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const documentId = String(formData.get('document_id') ?? '').trim()
+  const clientId = String(formData.get('client_id') ?? '').trim()
+  if (!documentId || !clientId) return { error: 'Missing document' }
+
+  const { error } = await supabase.rpc('approve_filing_document', { p_document_id: documentId })
+  if (error) return { error: error.message }
+
+  revalidatePath(`/dashboard/clients/${clientId}`)
+  return { approved: true }
 }

@@ -10,6 +10,8 @@ import { fetchEntityCdd } from '@/lib/companies-house/fetch-entity-cdd'
 import { fetchAuthToken } from '@/lib/companies-house/kyc-search-client'
 import { walk } from '@/lib/ownership/walk'
 import { createKycSearchFetcher } from '@/lib/ownership/kyc-search-fetcher'
+import { getMembership } from '@/lib/entity-cdd/membership'
+import { canWrite } from '@/lib/entity-cdd/permissions'
 import { toEntityCddOwnership } from '@/lib/ownership/to-entity-cdd'
 
 export type FetchEntityCddState = { error?: string }
@@ -41,14 +43,10 @@ export async function fetchEntityCddAction(
     return { error: 'Entity CDD can only be fetched for entity clients' }
   }
 
-  const { data: membership } = await supabase
-    .from('firm_members')
-    .select('firm_id, role')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
+  // The client's firm, not "the" firm: a user in several firms has several memberships.
+  const membership = await getMembership(supabase, user.id, client.firm_id)
 
-  if (!membership || membership.role === 'read_only') {
+  if (!membership || !canWrite(membership.role)) {
     return { error: 'You do not have permission to do this' }
   }
 

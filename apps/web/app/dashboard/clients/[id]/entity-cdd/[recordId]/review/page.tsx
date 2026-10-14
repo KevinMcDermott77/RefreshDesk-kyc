@@ -2,6 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { EntityCddRecord } from '@/lib/types/entity-cdd'
 import { PSC_DATA_QUALITY_LABELS } from '@/lib/types/entity-cdd'
+import { getMembership } from '@/lib/entity-cdd/membership'
+import { ROLE_LABELS, reviewGate } from '@/lib/entity-cdd/permissions'
 import { ReviewEntityCddForm } from './review-form'
 import { OwnershipOrgChart } from './org-chart'
 
@@ -66,6 +68,16 @@ export default async function ReviewEntityCddPage({
     redirect(`/dashboard/clients/${id}`)
   }
 
+  // What this user may do with the record (the database enforces the same rules).
+  const membership = await getMembership(supabase, user.id, record.firm_id)
+  const { data: firm } = await supabase.from('firms').select('four_eyes').eq('id', record.firm_id).maybeSingle()
+  const gate = reviewGate({
+    role: membership?.role,
+    userId: user.id,
+    fetchedBy: record.fetched_by,
+    fourEyes: firm?.four_eyes ?? true,
+  })
+
   const profile = asRecord(record.company_profile)
   const registeredOffice = profile.registered_office_address
 
@@ -89,6 +101,9 @@ export default async function ReviewEntityCddPage({
             Company number {record.company_number} · Fetched{' '}
             {new Date(record.fetched_at).toLocaleDateString('en-GB')}
           </p>
+          {membership ? (
+            <p className="mt-1 text-xs text-[var(--muted)]">Your role: {ROLE_LABELS[membership.role] ?? membership.role}</p>
+          ) : null}
         </header>
 
         {/* Company details */}
@@ -243,7 +258,7 @@ export default async function ReviewEntityCddPage({
             Approving will save these company details to the client record and recalculate the
             refresh due date. Rejecting will discard this fetch — no client data will change.
           </p>
-          <ReviewEntityCddForm recordId={record.id} clientId={id} />
+          <ReviewEntityCddForm recordId={record.id} clientId={id} gate={gate} />
         </div>
 
         <footer className="mt-8">

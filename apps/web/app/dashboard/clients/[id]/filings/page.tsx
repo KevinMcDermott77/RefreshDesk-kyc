@@ -72,7 +72,7 @@ export default async function ClientFilingsPage({
           </h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
             Select filings to download from Companies House and save to this client&apos;s record.
-            Saved filings are stored as documents and approved automatically.
+            Saved filings are stored as documents and wait for an admin to approve them.
           </p>
         </header>
 
