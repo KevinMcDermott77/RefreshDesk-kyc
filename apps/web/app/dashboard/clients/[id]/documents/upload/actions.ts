@@ -3,10 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { buildStoragePath, uploadDocument } from '@/lib/supabase/storage'
+import { downloadDocument } from '@/lib/supabase/storage'
+import { getMembership } from '@/lib/entity-cdd/membership'
+import { canWrite } from '@/lib/entity-cdd/permissions'
+import { matchesMimeType, uploadBelongsTo } from '@/lib/entity-cdd/fetch-input'
+import { parseDocumentUploadInput } from '@/lib/documents/upload-input'
 import { extractDocument, PROMPT_VERSION } from '@/lib/claude/extract-document'
-import type { DocumentType } from '@/lib/types/documents'
-import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
+import { MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
 
 const MODEL_USED = 'claude-sonnet-4-20250514'
 
@@ -22,49 +25,35 @@ export async function uploadDocumentAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const clientId = String(formData.get('client_id') ?? '').trim()
-  const documentType = String(formData.get('document_type') ?? '').trim() as DocumentType
-  const file = formData.get('file') as File | null
+  // Only a client, a document type and the path of a file already in Storage come from the browser.
+  const parsed = parseDocumentUploadInput(formData)
+  if (!parsed.ok) return { error: parsed.error }
+  const { clientId, documentType, upload } = parsed.input
 
-  if (!clientId) return { error: 'Missing client ID' }
-  if (!['passport', 'proof_of_address', 'incorporation', 'source_of_funds'].includes(documentType)) {
-    return { error: 'Invalid document type' }
+  // The client's firm, not "the" firm: a user in several firms has several memberships.
+  const { data: client } = await supabase.from('clients').select('id, firm_id').eq('id', clientId).maybeSingle()
+  if (!client) return { error: 'Client not found' }
+  const membership = await getMembership(supabase, user.id, client.firm_id)
+  if (!membership) return { error: 'Not a member of this firm' }
+  if (!canWrite(membership.role)) return { error: 'You do not have permission to do this' }
+
+  if (!uploadBelongsTo(upload.path, membership.firm_id, clientId)) {
+    return { error: "The uploaded document is not in this client's folder" }
   }
-  if (!file || file.size === 0) return { error: 'No file selected' }
-  if (file.size > MAX_FILE_SIZE_BYTES) return { error: 'File exceeds 10 MB limit' }
-  if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
-    return { error: 'File must be PDF, JPEG, or PNG' }
-  }
-
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  // Get firm membership to build storage path
-  const { data: membership } = await supabase
-    .from('firm_members')
-    .select('firm_id')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
-
-  if (!membership) return { error: 'Not a member of any firm' }
-
-  // Generate a storage ID for the path (distinct from the DB document ID)
-  const storageId = crypto.randomUUID()
-  const storagePath = buildStoragePath(membership.firm_id, clientId, storageId, file.name)
-
-  // Upload to Supabase Storage
-  const { error: uploadError } = await uploadDocument(storagePath, buffer, file.type)
-  if (uploadError) return { error: `Upload failed: ${uploadError}` }
+  const buffer = await downloadDocument(upload.path)
+  if (!buffer) return { error: 'The uploaded document could not be found in storage' }
+  if (buffer.byteLength === 0 || buffer.byteLength > MAX_FILE_SIZE_BYTES) return { error: 'File exceeds 10 MB limit' }
+  if (!matchesMimeType(buffer, upload.type)) return { error: 'The uploaded file is not a valid PDF, JPEG or PNG' }
+  const storagePath = upload.path
 
   // Register document in DB
   const { data: documentId, error: registerError } = await supabase.rpc('register_document', {
     p_client_id: clientId,
     p_document_type: documentType,
     p_storage_path: storagePath,
-    p_file_name: file.name,
-    p_file_size_bytes: file.size,
-    p_mime_type: file.type,
+    p_file_name: upload.name,
+    p_file_size_bytes: buffer.byteLength,
+    p_mime_type: upload.type,
   })
 
   if (registerError || !documentId) {
@@ -74,7 +63,7 @@ export async function uploadDocumentAction(
   // Run Claude extraction
   let extractionOutput
   try {
-    extractionOutput = await extractDocument(buffer, file.type, documentType)
+    extractionOutput = await extractDocument(buffer, upload.type, documentType)
   } catch (err) {
     return {
       error: err instanceof Error ? `Extraction failed: ${err.message}` : 'Extraction failed',

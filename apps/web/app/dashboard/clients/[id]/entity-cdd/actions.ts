@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { buildStoragePath, uploadDocument } from '@/lib/supabase/storage'
-import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
+import { downloadDocument } from '@/lib/supabase/storage'
+import { MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
+import { COMPANY_NUMBER_PATTERN, matchesMimeType, parseFetchInput, uploadBelongsTo } from '@/lib/entity-cdd/fetch-input'
 import { extractCompanyNumber, PROMPT_VERSION } from '@/lib/claude/extract-company-number'
 import { fetchEntityCdd } from '@/lib/companies-house/fetch-entity-cdd'
 import { fetchAuthToken } from '@/lib/companies-house/kyc-search-client'
@@ -17,7 +18,6 @@ import { toEntityCddOwnership } from '@/lib/ownership/to-entity-cdd'
 export type FetchEntityCddState = { error?: string }
 
 const MODEL_USED = 'claude-sonnet-4-20250514'
-const COMPANY_NUMBER_PATTERN = /^([0-9]{8}|[A-Z]{2}[0-9]{6})$/
 
 export async function fetchEntityCddAction(
   _prev: FetchEntityCddState,
@@ -29,8 +29,10 @@ export async function fetchEntityCddAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const clientId = String(formData.get('client_id') ?? '').trim()
-  if (!clientId) return { error: 'Missing client ID' }
+  // Only a client, and a company number or the path of an uploaded document, come from the browser.
+  const parsed = parseFetchInput(formData)
+  if (!parsed.ok) return { error: parsed.error }
+  const { clientId, upload } = parsed.input
 
   const { data: client } = await supabase
     .from('clients')
@@ -50,37 +52,28 @@ export async function fetchEntityCddAction(
     return { error: 'You do not have permission to do this' }
   }
 
-  let companyNumber = String(formData.get('company_number') ?? '').trim().toUpperCase()
-  const file = formData.get('file') as File | null
+  let companyNumber = parsed.input.companyNumber
   let sourceDocumentId: string | null = null
   let extractionModelUsed: string | null = null
   let extractionPromptVersion: string | null = null
 
-  if (!companyNumber) {
-    if (!file || file.size === 0) {
-      return { error: 'Enter a company number or upload an incorporation document' }
+  if (!companyNumber && upload) {
+    // The browser uploaded the document straight to Storage; only its path reached this action.
+    if (!uploadBelongsTo(upload.path, membership.firm_id, clientId)) {
+      return { error: "The uploaded document is not in this client's folder" }
     }
-    if (file.size > MAX_FILE_SIZE_BYTES) return { error: 'File exceeds 10 MB limit' }
-    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
-      return { error: 'File must be PDF, JPEG, or PNG' }
-    }
-
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    const storageId = crypto.randomUUID()
-    const storagePath = buildStoragePath(membership.firm_id, clientId, storageId, file.name)
-
-    const { error: uploadError } = await uploadDocument(storagePath, buffer, file.type)
-    if (uploadError) return { error: `Upload failed: ${uploadError}` }
+    const buffer = await downloadDocument(upload.path)
+    if (!buffer) return { error: 'The uploaded document could not be found in storage' }
+    if (buffer.byteLength === 0 || buffer.byteLength > MAX_FILE_SIZE_BYTES) return { error: 'File exceeds 10 MB limit' }
+    if (!matchesMimeType(buffer, upload.type)) return { error: 'The uploaded file is not a valid PDF, JPEG or PNG' }
 
     const { data: documentId, error: registerError } = await supabase.rpc('register_document', {
       p_client_id: clientId,
       p_document_type: 'incorporation',
-      p_storage_path: storagePath,
-      p_file_name: file.name,
-      p_file_size_bytes: file.size,
-      p_mime_type: file.type,
+      p_storage_path: upload.path,
+      p_file_name: upload.name,
+      p_file_size_bytes: buffer.byteLength,
+      p_mime_type: upload.type,
     })
 
     if (registerError || !documentId) {
@@ -90,7 +83,7 @@ export async function fetchEntityCddAction(
 
     let extraction
     try {
-      extraction = await extractCompanyNumber(buffer, file.type)
+      extraction = await extractCompanyNumber(buffer, upload.type)
     } catch (err) {
       return {
         error: err instanceof Error ? `Extraction failed: ${err.message}` : 'Extraction failed',
