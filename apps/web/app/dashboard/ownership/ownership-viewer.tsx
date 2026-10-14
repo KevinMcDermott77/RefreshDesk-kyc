@@ -57,6 +57,18 @@ function ProfilePanel({ rows }: { rows: ProfileRow[] }) {
                 ))}
               </ul>
               {row.note ? <p className="mt-1 text-xs text-[var(--muted)]">{row.note}</p> : null}
+              {row.links?.length ? (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {row.links.map((link, index) => (
+                    <span key={link.url}>
+                      {index > 0 ? ' · ' : ''}
+                      <a href={link.url} target="_blank" rel="noreferrer" className="underline">
+                        {link.label}
+                      </a>
+                    </span>
+                  ))}
+                </p>
+              ) : null}
               {row.source || row.fetchedAt ? (
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   {row.source ? (

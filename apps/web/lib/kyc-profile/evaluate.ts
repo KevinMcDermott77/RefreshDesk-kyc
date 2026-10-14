@@ -6,11 +6,13 @@ import type { Evidence, GleifRecord, WalkResult } from '@/lib/ownership/types'
 export type Mark = 'PASS' | 'GAP' | 'INFO'
 
 export type ProfileRow = {
-  key: 'identity' | 'filings' | 'officers' | 'lei' | 'listing' | 'ownership' | 'not-covered'
+  key: 'identity' | 'filings' | 'charges' | 'officers' | 'lei' | 'listing' | 'ownership' | 'not-covered'
   label: string
   mark: Mark
   lines: string[]
   source?: { label: string; url: string }
+  /** Further links to the evidence, shown after the source. */
+  links?: { label: string; url: string }[]
   /** ISO timestamp the data was fetched. */
   fetchedAt?: string
   note?: string
@@ -125,6 +127,10 @@ function identityRow(input: ProfileInput): ProfileRow {
     mark: status === 'active' ? 'PASS' : 'GAP',
     lines,
     source: { label: 'Companies House', url: `${CH_COMPANY_URL}${number}` },
+    links: [
+      { label: 'Filing history', url: `${CH_COMPANY_URL}${number}/filing-history` },
+      { label: 'Incorporation documents', url: `${CH_COMPANY_URL}${number}/filing-history?category=incorporation` },
+    ],
     fetchedAt: input.fetchedAt.profile,
     ...(status === 'active' ? {} : { note: `Company status is ${status ?? 'unknown'}, not active.` }),
   }
@@ -141,6 +147,40 @@ function dueLine(label: string, section: unknown): { line: string; overdue: bool
     overdue: s.overdue,
     known: true,
   }
+}
+
+/**
+ * Charges and insolvency history, from the raw Companies House profile flags.
+ * Insolvency history is a GAP; charges alone are for information, with a link to read them.
+ */
+export function chargesRow(input: ProfileInput): ProfileRow {
+  const number = str(input.profile.company_number) ?? ''
+  const { has_charges: charges, has_insolvency_history: insolvency } = input.profile
+  const base = {
+    key: 'charges' as const,
+    label: 'Charges & insolvency',
+    source: { label: 'Companies House charges', url: `${CH_COMPANY_URL}${number}/charges` },
+    fetchedAt: input.fetchedAt.profile,
+  }
+
+  if (typeof charges !== 'boolean' && typeof insolvency !== 'boolean') {
+    return { ...base, mark: 'INFO', lines: ['Not provided by Companies House for this entity'] }
+  }
+
+  const lines = [
+    insolvency === true ? 'Insolvency history: yes' : insolvency === false ? 'Insolvency history: none' : 'Insolvency history: not provided',
+    charges === true ? 'Charges: yes, outstanding or satisfied charges are registered' : charges === false ? 'Charges: none' : 'Charges: not provided',
+  ]
+  if (insolvency === true) {
+    return {
+      ...base,
+      mark: 'GAP',
+      lines,
+      links: [{ label: 'Insolvency', url: `${CH_COMPANY_URL}${number}/insolvency` }],
+      note: 'The company has an insolvency history: review it before relying on this record.',
+    }
+  }
+  return { ...base, mark: charges === true ? 'INFO' : 'PASS', lines }
 }
 
 function filingsRow(input: ProfileInput): ProfileRow {
@@ -317,6 +357,7 @@ export function evaluateProfile(input: ProfileInput): ProfileRow[] {
   return [
     identityRow(input),
     filingsRow(input),
+    chargesRow(input),
     officersRow(input),
     leiRow(input),
     listingRow(input.listing, input.listingFetchedAt),
