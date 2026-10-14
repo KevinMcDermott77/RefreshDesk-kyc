@@ -23,10 +23,13 @@ begin;
 --    previously only checked active membership. read_only can no longer write. Reviewing
 --    (entity CDD records, document extractions) and approving saved filings need admin:
 --    admin is the reviewer, there is no separate reviewer role.
+--    Saving a filing is maker-checker: a member or admin saves it (status 'pending'); an admin
+--    approves it, and with four_eyes on, not the person who saved it.
 -- 2. adds entity_cdd_records.fetched_by, set by save_entity_cdd from auth.uid(), backfilled
 --    from the entity_cdd.fetched audit event.
--- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd. (review_extraction
---    and approve_filing_document have no four-eyes check: no preparer is recorded for them.)
+-- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd and
+--    approve_filing_document (client_documents.uploaded_by is the person who saved the filing).
+--    review_extraction has no four-eyes check: no preparer is recorded for extractions.
 -- 4. repairs is_admin_or_analyst_of_firm, which still looked for the 'analyst' role that Slice 6
 --    removed, so only admins could update or archive clients. Admins and members can again.
 --
@@ -47,6 +50,20 @@ alter table public.firms
 
 comment on column public.firms.four_eyes is
   'When true, the person who fetched an entity CDD record cannot approve it.';
+
+-- Saved filings wait for approval in a 'pending' state (members save, admins approve).
+-- client_documents.uploaded_by is NOT NULL, so the person who saved each filing is already known.
+alter table public.client_documents
+  drop constraint if exists client_documents_status_check;
+
+alter table public.client_documents
+  add constraint client_documents_status_check
+  check (status in ('uploaded', 'extracting', 'pending_review', 'approved', 'rejected', 'pending'));
+
+-- Filings saved before this change that never got approved are waiting for approval too.
+update public.client_documents
+set status = 'pending'
+where document_type = 'filing' and status = 'uploaded';
 
 -- Backfill fetched_by from the audit trail where the actor is known.
 update public.entity_cdd_records r
@@ -384,7 +401,8 @@ begin
     p_file_name,
     p_file_size_bytes,
     p_mime_type,
-    'uploaded'
+    -- A saved filing waits for an admin to approve it; other documents are just uploaded.
+    case when p_document_type = 'filing' then 'pending' else 'uploaded' end
   );
 
   insert into public.audit_events (
@@ -624,6 +642,7 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_document public.client_documents%rowtype;
+  v_four_eyes boolean;
 begin
   if v_user_id is null then
     raise exception 'approve_filing_document requires an authenticated user';
@@ -644,6 +663,20 @@ begin
 
   perform public.require_role(v_document.firm_id, array['admin']);
 
+  if v_document.status = 'approved' then
+    raise exception 'filing has already been approved';
+  end if;
+
+  -- Maker-checker: the person who saved the filing (uploaded_by) cannot approve it.
+  select four_eyes into v_four_eyes
+  from public.firms
+  where id = v_document.firm_id;
+
+  if v_four_eyes and v_document.uploaded_by = v_user_id then
+    raise exception 'Four-eyes rule: the person who saved this filing cannot approve it'
+      using errcode = '42501';
+  end if;
+
   update public.client_documents
   set status = 'approved'
   where id = p_document_id;
@@ -660,7 +693,9 @@ begin
     jsonb_build_object(
       'document_id', p_document_id,
       'client_id', v_document.client_id,
-      'file_name', v_document.file_name
+      'file_name', v_document.file_name,
+      'saved_by', v_document.uploaded_by,
+      'four_eyes', v_four_eyes
     )
   );
 
@@ -1156,11 +1191,28 @@ begin
 end;
 $$;
 
+-- Saves a filing as p_user (register_document) and remembers its id under p_key.
+create function pg_temp.save_filing(p_user text, p_key text) returns void language plpgsql as $$
+declare
+  v_val text;
+begin
+  v_val := pg_temp.expect_ok(
+    pg_temp.id(p_user),
+    format(
+      'select public.register_document(%L, ''filing'', %L, ''filing.pdf'', 1000, ''application/pdf'')::text',
+      pg_temp.id('client_entity'), 'x/' || p_key || '.pdf'
+    ),
+    p_key || ': ' || p_user || ' can save a filing'
+  );
+  insert into t_ids values (p_key, v_val::uuid);
+end;
+$$;
+
 -- ─── Fixtures (as the connecting role; none of this is real data) ─────────────
 
 insert into t_ids select n, gen_random_uuid() from unnest(array[
   'admin_a', 'admin_b', 'member', 'read_only', 'outsider', 'firm', 'other_firm',
-  'client_entity', 'client_edit', 'client_archive', 'doc_inc', 'doc_filing', 'ext_blocked', 'ext_ok'
+  'client_entity', 'client_edit', 'client_archive', 'doc_inc', 'ext_blocked', 'ext_ok'
 ]) as n;
 
 insert into auth.users (id, email)
@@ -1191,8 +1243,7 @@ values
 
 insert into public.client_documents (id, firm_id, client_id, uploaded_by, document_type, storage_path, file_name, file_size_bytes, mime_type, status)
 values
-  (pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'incorporation', 'x/inc.pdf', 'inc.pdf', 1, 'application/pdf', 'pending_review'),
-  (pg_temp.id('doc_filing'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'filing', 'x/filing.pdf', 'filing.pdf', 1, 'application/pdf', 'uploaded');
+  (pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'incorporation', 'x/inc.pdf', 'inc.pdf', 1, 'application/pdf', 'pending_review');
 
 insert into public.document_extractions (id, document_id, firm_id, client_id, model_used, prompt_version)
 values
@@ -1374,22 +1425,105 @@ select pg_temp.expect_ok(
   'an admin may review_extraction'
 );
 
+-- ─── Saving and approving filings (maker-checker) ─────────────────────────────
+
 select pg_temp.expect_error(
   pg_temp.id('read_only'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  format('select public.register_document(%L, ''filing'', ''x/ro.pdf'', ''ro.pdf'', 1000, ''application/pdf'')::text', pg_temp.id('client_entity')),
   'permission denied%',
-  'read_only is blocked from approve_filing_document'
+  'read_only cannot save a filing'
 );
+
+-- A member can save a filing, and it waits as 'pending'.
+select pg_temp.save_filing('member', 'fil_member');
+select pg_temp.expect_true(
+  (select status = 'pending' and uploaded_by = pg_temp.id('member') and document_type = 'filing'
+   from public.client_documents where id = pg_temp.id('fil_member')),
+  'a filing saved by a member is pending, with the member recorded as who saved it'
+);
+
 select pg_temp.expect_error(
   pg_temp.id('member'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
   'permission denied%',
-  'a member is blocked from approve_filing_document'
+  'a member cannot approve a filing, even one they saved'
 );
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  'permission denied%',
+  'read_only cannot approve a filing'
+);
+
+-- An admin can approve a filing a member saved.
 select pg_temp.expect_ok(
   pg_temp.id('admin_a'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
-  'an admin may approve_filing_document'
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  'an admin may approve a filing saved by a member'
+);
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('fil_member')) = 'approved',
+  'the approved filing is now approved'
+);
+select pg_temp.expect_error(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  '%already been approved%',
+  'a filing cannot be approved twice'
+);
+
+-- Four-eyes on: an admin cannot approve the filing they saved themselves.
+select pg_temp.save_filing('admin_a', 'fil_admin');
+select pg_temp.expect_error(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin')),
+  'Four-eyes rule: the person who saved this filing cannot approve it',
+  'an admin cannot approve their own filing with four_eyes on'
+);
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('fil_admin')) = 'pending',
+  'the blocked approval left the filing pending'
+);
+
+-- A different admin can.
+select pg_temp.expect_ok(
+  pg_temp.id('admin_b'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin')),
+  'a different admin may approve it'
+);
+select pg_temp.expect_true(
+  (select (payload ->> 'four_eyes')::boolean and payload ->> 'saved_by' = pg_temp.id('admin_a')::text
+   from public.audit_events
+   where event_type = 'filing.saved' and (payload ->> 'document_id')::uuid = pg_temp.id('fil_admin')),
+  'the approval audit event records who saved the filing and that four_eyes was on'
+);
+
+-- Four-eyes off: an admin can approve their own.
+update public.firms set four_eyes = false where id = pg_temp.id('firm');
+select pg_temp.save_filing('admin_a', 'fil_admin_off');
+select pg_temp.expect_ok(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin_off')),
+  'an admin may approve their own filing with four_eyes off'
+);
+update public.firms set four_eyes = true where id = pg_temp.id('firm');
+
+-- Other documents are unaffected: they are still registered as 'uploaded'.
+do $$
+declare
+  v_val text;
+begin
+  v_val := pg_temp.expect_ok(
+    pg_temp.id('member'),
+    format('select public.register_document(%L, ''passport'', ''x/p.pdf'', ''p.pdf'', 1000, ''application/pdf'')::text', pg_temp.id('client_entity')),
+    'a member can register an ordinary document'
+  );
+  insert into t_ids values ('doc_passport', v_val::uuid);
+end;
+$$;
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('doc_passport')) = 'uploaded',
+  'ordinary documents still start as uploaded'
 );
 
 -- ─── Other write RPCs ─────────────────────────────────────────────────────────

@@ -7,10 +7,13 @@
 --    previously only checked active membership. read_only can no longer write. Reviewing
 --    (entity CDD records, document extractions) and approving saved filings need admin:
 --    admin is the reviewer, there is no separate reviewer role.
+--    Saving a filing is maker-checker: a member or admin saves it (status 'pending'); an admin
+--    approves it, and with four_eyes on, not the person who saved it.
 -- 2. adds entity_cdd_records.fetched_by, set by save_entity_cdd from auth.uid(), backfilled
 --    from the entity_cdd.fetched audit event.
--- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd. (review_extraction
---    and approve_filing_document have no four-eyes check: no preparer is recorded for them.)
+-- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd and
+--    approve_filing_document (client_documents.uploaded_by is the person who saved the filing).
+--    review_extraction has no four-eyes check: no preparer is recorded for extractions.
 -- 4. repairs is_admin_or_analyst_of_firm, which still looked for the 'analyst' role that Slice 6
 --    removed, so only admins could update or archive clients. Admins and members can again.
 --
@@ -31,6 +34,20 @@ alter table public.firms
 
 comment on column public.firms.four_eyes is
   'When true, the person who fetched an entity CDD record cannot approve it.';
+
+-- Saved filings wait for approval in a 'pending' state (members save, admins approve).
+-- client_documents.uploaded_by is NOT NULL, so the person who saved each filing is already known.
+alter table public.client_documents
+  drop constraint if exists client_documents_status_check;
+
+alter table public.client_documents
+  add constraint client_documents_status_check
+  check (status in ('uploaded', 'extracting', 'pending_review', 'approved', 'rejected', 'pending'));
+
+-- Filings saved before this change that never got approved are waiting for approval too.
+update public.client_documents
+set status = 'pending'
+where document_type = 'filing' and status = 'uploaded';
 
 -- Backfill fetched_by from the audit trail where the actor is known.
 update public.entity_cdd_records r
@@ -368,7 +385,8 @@ begin
     p_file_name,
     p_file_size_bytes,
     p_mime_type,
-    'uploaded'
+    -- A saved filing waits for an admin to approve it; other documents are just uploaded.
+    case when p_document_type = 'filing' then 'pending' else 'uploaded' end
   );
 
   insert into public.audit_events (
@@ -608,6 +626,7 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_document public.client_documents%rowtype;
+  v_four_eyes boolean;
 begin
   if v_user_id is null then
     raise exception 'approve_filing_document requires an authenticated user';
@@ -628,6 +647,20 @@ begin
 
   perform public.require_role(v_document.firm_id, array['admin']);
 
+  if v_document.status = 'approved' then
+    raise exception 'filing has already been approved';
+  end if;
+
+  -- Maker-checker: the person who saved the filing (uploaded_by) cannot approve it.
+  select four_eyes into v_four_eyes
+  from public.firms
+  where id = v_document.firm_id;
+
+  if v_four_eyes and v_document.uploaded_by = v_user_id then
+    raise exception 'Four-eyes rule: the person who saved this filing cannot approve it'
+      using errcode = '42501';
+  end if;
+
   update public.client_documents
   set status = 'approved'
   where id = p_document_id;
@@ -644,7 +677,9 @@ begin
     jsonb_build_object(
       'document_id', p_document_id,
       'client_id', v_document.client_id,
-      'file_name', v_document.file_name
+      'file_name', v_document.file_name,
+      'saved_by', v_document.uploaded_by,
+      'four_eyes', v_four_eyes
     )
   );
 

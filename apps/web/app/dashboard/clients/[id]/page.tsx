@@ -10,6 +10,8 @@ import { PSC_DATA_QUALITY_LABELS } from '@/lib/types/entity-cdd'
 import { fetchFilings } from '@/lib/companies-house/fetch-filings'
 import { filingLabel, isPriorityFiling } from '@/lib/types/filings'
 import { archiveClientAction } from '../actions'
+import { canReview as roleCanReview, filingApprovalGate } from '@/lib/entity-cdd/permissions'
+import { ApproveFilingButton } from './_components/ApproveFilingButton'
 import { AuditTimeline } from './_components/AuditTimeline'
 import type { AuditEventRow } from './_components/AuditEvent'
 
@@ -23,6 +25,7 @@ const DOC_STATUS_STYLE: Record<string, string> = {
   uploaded: 'text-[var(--muted)]',
   extracting: 'text-amber-700',
   pending_review: 'text-amber-700 font-semibold',
+  pending: 'text-amber-700 font-semibold',
   approved: 'text-emerald-700',
   rejected: 'text-red-700',
 }
@@ -31,6 +34,7 @@ const DOC_STATUS_ICON: Record<string, string> = {
   uploaded: '○',
   extracting: '◌',
   pending_review: '●',
+  pending: '●',
   approved: '✓',
   rejected: '✗',
 }
@@ -140,7 +144,10 @@ export default async function ClientDetailPage({
   const role = membership?.role ?? 'read_only'
   const canWrite = role !== 'read_only'
   const canArchive = role === 'admin'
-  const canReview = role !== 'read_only'
+  // Admin is the reviewer: members can save and upload but not approve or review.
+  const canReview = roleCanReview(role)
+  const { data: firmSettings } = await supabase.from('firms').select('four_eyes').eq('id', client.firm_id).maybeSingle()
+  const fourEyes = firmSettings?.four_eyes ?? true
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -324,6 +331,18 @@ export default async function ClientDetailPage({
                     <span className={`text-sm ${DOC_STATUS_STYLE[doc.status] ?? ''}`}>
                       {DOC_STATUS_ICON[doc.status]} {DOCUMENT_STATUS_LABELS[doc.status]}
                     </span>
+                    {doc.status === 'pending' &&
+                      (() => {
+                        const gate = filingApprovalGate({ role, userId: user.id, savedBy: doc.uploaded_by, fourEyes })
+                        return gate.show ? (
+                          <ApproveFilingButton
+                            documentId={doc.id}
+                            clientId={id}
+                            canApprove={gate.canApprove}
+                            reason={gate.reason}
+                          />
+                        ) : null
+                      })()}
                     {doc.status === 'pending_review' && canReview && (
                       <Link
                         href={`/dashboard/clients/${id}/documents/${doc.id}/review`}

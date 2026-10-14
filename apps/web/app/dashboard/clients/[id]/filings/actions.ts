@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 import { buildStoragePath, uploadDocument } from '@/lib/supabase/storage'
 import { fetchFilings, fetchFilingDocument } from '@/lib/companies-house/fetch-filings'
 import { filingLabel } from '@/lib/types/filings'
-import { canReview } from '@/lib/entity-cdd/permissions'
 
 export type SaveFilingsState = { error?: string; saved?: string[] }
 
@@ -44,10 +43,6 @@ export async function saveFilingsAction(
 
   if (!membership || membership.role === 'read_only') {
     return { error: 'You do not have permission to do this' }
-  }
-  // Saving a filing approves it in the same step, and approving needs an admin (reviewer).
-  if (!canReview(membership.role)) {
-    return { error: 'Only an admin (reviewer) can save filings' }
   }
 
   const { data: approvedCdd } = await supabase
@@ -111,12 +106,8 @@ export async function saveFilingsAction(
       return { error: registerError?.message ?? 'Failed to register document', saved }
     }
 
-    const { data: approvedId, error: approveError } = await supabase.rpc('approve_filing_document', {
-      p_document_id: documentId,
-    })
-    console.log(`[saveFilings] ${filing.transactionId}: approve_filing_document →`, { approvedId, approveError })
-
-    if (approveError) return { error: approveError.message, saved }
+    // The filing now waits as 'pending'. An admin approves it separately (approveFilingAction),
+    // and with four-eyes on, not the person who saved it.
 
     saved.push(filing.transactionId)
   }
@@ -125,4 +116,28 @@ export async function saveFilingsAction(
   revalidatePath(`/dashboard/clients/${clientId}/filings`)
 
   return { saved }
+}
+
+export type ApproveFilingState = { error?: string; approved?: boolean }
+
+/** Approves a pending filing. The database enforces admin-only and the four-eyes rule. */
+export async function approveFilingAction(
+  _prev: ApproveFilingState,
+  formData: FormData,
+): Promise<ApproveFilingState> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const documentId = String(formData.get('document_id') ?? '').trim()
+  const clientId = String(formData.get('client_id') ?? '').trim()
+  if (!documentId || !clientId) return { error: 'Missing document' }
+
+  const { error } = await supabase.rpc('approve_filing_document', { p_document_id: documentId })
+  if (error) return { error: error.message }
+
+  revalidatePath(`/dashboard/clients/${clientId}`)
+  return { approved: true }
 }

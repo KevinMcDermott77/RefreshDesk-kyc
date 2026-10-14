@@ -117,11 +117,28 @@ begin
 end;
 $$;
 
+-- Saves a filing as p_user (register_document) and remembers its id under p_key.
+create function pg_temp.save_filing(p_user text, p_key text) returns void language plpgsql as $$
+declare
+  v_val text;
+begin
+  v_val := pg_temp.expect_ok(
+    pg_temp.id(p_user),
+    format(
+      'select public.register_document(%L, ''filing'', %L, ''filing.pdf'', 1000, ''application/pdf'')::text',
+      pg_temp.id('client_entity'), 'x/' || p_key || '.pdf'
+    ),
+    p_key || ': ' || p_user || ' can save a filing'
+  );
+  insert into t_ids values (p_key, v_val::uuid);
+end;
+$$;
+
 -- ─── Fixtures (as the connecting role; none of this is real data) ─────────────
 
 insert into t_ids select n, gen_random_uuid() from unnest(array[
   'admin_a', 'admin_b', 'member', 'read_only', 'outsider', 'firm', 'other_firm',
-  'client_entity', 'client_edit', 'client_archive', 'doc_inc', 'doc_filing', 'ext_blocked', 'ext_ok'
+  'client_entity', 'client_edit', 'client_archive', 'doc_inc', 'ext_blocked', 'ext_ok'
 ]) as n;
 
 insert into auth.users (id, email)
@@ -152,8 +169,7 @@ values
 
 insert into public.client_documents (id, firm_id, client_id, uploaded_by, document_type, storage_path, file_name, file_size_bytes, mime_type, status)
 values
-  (pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'incorporation', 'x/inc.pdf', 'inc.pdf', 1, 'application/pdf', 'pending_review'),
-  (pg_temp.id('doc_filing'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'filing', 'x/filing.pdf', 'filing.pdf', 1, 'application/pdf', 'uploaded');
+  (pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'incorporation', 'x/inc.pdf', 'inc.pdf', 1, 'application/pdf', 'pending_review');
 
 insert into public.document_extractions (id, document_id, firm_id, client_id, model_used, prompt_version)
 values
@@ -335,22 +351,105 @@ select pg_temp.expect_ok(
   'an admin may review_extraction'
 );
 
+-- ─── Saving and approving filings (maker-checker) ─────────────────────────────
+
 select pg_temp.expect_error(
   pg_temp.id('read_only'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  format('select public.register_document(%L, ''filing'', ''x/ro.pdf'', ''ro.pdf'', 1000, ''application/pdf'')::text', pg_temp.id('client_entity')),
   'permission denied%',
-  'read_only is blocked from approve_filing_document'
+  'read_only cannot save a filing'
 );
+
+-- A member can save a filing, and it waits as 'pending'.
+select pg_temp.save_filing('member', 'fil_member');
+select pg_temp.expect_true(
+  (select status = 'pending' and uploaded_by = pg_temp.id('member') and document_type = 'filing'
+   from public.client_documents where id = pg_temp.id('fil_member')),
+  'a filing saved by a member is pending, with the member recorded as who saved it'
+);
+
 select pg_temp.expect_error(
   pg_temp.id('member'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
   'permission denied%',
-  'a member is blocked from approve_filing_document'
+  'a member cannot approve a filing, even one they saved'
 );
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  'permission denied%',
+  'read_only cannot approve a filing'
+);
+
+-- An admin can approve a filing a member saved.
 select pg_temp.expect_ok(
   pg_temp.id('admin_a'),
-  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
-  'an admin may approve_filing_document'
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  'an admin may approve a filing saved by a member'
+);
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('fil_member')) = 'approved',
+  'the approved filing is now approved'
+);
+select pg_temp.expect_error(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_member')),
+  '%already been approved%',
+  'a filing cannot be approved twice'
+);
+
+-- Four-eyes on: an admin cannot approve the filing they saved themselves.
+select pg_temp.save_filing('admin_a', 'fil_admin');
+select pg_temp.expect_error(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin')),
+  'Four-eyes rule: the person who saved this filing cannot approve it',
+  'an admin cannot approve their own filing with four_eyes on'
+);
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('fil_admin')) = 'pending',
+  'the blocked approval left the filing pending'
+);
+
+-- A different admin can.
+select pg_temp.expect_ok(
+  pg_temp.id('admin_b'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin')),
+  'a different admin may approve it'
+);
+select pg_temp.expect_true(
+  (select (payload ->> 'four_eyes')::boolean and payload ->> 'saved_by' = pg_temp.id('admin_a')::text
+   from public.audit_events
+   where event_type = 'filing.saved' and (payload ->> 'document_id')::uuid = pg_temp.id('fil_admin')),
+  'the approval audit event records who saved the filing and that four_eyes was on'
+);
+
+-- Four-eyes off: an admin can approve their own.
+update public.firms set four_eyes = false where id = pg_temp.id('firm');
+select pg_temp.save_filing('admin_a', 'fil_admin_off');
+select pg_temp.expect_ok(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('fil_admin_off')),
+  'an admin may approve their own filing with four_eyes off'
+);
+update public.firms set four_eyes = true where id = pg_temp.id('firm');
+
+-- Other documents are unaffected: they are still registered as 'uploaded'.
+do $$
+declare
+  v_val text;
+begin
+  v_val := pg_temp.expect_ok(
+    pg_temp.id('member'),
+    format('select public.register_document(%L, ''passport'', ''x/p.pdf'', ''p.pdf'', 1000, ''application/pdf'')::text', pg_temp.id('client_entity')),
+    'a member can register an ordinary document'
+  );
+  insert into t_ids values ('doc_passport', v_val::uuid);
+end;
+$$;
+select pg_temp.expect_true(
+  (select status from public.client_documents where id = pg_temp.id('doc_passport')) = 'uploaded',
+  'ordinary documents still start as uploaded'
 );
 
 -- ─── Other write RPCs ─────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 export type DocumentType = 'passport' | 'proof_of_address' | 'incorporation' | 'source_of_funds' | 'filing'
 
-export type DocumentStatus = 'uploaded' | 'extracting' | 'pending_review' | 'approved' | 'rejected'
+export type DocumentStatus = 'uploaded' | 'extracting' | 'pending_review' | 'pending' | 'approved' | 'rejected'
 
 export type ExtractionStatus = 'pending_review' | 'approved' | 'rejected'
 
@@ -94,6 +94,7 @@ export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   uploaded: 'Uploaded',
   extracting: 'Extracting',
   pending_review: 'Pending review',
+  pending: 'Pending approval',
   approved: 'Approved',
   rejected: 'Rejected',
 }

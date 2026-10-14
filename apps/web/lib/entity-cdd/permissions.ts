@@ -26,6 +26,30 @@ export function canReview(role: string | null | undefined): boolean {
   return !!role && (REVIEW_ROLES as readonly string[]).includes(role)
 }
 
+export const FILING_FOUR_EYES_MESSAGE = 'Four-eyes rule: the person who saved this filing cannot approve it'
+
+export type FilingApprovalGate = {
+  /** Show the Approve button at all: only admins see it. */
+  show: boolean
+  canApprove: boolean
+  reason?: string
+}
+
+/** Whether this user may approve a saved filing (maker-checker on the person who saved it). */
+export function filingApprovalGate(input: {
+  role: string | null | undefined
+  userId: string
+  /** client_documents.uploaded_by: who saved the filing. */
+  savedBy: string
+  fourEyes: boolean
+}): FilingApprovalGate {
+  if (!canReview(input.role)) return { show: false, canApprove: false }
+  if (input.fourEyes && input.savedBy === input.userId) {
+    return { show: true, canApprove: false, reason: FILING_FOUR_EYES_MESSAGE + '. Ask another admin to approve it.' }
+  }
+  return { show: true, canApprove: true }
+}
+
 export type ReviewGate = {
   canApprove: boolean
   canReject: boolean
