@@ -1,17 +1,10 @@
 import { createClient } from './server'
+import { DOCUMENT_BUCKET, buildStoragePath } from './storage-path'
 
-const BUCKET = 'kyc-documents'
+export { buildStoragePath }
+
+const BUCKET = DOCUMENT_BUCKET
 const SIGNED_URL_EXPIRY_SECONDS = 3600
-
-export function buildStoragePath(
-  firmId: string,
-  clientId: string,
-  documentId: string,
-  fileName: string,
-): string {
-  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-  return `${firmId}/${clientId}/${documentId}/${safeName}`
-}
 
 export async function uploadDocument(
   path: string,

@@ -51,7 +51,7 @@ export default async function EntityCddFetchPage({
         </header>
 
         <div className="mt-8">
-          <FetchEntityCddForm clientId={id} />
+          <FetchEntityCddForm clientId={id} firmId={client.firm_id} />
         </div>
 
         <footer className="mt-8">
