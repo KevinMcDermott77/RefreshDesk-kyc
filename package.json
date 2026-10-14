@@ -8,6 +8,11 @@
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
-    "lint": "npm run lint -w apps/web"
+    "lint": "npm run lint -w apps/web",
+    "dryrun:slice0b": "node scripts/run-dryrun.cjs",
+    "test:scripts": "node --test scripts/sql-split.test.cjs"
+  },
+  "devDependencies": {
+    "pg": "^8.23.1"
   }
 }

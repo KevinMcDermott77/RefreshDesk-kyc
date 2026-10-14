@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { ROLE_LABELS } from '@/lib/entity-cdd/permissions'
 import {
   deactivateJoinCodeAction,
   generateJoinCodeAction,
@@ -32,11 +33,6 @@ type Props = {
   atMemberLimit: boolean
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'admin',
-  member: 'member',
-  read_only: 'read_only',
-}
 
 function MemberRow({ member, currentUserId, isLastAdmin }: { member: Member; currentUserId: string; isLastAdmin: boolean }) {
   const [roleState, roleAction, rolePending] = useActionState(updateMemberRoleAction, {})
@@ -61,9 +57,9 @@ function MemberRow({ member, currentUserId, isLastAdmin }: { member: Member; cur
               defaultValue={member.role}
               className="border border-[var(--line)] bg-white px-2 py-1 text-xs"
             >
-              <option value="admin">admin</option>
-              <option value="member">member</option>
-              <option value="read_only">read_only</option>
+              <option value="admin">{ROLE_LABELS.admin}</option>
+              <option value="member">{ROLE_LABELS.member}</option>
+              <option value="read_only">{ROLE_LABELS.read_only}</option>
             </select>
             <button
               type="submit"

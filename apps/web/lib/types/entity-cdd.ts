@@ -32,6 +32,8 @@ export type EntityCddRecord = {
   reviewed_at: string | null
   reviewer_notes: string | null
   fetched_at: string
+  /** User who fetched the record; null for records from before it was tracked. */
+  fetched_by: string | null
   created_at: string
 }
 
