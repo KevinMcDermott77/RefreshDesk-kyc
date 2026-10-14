@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { upsertClientEmbedding } from '@/lib/search/upsert-client-embedding'
 import { upsertEntityCddEmbedding } from '@/lib/search/upsert-entity-cdd-embedding'
 import type { Client } from '@/lib/types/clients'
+import { embedAfterApproval } from '@/lib/entity-cdd/embed-after-approval'
 
 export type ReviewEntityCddState = { error?: string }
 
@@ -37,9 +38,22 @@ export async function reviewEntityCddAction(
   if (error) return { error: error.message }
 
   if (decision === 'approved') {
+    // The approval has committed. Embedding is a convenience for search: if it fails the
+    // reviewer still sees the approval succeed, and the failure is audited.
     const { data: client } = await supabase.from('clients').select('*').eq('id', clientId).single()
-    if (client) await upsertClientEmbedding(client as Client)
-    await upsertEntityCddEmbedding(recordId)
+    if (client) {
+      await embedAfterApproval({
+        supabase,
+        firmId: (client as Client).firm_id,
+        clientId,
+        recordId,
+        userId: user.id,
+        embed: async () => {
+          await upsertClientEmbedding(client as Client)
+          await upsertEntityCddEmbedding(recordId)
+        },
+      })
+    }
   }
 
   revalidatePath(`/dashboard/clients/${clientId}`)

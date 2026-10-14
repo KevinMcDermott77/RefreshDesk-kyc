@@ -1,14 +1,16 @@
 'use client'
 
 import { useActionState } from 'react'
+import type { ReviewGate } from '@/lib/entity-cdd/permissions'
 import { reviewEntityCddAction } from './actions'
 
 type Props = {
   recordId: string
   clientId: string
+  gate: ReviewGate
 }
 
-export function ReviewEntityCddForm({ recordId, clientId }: Props) {
+export function ReviewEntityCddForm({ recordId, clientId, gate }: Props) {
   const [state, dispatch, pending] = useActionState(reviewEntityCddAction, {})
 
   return (
@@ -26,6 +28,12 @@ export function ReviewEntityCddForm({ recordId, clientId }: Props) {
         />
       </label>
 
+      {gate.reason && (
+        <p role="note" className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {gate.reason}
+        </p>
+      )}
+
       {state.error && (
         <p className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {state.error}
@@ -37,7 +45,8 @@ export function ReviewEntityCddForm({ recordId, clientId }: Props) {
           type="submit"
           name="decision"
           value="approved"
-          disabled={pending}
+          disabled={pending || !gate.canApprove}
+          title={gate.canApprove ? undefined : gate.reason}
           className="bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
         >
           {pending ? 'Saving…' : 'Approve'}
@@ -46,7 +55,8 @@ export function ReviewEntityCddForm({ recordId, clientId }: Props) {
           type="submit"
           name="decision"
           value="rejected"
-          disabled={pending}
+          disabled={pending || !gate.canReject}
+          title={gate.canReject ? undefined : gate.reason}
           className="border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-800 transition hover:bg-red-100 disabled:opacity-60"
         >
           {pending ? 'Saving…' : 'Reject'}

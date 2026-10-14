@@ -8,3 +8,13 @@
 - `audit_events` is append-only. The migration installs `audit_events_prevent_update` and `audit_events_prevent_delete` triggers, both of which raise for every role before mutation.
 - `firms.retention_days` defaults to 2555 days and is documented against Money Laundering Regulations 2017, regulation 40.
 - Slice 4 portal work is intentionally deferred and will live in `apps/portal/`, not inside `apps/web/`, because it has a separate magic-link auth model and can run on a separate domain.
+
+## Slice 0b: permissions in the database
+
+- `public.require_role(firm_id, roles[])` is called at the top of every write RPC that used to check only active membership. `read_only` can no longer write; `review_entity_cdd` needs `admin` or `reviewer` (`reviewer` is not an assignable role yet).
+- `entity_cdd_records.fetched_by` is set by `save_entity_cdd`; `firms.four_eyes` (default true) stops the fetcher approving their own record.
+- `supabase/tests/permissions.test.sql` checks all of this inside one transaction that is rolled back. Run it against a database that has the migrations applied:
+
+  ```
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/permissions.test.sql
+  ```
