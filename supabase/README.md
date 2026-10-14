@@ -41,7 +41,7 @@ What it does:
 1. Prints whether the migration is already applied (`require_role`, `firms.four_eyes`,
    `entity_cdd_records.fetched_by`). If it is, it stops without running anything.
 2. `BEGIN`, then `supabase/migrations/20261014000000_slice0b_permissions.sql` and
-   `supabase/tests/permissions.test.sql` (read from disk, one statement at a time), printing each
+   the test files (read from disk, one statement at a time; the defaults are `supabase/tests/helpers.sql` then `supabase/tests/permissions.test.sql`), printing each
    `NOTICE` (`PASS: ...`, then `ALL PERMISSION TESTS PASSED`) as it arrives.
 3. `ROLLBACK` in a `finally`, even on error. On an error it prints the message, code, position and the
    file and line it maps to.
@@ -53,3 +53,23 @@ password and database name are scrubbed from any error text.
 
 The splitter it uses has its own tests: `npm run test:scripts`. `permissions.dryrun.sql` (from
 `node supabase/tests/build-dryrun.cjs`) is still generated for use with `psql`, but is not needed by the script.
+
+## Slice 6: refresh packs
+
+`supabase/migrations/20261015000000_slice6_refresh_packs.sql` (needs Slice 0b: `require_role`, `firms.four_eyes`).
+
+- `refresh_packs` holds a saved, unchangeable snapshot of an ownership run and its SHA-256 fingerprint. A trigger refuses any change to the subject, policy, snapshot, fingerprint, firm, creator or creation time; the status can only move draft → submitted → approved or rejected, and a reviewed pack cannot change at all.
+- Rows are written only by `create_refresh_pack` (member or admin), `submit_refresh_pack` (its creator), and `approve_refresh_pack` / `reject_refresh_pack` (admin only; with `firms.four_eyes` on, the creator cannot approve; a pack can be reviewed once; rejecting needs a note). Firm members, read_only included, can read their firm's packs.
+- Snapshots hold individuals as initials only; a check constraint refuses personal-data keys (`date_of_birth`, `nationality`, `country_of_residence`, `occupation`).
+- The app signs each snapshot with `PACK_SIGNING_SECRET` when it builds it, and refuses to save one that was changed or is over an hour old.
+
+Dry-run it, with its tests, before applying anything (Slice 0b must be listed too unless it is already applied):
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+  --migration supabase/migrations/20261014000000_slice0b_permissions.sql \
+  --migration supabase/migrations/20261015000000_slice6_refresh_packs.sql \
+  --tests supabase/tests/helpers.sql --tests supabase/tests/refresh_packs.test.sql
+```
+
+The SQL tests share `supabase/tests/helpers.sql`; `permissions.test.sql` (Slice 0b) and `refresh_packs.test.sql` (Slice 6) each need it run first.

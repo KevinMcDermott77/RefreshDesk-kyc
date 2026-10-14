@@ -1,4 +1,5 @@
 import { unzipSync } from 'fflate'
+import { scrubPath, type SourceLog, type SourceLogEntry } from '@/lib/packs/source-log'
 import Papa from 'papaparse'
 import {
   FIRDS_URL,
@@ -129,17 +130,36 @@ type Options = {
   minGapMs?: number
 }
 
+export type TerminalLookupsWithLog = TerminalLookups & {
+  /** The same lookups and caches, recording each register fetch (or cache hit) in a refresh pack's source log. */
+  withLog(log: SourceLog | undefined): TerminalLookups
+}
+
+type Note = (entry: Omit<SourceLogEntry, 'cached'>) => void
+
 /** Cached lookups against the public registers. In-memory; one instance per process. */
-export function createTerminalLookups(options: Options = {}): TerminalLookups {
+export function createTerminalLookups(options: Options = {}): TerminalLookupsWithLog {
   const { fetchImpl = fetch, now = Date.now, secUserAgent = process.env.SEC_USER_AGENT, minGapMs = 250 } = options
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
 
-  const cache = new Map<string, { value: Promise<unknown>; expires: number }>()
-  function memo<T>(key: string, ttl: number, load: () => Promise<T>): Promise<T> {
+  // Each cached value keeps the source-log entries of the fetches behind it, so a run served from
+  // the cache still lists the registers it relied on (marked cached, with the original fetch time).
+  const cache = new Map<string, { value: Promise<unknown>; entries: SourceLogEntry[]; expires: number }>()
+  function memo<T>(key: string, ttl: number, log: SourceLog | undefined, load: (note: Note) => Promise<T>): Promise<T> {
     const hit = cache.get(key)
-    if (hit && hit.expires > now()) return hit.value as Promise<T>
-    const value = load()
-    cache.set(key, { value, expires: now() + ttl })
+    if (hit && hit.expires > now()) {
+      return (hit.value as Promise<T>).then((value) => {
+        for (const entry of hit.entries) log?.record({ ...entry, cached: true })
+        return value
+      })
+    }
+    const entries: SourceLogEntry[] = []
+    const note: Note = (entry) => {
+      entries.push(entry)
+      log?.record(entry)
+    }
+    const value = load(note)
+    cache.set(key, { value, entries, expires: now() + ttl })
     // A failed or empty load is not remembered.
     value.then(
       (v) => v === null && cache.delete(key),
@@ -165,9 +185,26 @@ export function createTerminalLookups(options: Options = {}): TerminalLookups {
   }
 
   const userAgent = 'RefreshDesk ownership checks'
-  async function getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
+
+  /** fetch with the request noted in the source log, whatever the outcome. */
+  async function fetched(url: string, register: string, note: Note, init: RequestInit): Promise<Response> {
+    const fetchedAt = new Date(now()).toISOString()
+    try {
+      const response = await fetchImpl(url, init)
+      note({ register, path: scrubPath(url), fetchedAt, status: response.status })
+      return response
+    } catch (error) {
+      note({ register, path: scrubPath(url), fetchedAt, status: 0 })
+      throw error
+    }
+  }
+
+  async function getJson(url: string, register: string, note: Note, headers: Record<string, string> = {}): Promise<unknown> {
     return polite(url, async () => {
-      const response = await fetchImpl(url, { headers: { accept: 'application/json', 'user-agent': userAgent, ...headers }, signal: AbortSignal.timeout(20_000) })
+      const response = await fetched(url, register, note, {
+        headers: { accept: 'application/json', 'user-agent': userAgent, ...headers },
+        signal: AbortSignal.timeout(20_000),
+      })
       if (!response.ok) throw new Error(`request failed (${response.status}): ${url.split('?')[0]}`)
       return response.json()
     })
@@ -185,85 +222,103 @@ export function createTerminalLookups(options: Options = {}): TerminalLookups {
     return value
   }
 
-  return {
-    now: () => new Date(now()),
+  function build(log: SourceLog | undefined): TerminalLookups {
+    return {
+      now: () => new Date(now()),
 
-    firdsEquities: async (raw) => {
-      const lei = leiOrThrow(raw)
-      return memo(`firds:${lei}`, DAY_MS, async () =>
-        parseFirds(
-          await getJson(
-            solr(FIRDS_URL, {
-              q: `lei:${lei} AND gnr_cfi_code:ES* AND latest_received_flag:1 AND -status:TERM`,
-              rows: '200',
-              fl: 'isin,mic,gnr_cfi_code,gnr_full_name,status,latest_received_flag,mrkt_trdng_start_date,mrkt_trdng_trmination_date',
-              wt: 'json',
-            }),
+      firdsEquities: async (raw) => {
+        const lei = leiOrThrow(raw)
+        return memo(`firds:${lei}`, DAY_MS, log, async (note) =>
+          parseFirds(
+            await getJson(
+              solr(FIRDS_URL, {
+                q: `lei:${lei} AND gnr_cfi_code:ES* AND latest_received_flag:1 AND -status:TERM`,
+                rows: '200',
+                fl: 'isin,mic,gnr_cfi_code,gnr_full_name,status,latest_received_flag,mrkt_trdng_start_date,mrkt_trdng_trmination_date',
+                wt: 'json',
+              }),
+              'ESMA FIRDS',
+              note,
+            ),
+          ),
+        )
+      },
+
+      regulatedMarkets: () =>
+        memo('mir', DAY_MS, log, async (note) =>
+          parseMir(
+            await getJson(
+              solr(UPREG_URL, {
+                q: 'ae_entityTypeCode:MIR AND ae_status:Active',
+                rows: '500',
+                fl: 'ae_micLeiEsmaId,ae_entityName,ae_status',
+                wt: 'json',
+              }),
+              'ESMA regulated markets',
+              note,
+            ),
           ),
         ),
-      )
-    },
 
-    regulatedMarkets: () =>
-      memo('mir', DAY_MS, async () =>
-        parseMir(
-          await getJson(
-            solr(UPREG_URL, {
-              q: 'ae_entityTypeCode:MIR AND ae_status:Active',
-              rows: '500',
-              fl: 'ae_micLeiEsmaId,ae_entityName,ae_status',
-              wt: 'json',
-            }),
-          ),
+      isoMics: () =>
+        memo('iso-mic', WEEK_MS, log, async (note) =>
+          polite(ISO_MIC_URL, async () => {
+            const response = await fetched(ISO_MIC_URL, 'ISO 10383 MIC list', note, {
+              headers: { 'user-agent': userAgent },
+              signal: AbortSignal.timeout(30_000),
+            })
+            if (!response.ok) throw new Error(`request failed (${response.status}): ISO 10383 MIC list`)
+            return parseIsoMics(await response.text())
+          }),
         ),
-      ),
 
-    isoMics: () =>
-      memo('iso-mic', WEEK_MS, async () =>
-        polite(ISO_MIC_URL, async () => {
-          const response = await fetchImpl(ISO_MIC_URL, { headers: { 'user-agent': userAgent }, signal: AbortSignal.timeout(30_000) })
-          if (!response.ok) throw new Error(`request failed (${response.status}): ISO 10383 MIC list`)
-          return parseIsoMics(await response.text())
+      upregFirms: async (raw) => {
+        const lei = leiOrThrow(raw)
+        return memo(`upreg:${lei}`, DAY_MS, log, async (note) =>
+          parseUpreg(
+            await getJson(
+              solr(UPREG_URL, {
+                q: `ae_lei:${lei}`,
+                rows: '50',
+                fl: 'ae_entityName,ae_entityTypeCode,ae_entityTypeLabel,ae_status,ae_competentAuthority,ae_officeType',
+                wt: 'json',
+              }),
+              'ESMA authorised entities',
+              note,
+            ),
+          ),
+        )
+      },
+
+      // The ECB publishes the list monthly under a dated name: try this month and the two before.
+      ecbSupervised: () =>
+        memo('ecb', WEEK_MS, log, async (note) => {
+          const base = new Date(now())
+          for (let back = 0; back < 3; back++) {
+            const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - back, 1))
+            const month = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+            const url = `${ECB_URL}ssm.listofsupervisedentities${month}.en.xlsx`
+            const bytes = await polite(url, async () => {
+              const response = await fetched(url, 'ECB list of supervised entities', note, {
+                headers: { 'user-agent': userAgent },
+                signal: AbortSignal.timeout(30_000),
+              })
+              return response.ok ? new Uint8Array(await response.arrayBuffer()) : null
+            })
+            // A missing month comes back as an HTML page or 404; a real file is a zip.
+            if (bytes && bytes[0] === 0x50 && bytes[1] === 0x4b) return { month, url, leis: parseEcbLeis(bytes) }
+          }
+          return null
         }),
-      ),
 
-    upregFirms: async (raw) => {
-      const lei = leiOrThrow(raw)
-      return memo(`upreg:${lei}`, DAY_MS, async () =>
-        parseUpreg(
-          await getJson(
-            solr(UPREG_URL, {
-              q: `ae_lei:${lei}`,
-              rows: '50',
-              fl: 'ae_entityName,ae_entityTypeCode,ae_entityTypeLabel,ae_status,ae_competentAuthority,ae_officeType',
-              wt: 'json',
-            }),
-          ),
-        ),
-      )
-    },
-
-    // The ECB publishes the list monthly under a dated name: try this month and the two before.
-    ecbSupervised: () =>
-      memo('ecb', WEEK_MS, async () => {
-        const base = new Date(now())
-        for (let back = 0; back < 3; back++) {
-          const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - back, 1))
-          const month = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`
-          const url = `${ECB_URL}ssm.listofsupervisedentities${month}.en.xlsx`
-          const bytes = await polite(url, async () => {
-            const response = await fetchImpl(url, { headers: { 'user-agent': userAgent }, signal: AbortSignal.timeout(30_000) })
-            return response.ok ? new Uint8Array(await response.arrayBuffer()) : null
-          })
-          // A missing month comes back as an HTML page or 404; a real file is a zip.
-          if (bytes && bytes[0] === 0x50 && bytes[1] === 0x4b) return { month, url, leis: parseEcbLeis(bytes) }
-        }
-        return null
-      }),
-
-    secTickers: async () => {
-      if (!secUserAgent) return null
-      return memo('sec', DAY_MS, async () => parseSecTickers(await getJson(SEC_URL, { 'user-agent': secUserAgent })))
-    },
+      secTickers: async () => {
+        if (!secUserAgent) return null
+        return memo('sec', DAY_MS, log, async (note) =>
+          parseSecTickers(await getJson(SEC_URL, 'SEC company tickers', note, { 'user-agent': secUserAgent })),
+        )
+      },
+    }
   }
+
+  return { ...build(undefined), withLog: build }
 }

@@ -1,3 +1,4 @@
+import type { SourceLog } from '@/lib/packs/source-log'
 import { fetchAuthToken, kycSearchGet, asArray, type KycSearchResponse } from './kyc-search-client'
 
 export type EntityCddData = {
@@ -9,22 +10,22 @@ export type EntityCddData = {
   fetchedAt?: { profile?: string; officers?: string; pscs?: string }
 }
 
-async function getOrThrow(path: string, token: string): Promise<KycSearchResponse> {
-  const response = await kycSearchGet(path, token)
+async function getOrThrow(path: string, token: string, log?: SourceLog): Promise<KycSearchResponse> {
+  const response = await kycSearchGet(path, token, log)
   if (response.status < 200 || response.status >= 300) {
     throw new Error(`kyc-search request failed (${response.status}): ${path}`)
   }
   return response
 }
 
-export async function fetchEntityCdd(companyNumber: string, authToken?: string): Promise<EntityCddData> {
+export async function fetchEntityCdd(companyNumber: string, authToken?: string, log?: SourceLog): Promise<EntityCddData> {
   const normalised = companyNumber.trim().toUpperCase()
   const token = authToken ?? (await fetchAuthToken())
 
   const [profile, officers, pscs] = await Promise.all([
-    getOrThrow(`/companies/${normalised}`, token),
-    getOrThrow(`/companies/${normalised}/officers?fresh=true`, token),
-    getOrThrow(`/companies/${normalised}/pscs?fresh=true`, token),
+    getOrThrow(`/companies/${normalised}`, token, log),
+    getOrThrow(`/companies/${normalised}/officers?fresh=true`, token, log),
+    getOrThrow(`/companies/${normalised}/pscs?fresh=true`, token, log),
   ])
 
   return {

@@ -1,32 +1,100 @@
 #!/usr/bin/env node
-// Dry-runs the Slice 0b migration and its permission tests against a real database, over ONE
+// Dry-runs one or more migrations and their SQL tests against a real database, over ONE
 // connection, inside a transaction that is always rolled back.
 //
 //   DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs
+//   DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+//     --migration supabase/migrations/20261014000000_slice0b_permissions.sql \
+//     --migration supabase/migrations/20261015000000_slice6_refresh_packs.sql \
+//     --tests supabase/tests/helpers.sql --tests supabase/tests/refresh_packs.test.sql
+//
+// With no arguments it dry-runs the Slice 0b migration and supabase/tests/permissions.test.sql
+// (after supabase/tests/helpers.sql). --migration and --tests may each be given several times and
+// run in the order given: migrations first, then tests. Paths are relative to the current directory.
+// Slice 6 needs Slice 0b (require_role, firms.four_eyes), so list both unless 0b is already applied.
 //
 // DRYRUN_DB_URL is read from the environment only. Neither it nor any part of it (host, user,
 // password, database name) is ever printed: error text is scrubbed before it is shown.
 //
 // What it does, in order:
-//   1. Checks whether the migration is already applied. If it is, it stops without running anything.
-//   2. BEGIN, then the migration file, then supabase/tests/permissions.test.sql (both read from disk,
-//      statement by statement, so an error names the file and line), printing every NOTICE as it arrives.
+//   1. Checks whether each migration is already applied. If any is, it stops without running anything.
+//   2. BEGIN, then the migration files and the test files (read from disk, statement by statement,
+//      so an error names the file and line), printing every NOTICE as it arrives.
 //   3. ROLLBACK, in a finally block, whatever happened.
-//   4. Runs the check again to show nothing persisted.
+//   4. Runs the checks again to show nothing persisted.
 //
-// Exit code 0 only if "ALL PERMISSION TESTS PASSED" was seen and the post-rollback check is clean.
-// Exit codes: 0 passed; 1 a test failed or errored; 2 the migration is already applied; 3 could not
-// connect or DRYRUN_DB_URL is missing; 4 ran but the post-rollback check was not clean.
+// Exit code 0 only if "ALL PERMISSION TESTS PASSED" was seen and the post-rollback checks are clean.
+// Exit codes: 0 passed; 1 a test failed or errored; 2 a migration is already applied; 3 could not
+// connect, DRYRUN_DB_URL is missing or the arguments are wrong; 4 ran but the post-rollback check
+// was not clean.
 const fs = require('node:fs')
 const path = require('node:path')
 const { Client } = require('pg')
 const { splitStatements, lineAt } = require('./sql-split.cjs')
 
 const root = path.resolve(__dirname, '..')
-const FILES = [
-  path.join(root, 'supabase', 'migrations', '20261014000000_slice0b_permissions.sql'),
-  path.join(root, 'supabase', 'tests', 'permissions.test.sql'),
+
+const DEFAULT_MIGRATIONS = [path.join(root, 'supabase', 'migrations', '20261014000000_slice0b_permissions.sql')]
+const DEFAULT_TESTS = [path.join(root, 'supabase', 'tests', 'helpers.sql'), path.join(root, 'supabase', 'tests', 'permissions.test.sql')]
+
+// "Already applied?" probes, chosen by migration file name. Each query returns one row of columns;
+// `applied` says, from that row, whether the migration's objects exist.
+const PROBES = [
+  {
+    match: /slice0b/,
+    name: 'Slice 0b (permissions)',
+    sql: `
+      select to_regprocedure('public.require_role(uuid,text[])')::text as require_role,
+             (select count(*) from information_schema.columns
+               where table_schema = 'public' and table_name = 'firms' and column_name = 'four_eyes')::int as four_eyes_columns,
+             (select count(*) from information_schema.columns
+               where table_schema = 'public' and table_name = 'entity_cdd_records' and column_name = 'fetched_by')::int as fetched_by_columns`,
+    applied: (r) => r.require_role !== null || r.four_eyes_columns > 0 || r.fetched_by_columns > 0,
+  },
+  {
+    match: /slice6_refresh_packs/,
+    name: 'Slice 6 (refresh packs)',
+    sql: `
+      select to_regclass('public.refresh_packs')::text as refresh_packs_table,
+             to_regprocedure('public.create_refresh_pack(uuid,text,text,jsonb,jsonb,text)')::text as create_refresh_pack`,
+    applied: (r) => r.refresh_packs_table !== null || r.create_refresh_pack !== null,
+  },
 ]
+
+function parseArgs(argv) {
+  const migrations = []
+  const tests = []
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]
+    const value = () => {
+      const v = argv[++i]
+      if (!v) throw new Error(`${arg} needs a file path`)
+      return path.resolve(process.cwd(), v)
+    }
+    if (arg === '--migration') migrations.push(value())
+    else if (arg === '--tests') tests.push(value())
+    else if (arg === '--help' || arg === '-h') {
+      console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 33).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'))
+      process.exit(0)
+    } else throw new Error(`unknown argument: ${arg} (use --migration <file> and --tests <file>)`)
+  }
+  for (const file of [...migrations, ...tests]) {
+    if (!fs.existsSync(file)) throw new Error(`no such file: ${file}`)
+  }
+  return {
+    migrations: migrations.length > 0 ? migrations : DEFAULT_MIGRATIONS,
+    tests: tests.length > 0 ? tests : DEFAULT_TESTS,
+  }
+}
+
+let args
+try {
+  args = parseArgs(process.argv.slice(2))
+} catch (e) {
+  console.error(e.message)
+  process.exit(3)
+}
+const FILES = [...args.migrations, ...args.tests]
 
 const url = process.env.DRYRUN_DB_URL
 if (!url) {
@@ -56,28 +124,35 @@ function redact(value) {
 
 const out = (message = '') => console.log(redact(message))
 const err = (message = '') => console.error(redact(message))
-const rel = (file) => path.relative(root, file).split(path.sep).join('/')
+const rel = (file) => {
+  const r = path.relative(root, file).split(path.sep).join('/')
+  return r.startsWith('..') ? file : r
+}
 
-const CHECK_SQL = `
-  select to_regprocedure('public.require_role(uuid,text[])')::text as require_role,
-         (select count(*) from information_schema.columns
-           where table_schema = 'public' and table_name = 'firms' and column_name = 'four_eyes')::int as four_eyes_columns,
-         (select count(*) from information_schema.columns
-           where table_schema = 'public' and table_name = 'entity_cdd_records' and column_name = 'fetched_by')::int as fetched_by_columns,
-         exists (select 1 from pg_namespace where nspname = '_dryrun') as dryrun_schema_exists
-`
-
+/** Runs the probes for the listed migrations. Returns whether any migration is already applied. */
 async function check(client, label) {
-  const { rows } = await client.query(CHECK_SQL)
-  const r = rows[0]
-  const applied = r.require_role !== null || r.four_eyes_columns > 0 || r.fetched_by_columns > 0
   out(`${label}:`)
-  out(`  to_regprocedure('public.require_role(uuid,text[])') = ${r.require_role ?? 'null'}`)
-  out(`  firms.four_eyes columns             = ${r.four_eyes_columns}`)
-  out(`  entity_cdd_records.fetched_by cols  = ${r.fetched_by_columns}`)
-  out(`  _dryrun schema present              = ${r.dryrun_schema_exists}`)
-  out(`  => migration ${applied ? 'IS ALREADY APPLIED' : 'is not applied'}`)
-  return { applied, dryrunSchemaExists: r.dryrun_schema_exists }
+  let anyApplied = false
+  const probes = new Set()
+  for (const file of args.migrations) {
+    const probe = PROBES.find((p) => p.match.test(path.basename(file)))
+    if (!probe) {
+      out(`  (no "already applied?" check known for ${rel(file)})`)
+      continue
+    }
+    probes.add(probe)
+  }
+  for (const probe of probes) {
+    const { rows } = await client.query(probe.sql)
+    const applied = probe.applied(rows[0])
+    anyApplied ||= applied
+    out(`  ${probe.name}:`)
+    for (const [key, value] of Object.entries(rows[0])) out(`    ${key} = ${value === null ? 'null' : value}`)
+    out(`    => ${applied ? 'IS ALREADY APPLIED' : 'not applied'}`)
+  }
+  const { rows } = await client.query("select exists (select 1 from pg_namespace where nspname = '_dryrun') as e")
+  out(`  _dryrun schema present = ${rows[0].e}`)
+  return anyApplied
 }
 
 function describeError(e, file, statement) {
@@ -117,11 +192,14 @@ async function main() {
 
   let began = false
   try {
-    const before = await check(client, 'Before')
-    if (before.applied) {
+    out(`Migrations: ${args.migrations.map(rel).join(', ')}`)
+    out(`Tests:      ${args.tests.map(rel).join(', ')}`)
+    out('')
+    if (await check(client, 'Before')) {
       err('')
-      err('The migration looks already applied to this database. Nothing was run.')
+      err('A migration listed above looks already applied to this database. Nothing was run.')
       err('A dry run only makes sense before applying it. Use a database (or branch) without it.')
+      await client.end().catch(() => undefined)
       return 2
     }
     out('')
@@ -164,8 +242,7 @@ async function main() {
 
   let afterClean = false
   try {
-    const after = await check(client, 'After rollback')
-    afterClean = !after.applied
+    afterClean = !(await check(client, 'After rollback'))
   } catch (e) {
     err(`The post-rollback check failed: ${e.message}`)
   }
@@ -173,7 +250,7 @@ async function main() {
 
   out('')
   if (!afterClean) {
-    err('The database still shows the migration after the rollback. Investigate before doing anything else.')
+    err('The database still shows a migration after the rollback. Investigate before doing anything else.')
     exitCode = 4
   } else if (failed) {
     err('RESULT: FAILED (see the error above). Nothing persisted.')
