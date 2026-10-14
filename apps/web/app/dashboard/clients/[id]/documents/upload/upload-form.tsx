@@ -1,21 +1,57 @@
 'use client'
 
-import { useActionState } from 'react'
+import { startTransition, useActionState, useRef, useState } from 'react'
+import { uploadClientDocument } from '@/lib/documents/upload-client-document'
 import { uploadDocumentAction } from './actions'
 import { DOCUMENT_TYPE_LABELS } from '@/lib/types/documents'
 import type { DocumentType } from '@/lib/types/documents'
 
 type Props = {
   clientId: string
+  /** The client's firm: documents are stored under its folder. */
+  firmId: string
   preselectedType: string
 }
 
-export function UploadForm({ clientId, preselectedType }: Props) {
+export function UploadForm({ clientId, firmId, preselectedType }: Props) {
   const [state, dispatch, pending] = useActionState(uploadDocumentAction, {})
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  /**
+   * The file goes from here straight to Storage; only its path is sent to the server action, because a
+   * Server Action body over 1 MB is refused.
+   */
+  async function submit(formData: FormData) {
+    setUploadError(null)
+    const file = fileRef.current?.files?.[0]
+    if (!file) {
+      setUploadError('No file selected')
+      return
+    }
+    setUploading(true)
+    const result = await uploadClientDocument(file, firmId, clientId)
+    setUploading(false)
+    if ('error' in result) {
+      setUploadError(result.error)
+      return
+    }
+    const next = new FormData()
+    next.set('client_id', clientId)
+    next.set('document_type', String(formData.get('document_type') ?? ''))
+    next.set('upload_path', result.upload.path)
+    next.set('upload_name', result.upload.name)
+    next.set('upload_type', result.upload.type)
+    next.set('upload_size', String(result.upload.size))
+    startTransition(() => dispatch(next))
+  }
+
+  const busy = pending || uploading
+  const error = uploadError ?? state.error
 
   return (
-    <form action={dispatch} className="grid gap-5" encType="multipart/form-data">
-      <input type="hidden" name="client_id" value={clientId} />
+    <form action={submit} className="grid gap-5">
 
       <label className="block">
         <span className="text-sm font-medium">Document type</span>
@@ -35,8 +71,9 @@ export function UploadForm({ clientId, preselectedType }: Props) {
       <label className="block">
         <span className="text-sm font-medium">File</span>
         <p className="mt-1 text-xs text-[var(--muted)]">PDF, JPEG, or PNG — max 10 MB</p>
+        {/* No name: the file is uploaded to Storage by the form handler and never posted to the action. */}
         <input
-          name="file"
+          ref={fileRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf"
           required
@@ -44,19 +81,19 @@ export function UploadForm({ clientId, preselectedType }: Props) {
         />
       </label>
 
-      {state.error && (
+      {error && (
         <p className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {state.error}
+          {error}
         </p>
       )}
 
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={pending}
+          disabled={busy}
           className="bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:opacity-60"
         >
-          {pending ? 'Uploading and extracting…' : 'Upload and extract'}
+          {uploading ? 'Uploading…' : pending ? 'Extracting…' : 'Upload and extract'}
         </button>
         <a
           href={`/dashboard/clients/${clientId}`}
@@ -66,7 +103,7 @@ export function UploadForm({ clientId, preselectedType }: Props) {
         </a>
       </div>
 
-      {pending && (
+      {busy && (
         <p className="text-sm text-[var(--muted)]">
           Uploading… running AI extraction… this may take a moment.
         </p>

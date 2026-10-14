@@ -54,7 +54,7 @@ export default async function UploadDocumentPage({
         </header>
 
         <div className="mt-8">
-          <UploadForm clientId={id} preselectedType={preselectedType} />
+          <UploadForm clientId={id} firmId={client.firm_id} preselectedType={preselectedType} />
         </div>
 
         <footer className="mt-8">

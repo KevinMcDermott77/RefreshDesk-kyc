@@ -57,10 +57,8 @@ export function parseFetchInput(formData: FormData): ParsedFetchInput {
   }
 
   // The browser uploads documents to Storage and sends the path; a file body is never accepted here.
-  for (const value of formData.getAll('file')) {
-    if (typeof value !== 'string' && value.size > 0) {
-      return { ok: false, error: 'Upload the document to storage first: files are not accepted by this action.' }
-    }
+  if (hasFileBody(formData)) {
+    return { ok: false, error: 'Upload the document to storage first: files are not accepted by this action.' }
   }
 
   const clientId = text(formData, 'client_id')
@@ -75,8 +73,21 @@ export function parseFetchInput(formData: FormData): ParsedFetchInput {
     return { ok: true, input: { clientId, companyNumber, upload: null } }
   }
 
+  const uploaded = parseUploadFields(formData)
+  if (!uploaded.ok) return uploaded
+  if (!uploaded.upload) return { ok: false, error: 'Enter a company number or upload an incorporation document' }
+  return { ok: true, input: { clientId, companyNumber: '', upload: uploaded.upload } }
+}
+
+export type ParsedUpload = { ok: true; upload: FetchUpload | null } | { ok: false; error: string }
+
+/**
+ * The details of a document the browser has already put in Storage (upload_path, upload_name,
+ * upload_type, upload_size). { ok: true, upload: null } when none was sent; shared by every form that uploads.
+ */
+export function parseUploadFields(formData: FormData): ParsedUpload {
   const path = text(formData, 'upload_path')
-  if (!path) return { ok: false, error: 'Enter a company number or upload an incorporation document' }
+  if (!path) return { ok: true, upload: null }
 
   const name = text(formData, 'upload_name')
   const type = text(formData, 'upload_type')
@@ -86,8 +97,12 @@ export function parseFetchInput(formData: FormData): ParsedFetchInput {
   if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(type)) return { ok: false, error: 'File must be PDF, JPEG, or PNG' }
   if (!Number.isInteger(size) || size <= 0) return { ok: false, error: 'The uploaded document is empty' }
   if (size > MAX_FILE_SIZE_BYTES) return { ok: false, error: 'File exceeds 10 MB limit' }
+  return { ok: true, upload: { path, name, size, type: type as FetchUpload['type'] } }
+}
 
-  return { ok: true, input: { clientId, companyNumber: '', upload: { path, name, size, type: type as FetchUpload['type'] } } }
+/** A file body in a form: a non-empty File. Server Actions refuse bodies over 1 MB, so files go to Storage instead. */
+export function hasFileBody(formData: FormData, field = 'file'): boolean {
+  return formData.getAll(field).some((value) => typeof value !== 'string' && value.size > 0)
 }
 
 /** An upload must sit in this client's folder in this client's firm: {firm}/{client}/{document}/{file}. */
