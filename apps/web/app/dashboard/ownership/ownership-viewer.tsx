@@ -15,6 +15,7 @@ import { reasonText } from '@/lib/ownership/reason-text'
 import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
 import { ruleText } from '@/lib/ownership/terminals'
+import { SavePackButton } from './save-pack-button'
 import { pickedFormData } from './picker'
 import { walkOwnershipAction, type OwnershipViewState } from './actions'
 
@@ -381,6 +382,8 @@ export function OwnershipViewer() {
 
       {result ? (
         <>
+          <SavePackButton pack={result.pack} />
+
           <ProfilePanel rows={result.profile} />
 
           <section className={`mt-6 border p-4 ${BANNER_CLASSES[bannerTone(result.summary)]}`}>

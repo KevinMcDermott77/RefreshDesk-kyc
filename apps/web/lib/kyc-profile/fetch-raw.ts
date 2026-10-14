@@ -1,4 +1,5 @@
 import { kycSearchGet } from '@/lib/companies-house/kyc-search-client'
+import type { SourceLog } from '@/lib/packs/source-log'
 
 export type RawProfileData = {
   /** Companies House company profile, JSON unchanged. */
@@ -18,11 +19,11 @@ function asRecord(value: unknown): Record<string, unknown> {
  * /raw endpoints preserve. Separate from fetchEntityCdd, whose flattened data
  * feeds the CDD screens and storage.
  */
-export async function fetchRawProfile(companyNumber: string, token: string): Promise<RawProfileData> {
+export async function fetchRawProfile(companyNumber: string, token: string, log?: SourceLog): Promise<RawProfileData> {
   const number = companyNumber.trim().toUpperCase()
   const [profile, officers] = await Promise.all([
-    kycSearchGet(`/companies/${number}/raw`, token),
-    kycSearchGet(`/companies/${number}/officers/raw`, token),
+    kycSearchGet(`/companies/${number}/raw`, token, log),
+    kycSearchGet(`/companies/${number}/officers/raw`, token, log),
   ])
   if (profile.status !== 200) throw new Error(`kyc-search request failed (${profile.status}): /companies/${number}/raw`)
   // A company with no officers on file is a 404 from Companies House.

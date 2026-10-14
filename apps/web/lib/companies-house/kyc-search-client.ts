@@ -1,3 +1,5 @@
+import { scrubPath, type SourceLog } from '@/lib/packs/source-log'
+
 function kycSearchUrl(): string {
   const base = process.env.KYC_SEARCH_URL
   if (!base) throw new Error('KYC_SEARCH_URL is not configured')
@@ -56,8 +58,11 @@ export type KycSearchResponse = {
   retryAfter?: string
 }
 
-/** Like kycSearchGetJson, but returns the status instead of throwing on non-2xx. */
-export async function kycSearchGet(path: string, token: string): Promise<KycSearchResponse> {
+/**
+ * Like kycSearchGetJson, but returns the status instead of throwing on non-2xx.
+ * `log`, when given, records the fetch (path only, never the host or token) in a refresh pack's source log.
+ */
+export async function kycSearchGet(path: string, token: string, log?: SourceLog): Promise<KycSearchResponse> {
   const url = `${kycSearchUrl()}${path}`
   console.log(`[kyc-search] GET ${url}`)
 
@@ -68,6 +73,12 @@ export async function kycSearchGet(path: string, token: string): Promise<KycSear
   const body = response.ok ? await response.json() : null
   const fetchedAt = response.headers.get('x-fetched-at')
   const retryAfter = response.headers.get('retry-after')
+  log?.record({
+    register: 'Companies House (via kyc-search)',
+    path: scrubPath(path),
+    fetchedAt: fetchedAt ?? new Date().toISOString(),
+    status: response.status,
+  })
   return {
     status: response.status,
     body,

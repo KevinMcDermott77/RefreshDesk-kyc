@@ -1,3 +1,4 @@
+import { scrubPath, type SourceLog } from '@/lib/packs/source-log'
 import type { GleifLookup } from './evaluate'
 
 const GLEIF_URL = 'https://api.gleif.org/api/v1/lei-records'
@@ -43,9 +44,14 @@ export async function lookupLei(
   companyNumber: string,
   fetchImpl: typeof fetch = fetch,
   now: () => number = Date.now,
+  log?: SourceLog,
 ): Promise<{ lookup: GleifLookup; fetchedAt: string }> {
+  const logPath = `/api/v1/lei-records?filter[entity.registeredAs]=${companyNumber}&filter[entity.legalAddress.country]=GB`
   const hit = cache.get(companyNumber)
-  if (hit && hit.expires > now()) return { lookup: hit.lookup, fetchedAt: hit.fetchedAt }
+  if (hit && hit.expires > now()) {
+    log?.record({ register: 'GLEIF', path: logPath, fetchedAt: hit.fetchedAt, status: 200, cached: true })
+    return { lookup: hit.lookup, fetchedAt: hit.fetchedAt }
+  }
 
   const url = new URL(GLEIF_URL)
   url.searchParams.set('filter[entity.registeredAs]', companyNumber)
@@ -58,11 +64,13 @@ export async function lookupLei(
       headers: { accept: 'application/vnd.api+json' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
+    log?.record({ register: 'GLEIF', path: logPath, fetchedAt, status: response.status })
     if (!response.ok) return { lookup: { status: 'unavailable' }, fetchedAt }
     const lookup = parseGleif(await response.json())
     if (lookup.status !== 'unavailable') cache.set(companyNumber, { lookup, fetchedAt, expires: now() + CACHE_MS })
     return { lookup, fetchedAt }
   } catch {
+    log?.record({ register: 'GLEIF', path: logPath, fetchedAt, status: 0 })
     return { lookup: { status: 'unavailable' }, fetchedAt }
   }
 }
@@ -99,7 +107,14 @@ export function createLimiter(limit = GLEIF_RATE_LIMIT): Limiter {
 
 const defaultLimiter = createLimiter()
 
-export type GleifResponse = { status: number; body: unknown }
+export type GleifResponse = {
+  status: number
+  body: unknown
+  /** When GLEIF was asked (ISO), for the pack's source log. */
+  fetchedAt?: string
+  /** True when served from the in-memory cache. */
+  cached?: boolean
+}
 
 /** GET against the GLEIF API (path after /api/v1). 200 and 404 are returned; anything else throws. */
 export type GleifHttp = { get(path: string, options?: { ttlMs?: number }): Promise<GleifResponse> }
@@ -120,7 +135,7 @@ export function createGleifHttp(
   return {
     async get(path, getOptions) {
       const hit = store.get(path)
-      if (hit && hit.expires > now()) return hit.response
+      if (hit && hit.expires > now()) return { ...hit.response, cached: true }
 
       await limiter.acquire(now, sleep)
       const response = await fetchImpl(`${API}${path}`, {
@@ -130,9 +145,36 @@ export function createGleifHttp(
       if (response.status !== 200 && response.status !== 404) {
         throw new Error(`GLEIF request failed (${response.status}): ${path}`)
       }
-      const result: GleifResponse = { status: response.status, body: await response.json().catch(() => null) }
+      const result: GleifResponse = {
+        status: response.status,
+        body: await response.json().catch(() => null),
+        fetchedAt: new Date(now()).toISOString(),
+      }
       store.set(path, { response: result, expires: now() + (getOptions?.ttlMs ?? CACHE_MS) })
       return result
+    },
+  }
+}
+
+/** Wraps a GLEIF client so each request is recorded in a refresh pack's source log. */
+export function withSourceLog(http: GleifHttp, log: SourceLog | undefined): GleifHttp {
+  if (!log) return http
+  return {
+    async get(path, options) {
+      try {
+        const response = await http.get(path, options)
+        log.record({
+          register: 'GLEIF',
+          path: scrubPath(`/api/v1${path}`),
+          fetchedAt: response.fetchedAt ?? new Date().toISOString(),
+          status: response.status,
+          ...(response.cached ? { cached: true } : {}),
+        })
+        return response
+      } catch (error) {
+        log.record({ register: 'GLEIF', path: scrubPath(`/api/v1${path}`), fetchedAt: new Date().toISOString(), status: 0 })
+        throw error
+      }
     },
   }
 }
