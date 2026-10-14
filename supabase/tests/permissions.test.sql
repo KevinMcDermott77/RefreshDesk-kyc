@@ -1,21 +1,34 @@
--- Slice 0b permission tests. Plain SQL, no extensions; everything runs inside one transaction
--- that is rolled back at the end, so nothing is left behind.
+-- Slice 0b permission tests.
 --
--- Run against a database that has the migrations applied (local stack or a branch):
+-- Runs against a database that already has the migrations applied (for a dry run before applying
+-- anything, use permissions.dryrun.sql, which wraps the migration and these tests in one
+-- transaction):
+--
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/permissions.test.sql
--- It prints NOTICE "ok - ..." per check, "ALL N CHECKS PASSED" at the end, and stops with
--- an exception at the first failure.
 --
--- Users are simulated by setting the JWT claim GUCs that auth.uid() reads. The SECURITY DEFINER
--- RPCs run as their owner, so the session role does not matter.
+-- Everything happens inside one transaction that is rolled back, so nothing persists and no
+-- existing data is read or changed. Users are simulated the way PostgREST does it: the
+-- request.jwt.claims setting that auth.uid() reads, plus SET LOCAL ROLE authenticated.
+-- Each check prints NOTICE 'PASS: <name>' or raises 'FAIL: <name>: <detail>'.
 
 begin;
+
+-- ===== BEGIN TESTS =====
 
 create temp table t_ids (name text primary key, id uuid not null) on commit drop;
 create temp table t_count (n int not null) on commit drop;
 insert into t_count values (0);
 
-create function pg_temp.act_as(p_user uuid) returns void language plpgsql as $$
+-- Runs one statement as p_user (null = signed out) with the role the API uses, and returns its
+-- error message (null if it succeeded) and first column. The statement text must not read the
+-- temp tables: build it with pg_temp.id() before calling.
+create function pg_temp.try_as(p_user uuid, p_sql text)
+returns table (err text, val text)
+language plpgsql
+as $$
+declare
+  v_err text;
+  v_val text;
 begin
   perform set_config('request.jwt.claim.sub', coalesce(p_user::text, ''), true);
   perform set_config(
@@ -23,6 +36,14 @@ begin
     case when p_user is null then '' else json_build_object('sub', p_user, 'role', 'authenticated')::text end,
     true
   );
+  begin
+    execute 'set local role authenticated';
+    execute p_sql into v_val;
+  exception when others then
+    v_err := sqlerrm;
+  end;
+  execute 'reset role';
+  return query select v_err, v_val;
 end;
 $$;
 
@@ -30,77 +51,82 @@ create function pg_temp.id(p_name text) returns uuid language sql as $$
   select id from t_ids where name = p_name;
 $$;
 
-create function pg_temp.pass(p_label text) returns void language plpgsql as $$
+create function pg_temp.pass(p_name text) returns void language plpgsql as $$
 begin
   update t_count set n = n + 1;
-  raise notice 'ok - %', p_label;
+  raise notice 'PASS: %', p_name;
 end;
 $$;
 
--- The statement must raise an error whose message matches p_pattern (ILIKE).
-create function pg_temp.expect_error(p_sql text, p_pattern text, p_label text) returns void language plpgsql as $$
+-- The call must fail with a message matching p_pattern (ILIKE).
+create function pg_temp.expect_error(p_user uuid, p_sql text, p_pattern text, p_name text)
+returns void language plpgsql as $$
 declare
-  v_matched boolean := false;
+  v_err text;
 begin
-  begin
-    execute p_sql;
-  exception when others then
-    if sqlerrm ilike p_pattern then
-      v_matched := true;
-    else
-      raise exception 'FAIL - %: expected an error like "%" but got "%"', p_label, p_pattern, sqlerrm;
-    end if;
-  end;
-  if not v_matched then
-    raise exception 'FAIL - %: expected an error like "%" but the statement succeeded', p_label, p_pattern;
+  select r.err into v_err from pg_temp.try_as(p_user, p_sql) r;
+  if v_err is null then
+    raise exception 'FAIL: %: expected an error like "%" but the call succeeded', p_name, p_pattern;
   end if;
-  perform pg_temp.pass(p_label);
+  if v_err not ilike p_pattern then
+    raise exception 'FAIL: %: expected an error like "%" but got "%"', p_name, p_pattern, v_err;
+  end if;
+  perform pg_temp.pass(p_name);
 end;
 $$;
 
-create function pg_temp.expect_ok(p_sql text, p_label text) returns void language plpgsql as $$
+-- The call must succeed; returns its first column.
+create function pg_temp.expect_ok(p_user uuid, p_sql text, p_name text)
+returns text language plpgsql as $$
+declare
+  v_err text;
+  v_val text;
 begin
-  begin
-    execute p_sql;
-  exception when others then
-    raise exception 'FAIL - %: unexpected error "%"', p_label, sqlerrm;
-  end;
-  perform pg_temp.pass(p_label);
+  select r.err, r.val into v_err, v_val from pg_temp.try_as(p_user, p_sql) r;
+  if v_err is not null then
+    raise exception 'FAIL: %: unexpected error "%"', p_name, v_err;
+  end if;
+  perform pg_temp.pass(p_name);
+  return v_val;
 end;
 $$;
 
-create function pg_temp.expect_true(p_condition boolean, p_label text) returns void language plpgsql as $$
+create function pg_temp.expect_true(p_condition boolean, p_name text) returns void language plpgsql as $$
 begin
   if p_condition is not true then
-    raise exception 'FAIL - %', p_label;
+    raise exception 'FAIL: %: the condition was not true', p_name;
   end if;
-  perform pg_temp.pass(p_label);
+  perform pg_temp.pass(p_name);
 end;
 $$;
 
--- Records a fetched record: act as p_user and save an entity CDD record, remembering its id.
+-- Saves an entity CDD record as p_user and remembers its id under p_key.
 create function pg_temp.fetch_record(p_user text, p_key text) returns void language plpgsql as $$
 declare
-  v_id uuid;
+  v_val text;
 begin
-  perform pg_temp.act_as(pg_temp.id(p_user));
-  v_id := public.save_entity_cdd(
-    pg_temp.id('client'), '00000001', null,
-    '{"company_name": "Test Co"}'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'full'
+  v_val := pg_temp.expect_ok(
+    pg_temp.id(p_user),
+    format(
+      'select public.save_entity_cdd(%L, ''00000001'', null, ''{"company_name": "Test Co"}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')::text',
+      pg_temp.id('client_entity')
+    ),
+    p_key || ': ' || p_user || ' can save_entity_cdd'
   );
-  insert into t_ids values (p_key, v_id);
+  insert into t_ids values (p_key, v_val::uuid);
 end;
 $$;
 
--- ─── Fixtures (as the connecting superuser; RLS does not apply) ───────────────
+-- ─── Fixtures (as the connecting role; none of this is real data) ─────────────
 
 insert into t_ids select n, gen_random_uuid() from unnest(array[
-  'fetcher_admin', 'second_admin', 'member', 'read_only', 'outsider', 'firm', 'other_firm', 'client'
+  'admin_a', 'admin_b', 'member', 'read_only', 'outsider', 'firm', 'other_firm',
+  'client_entity', 'client_edit', 'client_archive', 'doc_inc', 'doc_filing', 'ext_blocked', 'ext_ok'
 ]) as n;
 
 insert into auth.users (id, email)
 select id, name || '@permissions.test' from t_ids
-where name in ('fetcher_admin', 'second_admin', 'member', 'read_only', 'outsider');
+where name in ('admin_a', 'admin_b', 'member', 'read_only', 'outsider');
 
 insert into public.firms (id, name, slug)
 values
@@ -109,8 +135,8 @@ values
 
 insert into public.firm_members (firm_id, user_id, full_name, role)
 values
-  (pg_temp.id('firm'), pg_temp.id('fetcher_admin'), 'Fetcher Admin', 'admin'),
-  (pg_temp.id('firm'), pg_temp.id('second_admin'), 'Second Admin', 'admin'),
+  (pg_temp.id('firm'), pg_temp.id('admin_a'), 'Admin A (fetcher)', 'admin'),
+  (pg_temp.id('firm'), pg_temp.id('admin_b'), 'Admin B (second reviewer)', 'admin'),
   (pg_temp.id('firm'), pg_temp.id('member'), 'Plain Member', 'member'),
   (pg_temp.id('firm'), pg_temp.id('read_only'), 'Read Only', 'read_only'),
   (pg_temp.id('other_firm'), pg_temp.id('outsider'), 'Outsider', 'admin');
@@ -119,205 +145,288 @@ insert into public.firm_refresh_rules (firm_id, risk_rating, cadence_months)
 values (pg_temp.id('firm'), 'standard', 12);
 
 insert into public.clients (id, firm_id, client_type, display_name, risk_rating)
-values (pg_temp.id('client'), pg_temp.id('firm'), 'entity', 'Test Entity Ltd', 'standard');
+values
+  (pg_temp.id('client_entity'), pg_temp.id('firm'), 'entity', 'Test Entity Ltd', 'standard'),
+  (pg_temp.id('client_edit'), pg_temp.id('firm'), 'individual', 'Edit Me', 'standard'),
+  (pg_temp.id('client_archive'), pg_temp.id('firm'), 'individual', 'Archive Me', 'standard');
+
+insert into public.client_documents (id, firm_id, client_id, uploaded_by, document_type, storage_path, file_name, file_size_bytes, mime_type, status)
+values
+  (pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'incorporation', 'x/inc.pdf', 'inc.pdf', 1, 'application/pdf', 'pending_review'),
+  (pg_temp.id('doc_filing'), pg_temp.id('firm'), pg_temp.id('client_entity'), pg_temp.id('member'), 'filing', 'x/filing.pdf', 'filing.pdf', 1, 'application/pdf', 'uploaded');
+
+insert into public.document_extractions (id, document_id, firm_id, client_id, model_used, prompt_version)
+values
+  (pg_temp.id('ext_blocked'), pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), 'test-model', 'v0'),
+  (pg_temp.id('ext_ok'), pg_temp.id('doc_inc'), pg_temp.id('firm'), pg_temp.id('client_entity'), 'test-model', 'v0');
 
 -- ─── Defaults ─────────────────────────────────────────────────────────────────
 
 select pg_temp.expect_true(
   (select four_eyes from public.firms where id = pg_temp.id('firm')),
-  'four_eyes defaults to true'
+  'firms.four_eyes defaults to true'
 );
 
 -- ─── require_role ─────────────────────────────────────────────────────────────
 
-select pg_temp.act_as(pg_temp.id('member'));
 select pg_temp.expect_true(
-  public.require_role(pg_temp.id('firm'), array['admin', 'member']) = 'member',
-  'require_role returns the caller''s role when allowed'
+  pg_temp.expect_ok(pg_temp.id('member'), format('select public.require_role(%L, array[''admin'', ''member''])', pg_temp.id('firm')), 'require_role runs for a member') = 'member',
+  'require_role returns the caller''s role'
 );
 select pg_temp.expect_error(
+  pg_temp.id('member'),
   format('select public.require_role(%L, array[''admin''])', pg_temp.id('firm')),
   'permission denied%',
   'require_role rejects a role that is not listed'
 );
 select pg_temp.expect_error(
+  pg_temp.id('member'),
   format('select public.require_role(%L, array[''admin'', ''member''])', pg_temp.id('other_firm')),
   '%not an active member%',
-  'require_role rejects a user from another firm'
+  'require_role rejects a member of a different firm'
 );
-select pg_temp.act_as(null);
 select pg_temp.expect_error(
+  null,
   format('select public.require_role(%L, array[''admin''])', pg_temp.id('firm')),
   '%authentication required%',
-  'require_role rejects an unauthenticated caller'
+  'require_role rejects a signed-out caller'
 );
 
 -- ─── save_entity_cdd ──────────────────────────────────────────────────────────
 
-select pg_temp.act_as(pg_temp.id('read_only'));
 select pg_temp.expect_error(
-  format(
-    'select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')',
-    pg_temp.id('client')
-  ),
+  pg_temp.id('read_only'),
+  format('select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')', pg_temp.id('client_entity')),
   'permission denied%',
   'read_only is blocked from save_entity_cdd'
 );
-
-select pg_temp.act_as(pg_temp.id('outsider'));
 select pg_temp.expect_error(
-  format(
-    'select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')',
-    pg_temp.id('client')
-  ),
+  pg_temp.id('outsider'),
+  format('select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')', pg_temp.id('client_entity')),
   '%not an active member%',
-  'a user from another firm is blocked from save_entity_cdd'
+  'a member of another firm is blocked from save_entity_cdd'
 );
-
-select pg_temp.act_as(null);
 select pg_temp.expect_error(
-  format(
-    'select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')',
-    pg_temp.id('client')
-  ),
+  null,
+  format('select public.save_entity_cdd(%L, ''00000001'', null, ''{}''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''[]''::jsonb, ''full'')', pg_temp.id('client_entity')),
   '%authenticated user%',
-  'an unauthenticated caller is blocked from save_entity_cdd'
+  'a signed-out caller is blocked from save_entity_cdd'
 );
 
 select pg_temp.fetch_record('member', 'rec_member');
 select pg_temp.expect_true(
   (select fetched_by from public.entity_cdd_records where id = pg_temp.id('rec_member')) = pg_temp.id('member'),
-  'save_entity_cdd sets fetched_by from auth.uid() (member)'
+  'save_entity_cdd sets fetched_by to the member who fetched'
 );
-
-select pg_temp.fetch_record('fetcher_admin', 'rec_a');
+select pg_temp.fetch_record('admin_a', 'rec_a');
 select pg_temp.expect_true(
-  (select fetched_by from public.entity_cdd_records where id = pg_temp.id('rec_a')) = pg_temp.id('fetcher_admin'),
-  'save_entity_cdd sets fetched_by from auth.uid() (admin)'
+  (select fetched_by from public.entity_cdd_records where id = pg_temp.id('rec_a')) = pg_temp.id('admin_a'),
+  'save_entity_cdd sets fetched_by to the admin who fetched'
 );
 
 -- ─── review_entity_cdd ────────────────────────────────────────────────────────
 
-select pg_temp.act_as(pg_temp.id('read_only'));
 select pg_temp.expect_error(
+  pg_temp.id('read_only'),
   format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_a')),
   'permission denied%',
-  'read_only is blocked from approving'
+  'read_only is blocked from approving an entity CDD record'
 );
 select pg_temp.expect_error(
+  pg_temp.id('read_only'),
   format('select public.review_entity_cdd(%L, ''rejected'')', pg_temp.id('rec_a')),
   'permission denied%',
-  'read_only is blocked from rejecting'
+  'read_only is blocked from rejecting an entity CDD record'
 );
-
-select pg_temp.act_as(pg_temp.id('member'));
 select pg_temp.expect_error(
+  pg_temp.id('member'),
   format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_a')),
   'permission denied%',
-  'member is blocked from approving'
+  'a member is blocked from approving (only admins review)'
 );
-
-select pg_temp.act_as(pg_temp.id('outsider'));
 select pg_temp.expect_error(
+  pg_temp.id('outsider'),
   format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_a')),
   '%not an active member%',
-  'a user from another firm is blocked from approving'
+  'a member of another firm is blocked from approving'
 );
 
--- Four-eyes ON (the default): the fetcher cannot approve their own record.
-select pg_temp.act_as(pg_temp.id('fetcher_admin'));
+-- Four-eyes on (the default): the fetcher cannot approve their own record...
 select pg_temp.expect_error(
+  pg_temp.id('admin_a'),
   format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_a')),
   'Four-eyes rule: the person who fetched this record cannot approve it',
-  'the fetcher is blocked from approving with four_eyes on'
+  'the fetcher is blocked from approving their own record with four_eyes on'
 );
 select pg_temp.expect_true(
   (select status from public.entity_cdd_records where id = pg_temp.id('rec_a')) = 'pending_review',
-  'the blocked approval left the record pending'
+  'the blocked approval left the record pending_review'
 );
 
--- ...but may reject their own fetch.
-select pg_temp.fetch_record('fetcher_admin', 'rec_reject');
+-- ...but may reject it.
+select pg_temp.fetch_record('admin_a', 'rec_reject');
 select pg_temp.expect_ok(
-  format('select public.review_entity_cdd(%L, ''rejected'', ''fetched the wrong company'')', pg_temp.id('rec_reject')),
+  pg_temp.id('admin_a'),
+  format('select public.review_entity_cdd(%L, ''rejected'', ''fetched the wrong company'')::text', pg_temp.id('rec_reject')),
   'the fetcher may reject their own record with four_eyes on'
 );
 
--- A second reviewer is allowed.
-select pg_temp.act_as(pg_temp.id('second_admin'));
+-- A second admin may approve.
 select pg_temp.expect_ok(
-  format('select public.review_entity_cdd(%L, ''approved'', ''checked against the register'')', pg_temp.id('rec_a')),
+  pg_temp.id('admin_b'),
+  format('select public.review_entity_cdd(%L, ''approved'', ''checked against the register'')::text', pg_temp.id('rec_a')),
   'a second admin may approve with four_eyes on'
 );
 select pg_temp.expect_true(
-  (select status = 'approved' and reviewed_by = pg_temp.id('second_admin')
-   from public.entity_cdd_records where id = pg_temp.id('rec_a')),
-  'the approval is recorded against the second reviewer'
+  (select status = 'approved' and reviewed_by = pg_temp.id('admin_b') from public.entity_cdd_records where id = pg_temp.id('rec_a')),
+  'the approval is recorded against the second admin'
 );
 select pg_temp.expect_true(
-  (select (payload ->> 'four_eyes')::boolean and payload ->> 'fetched_by' = pg_temp.id('fetcher_admin')::text and payload ->> 'note' is null
+  (select (payload ->> 'four_eyes')::boolean
+          and payload ->> 'fetched_by' = pg_temp.id('admin_a')::text
+          and payload ->> 'note' is null
    from public.audit_events
    where event_type = 'entity_cdd.approved' and (payload ->> 'record_id')::uuid = pg_temp.id('rec_a')),
   'the approval audit event records four_eyes and fetched_by, with no note'
 );
 
--- Four-eyes OFF: the fetcher may approve their own record.
+-- Four-eyes off: the fetcher may approve.
 update public.firms set four_eyes = false where id = pg_temp.id('firm');
-select pg_temp.fetch_record('fetcher_admin', 'rec_off');
+select pg_temp.fetch_record('admin_a', 'rec_off');
 select pg_temp.expect_ok(
-  format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_off')),
+  pg_temp.id('admin_a'),
+  format('select public.review_entity_cdd(%L, ''approved'')::text', pg_temp.id('rec_off')),
   'the fetcher may approve their own record with four_eyes off'
 );
 update public.firms set four_eyes = true where id = pg_temp.id('firm');
 
--- Old rows: fetched_by is null, so the approval is allowed but logged with a note.
-select pg_temp.fetch_record('fetcher_admin', 'rec_old');
+-- Records from before fetched_by existed: allowed, logged with a note.
+select pg_temp.fetch_record('admin_a', 'rec_old');
 update public.entity_cdd_records set fetched_by = null where id = pg_temp.id('rec_old');
-select pg_temp.act_as(pg_temp.id('fetcher_admin'));
 select pg_temp.expect_ok(
-  format('select public.review_entity_cdd(%L, ''approved'')', pg_temp.id('rec_old')),
+  pg_temp.id('admin_a'),
+  format('select public.review_entity_cdd(%L, ''approved'')::text', pg_temp.id('rec_old')),
   'an approval is allowed when fetched_by is null'
 );
 select pg_temp.expect_true(
   (select payload ->> 'note' like 'Four-eyes could not be checked%'
    from public.audit_events
    where event_type = 'entity_cdd.approved' and (payload ->> 'record_id')::uuid = pg_temp.id('rec_old')),
-  'that approval is logged with a note'
+  'that approval is logged with a note that four-eyes could not be checked'
+);
+
+-- ─── review_extraction and approve_filing_document: admin only ────────────────
+
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.review_extraction(%L, ''approved'')::text', pg_temp.id('ext_blocked')),
+  'permission denied%',
+  'read_only is blocked from review_extraction'
+);
+select pg_temp.expect_error(
+  pg_temp.id('member'),
+  format('select public.review_extraction(%L, ''approved'')::text', pg_temp.id('ext_blocked')),
+  'permission denied%',
+  'a member is blocked from review_extraction'
+);
+select pg_temp.expect_ok(
+  pg_temp.id('admin_a'),
+  format('select public.review_extraction(%L, ''approved'')::text', pg_temp.id('ext_ok')),
+  'an admin may review_extraction'
+);
+
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  'permission denied%',
+  'read_only is blocked from approve_filing_document'
+);
+select pg_temp.expect_error(
+  pg_temp.id('member'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  'permission denied%',
+  'a member is blocked from approve_filing_document'
+);
+select pg_temp.expect_ok(
+  pg_temp.id('admin_a'),
+  format('select public.approve_filing_document(%L)::text', pg_temp.id('doc_filing')),
+  'an admin may approve_filing_document'
 );
 
 -- ─── Other write RPCs ─────────────────────────────────────────────────────────
 
-select pg_temp.act_as(pg_temp.id('read_only'));
 select pg_temp.expect_error(
-  format('select public.create_client(%L, ''individual'', ''Nobody'', ''standard'', ''{}''::jsonb)', pg_temp.id('firm')),
+  pg_temp.id('read_only'),
+  format('select public.create_client(%L, ''individual'', ''Nobody'', ''standard'', ''{}''::jsonb)::text', pg_temp.id('firm')),
   'permission denied%',
   'read_only is blocked from create_client'
 );
 select pg_temp.expect_error(
-  format('select public.import_clients(%L, ''[]''::jsonb)', pg_temp.id('firm')),
+  pg_temp.id('read_only'),
+  format('select public.import_clients(%L, ''[]''::jsonb)::text', pg_temp.id('firm')),
   'permission denied%',
   'read_only is blocked from import_clients'
 );
-
-select pg_temp.act_as(pg_temp.id('member'));
 select pg_temp.expect_ok(
-  format(
-    'select public.create_client(%L, ''individual'', ''Allowed Person'', ''standard'', ''{"date_of_birth": "1980-01-01"}''::jsonb)',
-    pg_temp.id('firm')
-  ),
-  'member may create_client'
+  pg_temp.id('member'),
+  format('select public.create_client(%L, ''individual'', ''Allowed Person'', ''standard'', ''{}''::jsonb)::text', pg_temp.id('firm')),
+  'a member may create_client'
+);
+
+-- ─── update_client and archive_client (the analyst-role bug) ──────────────────
+
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.update_client(%L, ''{"display_name": "Nope"}''::jsonb)::text', pg_temp.id('client_edit')),
+  'user cannot update clients in this firm',
+  'read_only is blocked from update_client'
+);
+select pg_temp.expect_error(
+  pg_temp.id('outsider'),
+  format('select public.update_client(%L, ''{"display_name": "Nope"}''::jsonb)::text', pg_temp.id('client_edit')),
+  'user cannot update clients in this firm',
+  'a member of another firm is blocked from update_client'
+);
+select pg_temp.expect_ok(
+  pg_temp.id('member'),
+  format('select public.update_client(%L, ''{"display_name": "Renamed by member"}''::jsonb)::text', pg_temp.id('client_edit')),
+  'a member may update_client'
+);
+select pg_temp.expect_ok(
+  pg_temp.id('admin_a'),
+  format('select public.update_client(%L, ''{"display_name": "Renamed by admin"}''::jsonb)::text', pg_temp.id('client_edit')),
+  'an admin may update_client'
+);
+select pg_temp.expect_true(
+  (select display_name from public.clients where id = pg_temp.id('client_edit')) = 'Renamed by admin',
+  'the update_client changes were saved'
+);
+
+select pg_temp.expect_error(
+  pg_temp.id('read_only'),
+  format('select public.archive_client(%L)::text', pg_temp.id('client_archive')),
+  'user cannot archive clients in this firm',
+  'read_only is blocked from archive_client'
+);
+select pg_temp.expect_ok(
+  pg_temp.id('member'),
+  format('select public.archive_client(%L)::text', pg_temp.id('client_archive')),
+  'a member may archive_client'
+);
+select pg_temp.expect_true(
+  (select status from public.clients where id = pg_temp.id('client_archive')) = 'archived',
+  'the archive_client change was saved'
 );
 
 -- ─── Backfill ─────────────────────────────────────────────────────────────────
 
--- The same statement as the migration's backfill, on a record whose actor is in the audit trail.
-select pg_temp.act_as(null);
+-- The migration's backfill statement, run on a record whose fetcher is in the audit trail.
 insert into t_ids values ('rec_backfill', gen_random_uuid());
 insert into public.entity_cdd_records (id, firm_id, client_id, company_number, status)
-values (pg_temp.id('rec_backfill'), pg_temp.id('firm'), pg_temp.id('client'), '00000002', 'pending_review');
+values (pg_temp.id('rec_backfill'), pg_temp.id('firm'), pg_temp.id('client_entity'), '00000002', 'pending_review');
 insert into public.audit_events (firm_id, actor_user_id, event_type, entity_type, entity_id, payload)
 values (
-  pg_temp.id('firm'), pg_temp.id('member'), 'entity_cdd.fetched', 'client', pg_temp.id('client'),
+  pg_temp.id('firm'), pg_temp.id('member'), 'entity_cdd.fetched', 'client', pg_temp.id('client_entity'),
   jsonb_build_object('record_id', pg_temp.id('rec_backfill'))
 );
 update public.entity_cdd_records r
@@ -329,9 +438,21 @@ where r.fetched_by is null
   and e.actor_user_id is not null;
 select pg_temp.expect_true(
   (select fetched_by from public.entity_cdd_records where id = pg_temp.id('rec_backfill')) = pg_temp.id('member'),
-  'backfill takes fetched_by from the entity_cdd.fetched audit event'
+  'the backfill takes fetched_by from the entity_cdd.fetched audit event'
 );
 
-select 'ALL ' || n || ' CHECKS PASSED' as result from t_count;
+-- ─── Done ─────────────────────────────────────────────────────────────────────
+
+do $$
+declare
+  v_checks int;
+begin
+  select n into v_checks from t_count;
+  raise notice 'ALL PERMISSION TESTS PASSED';
+  raise notice '% checks ran', v_checks;
+end;
+$$;
+
+-- ===== END TESTS =====
 
 rollback;

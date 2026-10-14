@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { EntityCddRecord } from '@/lib/types/entity-cdd'
 import { PSC_DATA_QUALITY_LABELS } from '@/lib/types/entity-cdd'
 import { getMembership } from '@/lib/entity-cdd/membership'
-import { reviewGate } from '@/lib/entity-cdd/permissions'
+import { ROLE_LABELS, reviewGate } from '@/lib/entity-cdd/permissions'
 import { ReviewEntityCddForm } from './review-form'
 import { OwnershipOrgChart } from './org-chart'
 
@@ -101,6 +101,9 @@ export default async function ReviewEntityCddPage({
             Company number {record.company_number} · Fetched{' '}
             {new Date(record.fetched_at).toLocaleDateString('en-GB')}
           </p>
+          {membership ? (
+            <p className="mt-1 text-xs text-[var(--muted)]">Your role: {ROLE_LABELS[membership.role] ?? membership.role}</p>
+          ) : null}
         </header>
 
         {/* Company details */}

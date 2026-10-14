@@ -5,9 +5,16 @@
  */
 
 /** Roles that may write (fetch, create, upload). read_only never can. */
-export const WRITE_ROLES = ['admin', 'member', 'reviewer'] as const
-/** Roles that may review (approve or reject) an entity CDD record. */
-export const REVIEW_ROLES = ['admin', 'reviewer'] as const
+export const WRITE_ROLES = ['admin', 'member'] as const
+/** Roles that may review (approve or reject records and documents). Admin is the reviewer. */
+export const REVIEW_ROLES = ['admin'] as const
+
+/** How a role is shown to people. Admins are the firm's reviewers. */
+export const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin (reviewer)',
+  member: 'Member',
+  read_only: 'Read only',
+}
 
 export const FOUR_EYES_MESSAGE = 'Four-eyes rule: the person who fetched this record cannot approve it'
 
@@ -43,7 +50,7 @@ export function reviewGate({ role, userId, fetchedBy, fourEyes }: ReviewGateInpu
     return {
       canApprove: false,
       canReject: false,
-      reason: 'Only an admin or reviewer can approve or reject records.',
+      reason: 'Only an admin (reviewer) can approve or reject records.',
     }
   }
   // A missing fetched_by (old record) is allowed; the database logs that it could not be checked.

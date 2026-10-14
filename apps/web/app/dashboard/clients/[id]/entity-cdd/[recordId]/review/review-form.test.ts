@@ -21,7 +21,7 @@ function button(html: string, decision: 'approved' | 'rejected'): string {
 const disabled = (tag: string) => /\sdisabled(=|\s|>)/.test(tag)
 
 describe('review form buttons', () => {
-  it('enables both for a second reviewer and shows no warning', () => {
+  it('enables both for a second admin and shows no warning', () => {
     const html = render(reviewGate({ role: 'admin', userId: 'b', fetchedBy: 'a', fourEyes: true }))
     expect(disabled(button(html, 'approved'))).toBe(false)
     expect(disabled(button(html, 'rejected'))).toBe(false)
@@ -39,7 +39,7 @@ describe('review form buttons', () => {
     const html = render(reviewGate({ role: 'member', userId: 'b', fetchedBy: 'a', fourEyes: true }))
     expect(disabled(button(html, 'approved'))).toBe(true)
     expect(disabled(button(html, 'rejected'))).toBe(true)
-    expect(html).toContain('Only an admin or reviewer')
+    expect(html).toContain('Only an admin (reviewer)')
   })
 
   it('disables only Approve for the fetcher under four-eyes, with the rule shown', () => {

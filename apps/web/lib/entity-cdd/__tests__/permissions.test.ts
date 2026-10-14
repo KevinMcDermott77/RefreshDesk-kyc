@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canReview, canWrite, FOUR_EYES_MESSAGE, reviewGate } from '../permissions'
+import { canReview, canWrite, FOUR_EYES_MESSAGE, REVIEW_ROLES, ROLE_LABELS, WRITE_ROLES, reviewGate } from '../permissions'
 
 const FETCHER = 'user-fetcher'
 const OTHER = 'user-other'
@@ -10,13 +10,23 @@ describe('canWrite / canReview', () => {
     expect(canReview('read_only')).toBe(false)
   })
 
-  it('members write but do not review; admins and reviewers do both', () => {
+  it('members write but do not review; admins do both', () => {
     expect(canWrite('member')).toBe(true)
     expect(canReview('member')).toBe(false)
-    for (const role of ['admin', 'reviewer']) {
-      expect(canWrite(role)).toBe(true)
-      expect(canReview(role)).toBe(true)
-    }
+    expect(canWrite('admin')).toBe(true)
+    expect(canReview('admin')).toBe(true)
+  })
+
+  it('names only roles that can exist: admin, member, read_only', () => {
+    expect([...WRITE_ROLES, ...REVIEW_ROLES].every((r) => ['admin', 'member', 'read_only'].includes(r))).toBe(true)
+    expect(canWrite('reviewer')).toBe(false)
+    expect(canReview('reviewer')).toBe(false)
+  })
+
+  it('labels admins as the reviewers', () => {
+    expect(ROLE_LABELS.admin).toBe('Admin (reviewer)')
+    expect(ROLE_LABELS.member).toBe('Member')
+    expect(ROLE_LABELS.read_only).toBe('Read only')
   })
 
   it('no role means no access', () => {
@@ -38,7 +48,7 @@ describe('reviewGate', () => {
   it('disables both buttons for a member', () => {
     const gate = reviewGate({ ...base, role: 'member' })
     expect(gate).toMatchObject({ canApprove: false, canReject: false })
-    expect(gate.reason).toMatch(/admin or reviewer/)
+    expect(gate.reason).toMatch(/admin \(reviewer\)/)
   })
 
   it('disables both buttons when the user is not in the firm', () => {
@@ -56,9 +66,8 @@ describe('reviewGate', () => {
     expect(reviewGate({ ...base, role: 'admin', userId: FETCHER, fourEyes: false })).toEqual({ canApprove: true, canReject: true })
   })
 
-  it('lets a second reviewer approve under four-eyes', () => {
+  it('lets a second admin approve under four-eyes', () => {
     expect(reviewGate({ ...base, role: 'admin' })).toEqual({ canApprove: true, canReject: true })
-    expect(reviewGate({ ...base, role: 'reviewer' })).toEqual({ canApprove: true, canReject: true })
   })
 
   it('allows approval of an old record with no fetched_by', () => {

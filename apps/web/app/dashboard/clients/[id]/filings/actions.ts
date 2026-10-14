@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { buildStoragePath, uploadDocument } from '@/lib/supabase/storage'
 import { fetchFilings, fetchFilingDocument } from '@/lib/companies-house/fetch-filings'
 import { filingLabel } from '@/lib/types/filings'
+import { canReview } from '@/lib/entity-cdd/permissions'
 
 export type SaveFilingsState = { error?: string; saved?: string[] }
 
@@ -43,6 +44,10 @@ export async function saveFilingsAction(
 
   if (!membership || membership.role === 'read_only') {
     return { error: 'You do not have permission to do this' }
+  }
+  // Saving a filing approves it in the same step, and approving needs an admin (reviewer).
+  if (!canReview(membership.role)) {
+    return { error: 'Only an admin (reviewer) can save filings' }
   }
 
   const { data: approvedCdd } = await supabase

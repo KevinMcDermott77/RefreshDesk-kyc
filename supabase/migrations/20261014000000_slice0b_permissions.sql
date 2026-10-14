@@ -4,15 +4,19 @@
 -- read_only user could call them directly (BUILT_STATE §6 bugs 1 and 2). This migration:
 --
 -- 1. adds require_role(firm_id, roles[]) and calls it at the top of every write RPC that
---    previously only checked active membership. read_only can no longer write. Reviewing an
---    entity CDD record needs admin or reviewer.
+--    previously only checked active membership. read_only can no longer write. Reviewing
+--    (entity CDD records, document extractions) and approving saved filings need admin:
+--    admin is the reviewer, there is no separate reviewer role.
 -- 2. adds entity_cdd_records.fetched_by, set by save_entity_cdd from auth.uid(), backfilled
 --    from the entity_cdd.fetched audit event.
--- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd.
+-- 3. adds firms.four_eyes (default true) and enforces it in review_entity_cdd. (review_extraction
+--    and approve_filing_document have no four-eyes check: no preparer is recorded for them.)
+-- 4. repairs is_admin_or_analyst_of_firm, which still looked for the 'analyst' role that Slice 6
+--    removed, so only admins could update or archive clients. Admins and members can again.
 --
--- Roles today are admin, member and read_only (firm_members_role_check). 'reviewer' is not an
--- assignable role yet; it is listed so the gate works the day it is added.
+-- Roles are admin, member and read_only (firm_members_role_check).
 -- CREATE OR REPLACE keeps each function's existing grants.
+-- Everything here can run inside a transaction (no CONCURRENTLY, no ALTER TYPE ... ADD VALUE).
 
 -- 1. Columns
 
@@ -76,7 +80,29 @@ $$;
 revoke all on function public.require_role(uuid, text[]) from public;
 grant execute on function public.require_role(uuid, text[]) to authenticated;
 
--- 3. Write RPCs (each is its latest definition with the membership check replaced)
+-- 3. Client-edit gate (update_client and archive_client)
+
+create or replace function public.is_admin_or_analyst_of_firm(p_firm_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.firm_members
+    where firm_id = p_firm_id
+      and user_id = auth.uid()
+      and role in ('admin', 'member')
+      and status = 'active'
+  );
+$$;
+
+comment on function public.is_admin_or_analyst_of_firm(uuid) is
+  'True for an active admin or member of the firm: the roles that may update and archive clients. The name predates Slice 6, which removed the analyst role.';
+
+-- 4. Write RPCs (each is its latest definition with the membership check replaced)
 
 -- ─── create_client ─────────────────────────────────────────────────────────
 
@@ -105,7 +131,7 @@ begin
     raise exception 'create_client requires an authenticated user';
   end if;
 
-  perform public.require_role(p_firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(p_firm_id, array['admin', 'member']);
 
   select plan into v_plan from public.firms where id = p_firm_id;
 
@@ -214,7 +240,7 @@ begin
     raise exception 'import_clients requires an authenticated user';
   end if;
 
-  perform public.require_role(p_firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(p_firm_id, array['admin', 'member']);
 
   if p_rows is null or jsonb_typeof(p_rows) <> 'array' then
     raise exception 'p_rows must be a JSON array';
@@ -310,7 +336,7 @@ begin
     raise exception 'client not found';
   end if;
 
-  perform public.require_role(v_firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_firm_id, array['admin', 'member']);
 
   if p_document_type not in ('passport', 'proof_of_address', 'incorporation', 'source_of_funds', 'filing') then
     raise exception 'invalid document_type';
@@ -401,7 +427,7 @@ begin
     raise exception 'document not found';
   end if;
 
-  perform public.require_role(v_doc.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_doc.firm_id, array['admin', 'member']);
 
   update public.client_documents
   set status = 'pending_review'
@@ -495,7 +521,7 @@ begin
     raise exception 'extraction has already been reviewed';
   end if;
 
-  perform public.require_role(v_extraction.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_extraction.firm_id, array['admin']);
 
   update public.document_extractions
   set
@@ -600,7 +626,7 @@ begin
     raise exception 'approve_filing_document can only be used on filing documents';
   end if;
 
-  perform public.require_role(v_document.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_document.firm_id, array['admin']);
 
   update public.client_documents
   set status = 'approved'
@@ -655,7 +681,7 @@ begin
     raise exception 'client not found';
   end if;
 
-  perform public.require_role(v_firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_firm_id, array['admin', 'member']);
 
   insert into public.client_embeddings (firm_id, client_id, content_hash, embedding)
   values (v_firm_id, p_client_id, p_content_hash, p_embedding)
@@ -699,7 +725,7 @@ begin
     raise exception 'extraction not found';
   end if;
 
-  perform public.require_role(v_extraction.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_extraction.firm_id, array['admin', 'member']);
 
   insert into public.extraction_embeddings (firm_id, client_id, extraction_id, content_hash, embedding)
   values (v_extraction.firm_id, v_extraction.client_id, p_extraction_id, p_content_hash, p_embedding)
@@ -743,7 +769,7 @@ begin
     raise exception 'entity CDD record not found';
   end if;
 
-  perform public.require_role(v_record.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_record.firm_id, array['admin', 'member']);
 
   insert into public.extraction_embeddings (firm_id, client_id, entity_cdd_id, content_hash, embedding)
   values (v_record.firm_id, v_record.client_id, p_entity_cdd_id, p_content_hash, p_embedding)
@@ -796,7 +822,7 @@ begin
     raise exception 'client not found';
   end if;
 
-  perform public.require_role(v_client.firm_id, array['admin', 'member', 'reviewer']);
+  perform public.require_role(v_client.firm_id, array['admin', 'member']);
 
   if v_client.client_type <> 'entity' then
     raise exception 'entity CDD can only be fetched for entity clients';
@@ -907,7 +933,7 @@ begin
   end if;
 
   -- Reviewing needs a reviewing role; read_only and member cannot, whatever the app shows.
-  perform public.require_role(v_record.firm_id, array['admin', 'reviewer']);
+  perform public.require_role(v_record.firm_id, array['admin']);
 
   select four_eyes into v_four_eyes
   from public.firms
