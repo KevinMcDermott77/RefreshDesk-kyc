@@ -30,7 +30,7 @@ const letter = (over: Partial<ClientEvidenceItem> = {}): ClientEvidenceItem => (
   evidenceKind: 'client_ownership_confirmation',
   asAt: '2026-06-30',
   documentDate: '2026-07-16',
-  certified: 'unclear',
+  certified: 'not_applicable',
   certifierCapacity: null,
   certificationDate: null,
   confirmedByCapacity: 'director',
@@ -135,7 +135,7 @@ describe('normalising a confirmation', () => {
 
   it('has no certification at all, and keeps who confirmed it (by capacity), when and how', () => {
     const payload = ok(base)
-    expect(payload).toMatchObject({ certified: 'unclear', confirmed_by_capacity: 'director', received_as: 'signed_letter', confirmation_date: '2026-07-16', no_other_holder_at_or_above: 25 })
+    expect(payload).toMatchObject({ certified: 'not_applicable', confirmed_by_capacity: 'director', received_as: 'signed_letter', confirmation_date: '2026-07-16', no_other_holder_at_or_above: 25 })
     for (const key of ['certified_by', 'certifier_capacity', 'certification_date']) expect(payload).not.toHaveProperty(key)
     expect(JSON.stringify(payload)).not.toContain('Some Person')
   })
@@ -161,6 +161,25 @@ describe('normalising a confirmation', () => {
   it('refuses a confirmation date in the future and a nonsense "no other holder" percentage', () => {
     expect(normalisePayload({ ...base, confirmation_date: '2026-10-17' }, { today: TODAY, kind: 'client_ownership_confirmation' })).toMatchObject({ ok: false })
     expect(normalisePayload({ ...base, no_other_holder_at_or_above: 150 }, { today: TODAY, kind: 'client_ownership_confirmation' })).toMatchObject({ ok: false })
+  })
+
+  it('says not_applicable whatever the form or the model sent, and never "certified"', () => {
+    for (const certified of ['yes', 'no', 'unclear', 'not_applicable', undefined]) {
+      expect(ok({ ...base, certified }).certified).toBe('not_applicable')
+    }
+  })
+
+  it('"not applicable" is for a confirmation only: any other kind must say yes, no or unclear', () => {
+    for (const kind of ['shareholder_register', 'register_extract', 'annual_report_page', undefined]) {
+      expect(normalisePayload({ ...base, certified: 'not_applicable' }, { today: TODAY, kind })).toMatchObject({ ok: false, error: expect.stringContaining("only for a client's written confirmation") })
+    }
+    for (const certified of ['yes', 'no', 'unclear']) {
+      expect(normalisePayload({ ...base, certified }, { today: TODAY, kind: 'shareholder_register' })).toMatchObject({ ok: true })
+    }
+  })
+
+  it('the older signed-chart kind is a confirmation too', () => {
+    expect(ok({ ...base, certified: 'yes' }, { kind: 'signed_structure_chart' }).certified).toBe('not_applicable')
   })
 
   it('another kind keeps its certification and drops the confirmation fields', () => {
@@ -276,7 +295,7 @@ describe('the loader', () => {
         node_identity: { country: 'NO', registration_number: '1' },
         evidence_kind: 'client_ownership_confirmation',
         as_at: '2026-06-30',
-        certified: 'unclear',
+        certified: 'not_applicable',
         confirmed_by: 'admin-1',
         confirmed_at: '2026-10-15T09:00:00Z',
         document_sha256: 'a'.repeat(64),
@@ -291,6 +310,7 @@ describe('the loader', () => {
         },
       },
     ])
+    expect(item.certified).toBe('not_applicable')
     expect(item).toMatchObject({ confirmedByCapacity: 'company_secretary', confirmationDate: '2026-07-16', receivedAs: 'email', noOtherHolderAtOrAbove: 25 })
     expect(JSON.stringify(item)).not.toContain('Some Person')
   })
@@ -319,7 +339,7 @@ describe('reading a confirmation', () => {
 
   it('keeps the statement, the capacity, the date and the channel', () => {
     const { payload } = parseEvidenceResponse(JSON.stringify(reply), TODAY, 'client_ownership_confirmation')
-    expect(payload).toMatchObject({ confirmed_by_capacity: 'director', received_as: 'signed_letter', confirmation_date: '2026-07-16', no_other_holder_at_or_above: 25, certified: 'unclear' })
+    expect(payload).toMatchObject({ confirmed_by_capacity: 'director', received_as: 'signed_letter', confirmation_date: '2026-07-16', no_other_holder_at_or_above: 25, certified: 'not_applicable' })
   })
 
   it('an unreadable confirmation date costs the date, not the owners', () => {
@@ -336,7 +356,7 @@ describe('reading a confirmation', () => {
 
   it('never takes a certification from a confirmation, even if the model offers one', () => {
     const { payload } = parseEvidenceResponse(JSON.stringify({ ...reply, certified: 'yes', certified_by: 'Some Person', certifier_capacity: 'notary' }), TODAY, 'client_ownership_confirmation')
-    expect(payload.certified).toBe('unclear')
+    expect(payload.certified).toBe('not_applicable')
     expect(payload).not.toHaveProperty('certified_by')
     expect(payload).not.toHaveProperty('certifier_capacity')
   })

@@ -74,6 +74,9 @@ export const EVIDENCE_LABEL = 'client-provided, reviewer-verified'
 
 export type Certified = 'yes' | 'no' | 'unclear'
 
+/** What a payload says about certification: a client's own written confirmation is nobody's, so it says not_applicable. */
+export type PayloadCertified = Certified | 'not_applicable'
+
 /** Who certified the document, by capacity: the person's name is never kept. */
 export const CERTIFIER_CAPACITIES = ['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear'] as const
 export type CertifierCapacity = (typeof CERTIFIER_CAPACITIES)[number]
@@ -117,7 +120,7 @@ export type EvidencePayload = {
   as_at?: string
   /** The date of the document (yyyy-mm-dd). */
   document_date?: string
-  certified: Certified
+  certified: PayloadCertified
   certified_by?: string
   /** In what capacity the certifier signed. Set only when the document is certified (or may be). */
   certifier_capacity?: CertifierCapacity

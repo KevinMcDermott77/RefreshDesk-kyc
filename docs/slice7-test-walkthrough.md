@@ -10,7 +10,7 @@ are all invented, and everything the sample produces says **Sample data**, inclu
 - `apps/web/.env.local` has `ANTHROPIC_API_KEY` and `PACK_SIGNING_SECRET` (16+ characters). Restart `npm run dev` after changing it.
 - Extraction is on for your firm (Settings → Client ownership evidence). It is, for `bubble-up`.
 - The sample subject is offered only to firms whose slug is in `DEMO_SUBJECT_FIRM_SLUGS` (comma-separated), which defaults to `bubble-up`. Any other firm gets "The sample subject is not available to this firm."
-- **The migration for the new evidence kind is applied** (see the report; until it is, uploading a written confirmation is refused with "invalid evidence kind"). Also `20261017000000_slice7e_evidence_followup.sql`.
+- **Migrations 7e and 7f are applied** (`20261017000000_slice7e_evidence_followup.sql`, `20261018000000_slice7f_confirmation_kind.sql`). Until 7f is, uploading a written confirmation is refused with "invalid evidence kind"; until 7e is, a draft cannot be withdrawn.
 - The files to upload: `__fixtures__/evidence/SAMPLE-ownership-confirmation.pdf` (the client's signed letter: use this one first) and `__fixtures__/evidence/SAMPLE-shareholder-register.pdf` (the register: the fallback). Regenerate both with `node scripts/make-sample-register.cjs`.
 
 ## Steps

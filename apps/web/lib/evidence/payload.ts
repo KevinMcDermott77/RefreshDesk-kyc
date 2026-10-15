@@ -78,7 +78,7 @@ const payloadSchema = z.object({
   as_at: isoDate,
   document_date: isoDate,
   // Missing means "unclear": a document is never assumed to be certified.
-  certified: z.enum(['yes', 'no', 'unclear']).default('unclear'),
+  certified: z.enum(['yes', 'no', 'unclear', 'not_applicable']).default('unclear'),
   certified_by: optionalText,
   certifier_capacity: z.enum(CERTIFIER_CAPACITIES).nullish().transform((value) => value ?? undefined),
   certification_date: isoDate,
@@ -124,6 +124,10 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
     return { ok: false, error: 'The as-at date and document date cannot be in the future' }
   }
   const confirmation = isConfirmationKind(options.kind)
+  // not_applicable belongs to the client's own statement and to nothing else: any other kind is yes, no or unclear.
+  if (!confirmation && value.certified === 'not_applicable') {
+    return { ok: false, error: "'Not applicable' is only for a client's written confirmation: say whether this document is certified" }
+  }
   if (value.certification_date && value.certification_date > today) {
     return { ok: false, error: 'The certification date cannot be in the future' }
   }
@@ -164,8 +168,7 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
 
   // Capacity and date only mean something on a document that is, or may be, certified; a certified one with no
   // stated capacity is "unclear", never assumed.
-  // A client's written confirmation is nobody's certification: the database still wants a value, so it is
-  // "unclear", and everything that reads it looks at the kind first.
+  // A client's written confirmation is nobody's certification: it says "not_applicable".
   const certification =
     confirmation || value.certified === 'no'
       ? {}
@@ -179,7 +182,7 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
     owners_complete: value.owners_complete,
     ...(value.as_at ? { as_at: value.as_at } : {}),
     ...(value.document_date ? { document_date: value.document_date } : {}),
-    certified: confirmation ? ('unclear' as const) : value.certified,
+    certified: confirmation ? ('not_applicable' as const) : value.certified,
     ...(!confirmation && value.certified_by ? { certified_by: value.certified_by } : {}),
     ...certification,
     ...(confirmation

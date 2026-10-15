@@ -435,7 +435,7 @@ export async function walk(
             ...(item.receivedAs ? { receivedAs: item.receivedAs } : {}),
           }
         : {
-            certified: item.certified,
+            certified: item.certified === 'not_applicable' ? ('unclear' as const) : item.certified,
             ...(item.certifierCapacity ? { certifierCapacity: item.certifierCapacity } : {}),
             ...(item.certificationDate ? { certificationDate: item.certificationDate } : {}),
           }),

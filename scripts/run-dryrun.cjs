@@ -13,6 +13,7 @@
 // run in the order given: migrations first, then tests. Paths are relative to the current directory.
 // Slice 6 needs Slice 0b (require_role, firms.four_eyes), so list both unless 0b is already applied.
 // Slice 7a needs both; with 0b and 6 already on the database, give only the 7a migration.
+// Several --migration flags run in the order given (7e, then 7f), in the one transaction, with the tests after both.
 //
 // DRYRUN_DB_URL is read from the environment only. Neither it nor any part of it (host, user,
 // password, database name) is ever printed: error text is scrubbed before it is shown.
@@ -80,6 +81,16 @@ const PROBES = [
                  and c.conrelid = to_regclass('public.ownership_evidence')) as proposal_present_check`,
     // Absent when 7a is not applied (the migration would fail); applied once the check allows a rejected draft.
     applied: (r) => typeof r.proposal_present_check === 'string' && r.proposal_present_check.includes('rejected'),
+  },
+  {
+    match: /slice7f/,
+    name: 'Slice 7f (client ownership confirmation kind)',
+    sql: `
+      select (select pg_get_constraintdef(c.oid)
+                from pg_constraint c
+               where c.conname = 'ownership_evidence_evidence_kind_check'
+                 and c.conrelid = to_regclass('public.ownership_evidence')) as evidence_kind_check`,
+    applied: (r) => typeof r.evidence_kind_check === 'string' && r.evidence_kind_check.includes('client_ownership_confirmation'),
   },
 ]
 

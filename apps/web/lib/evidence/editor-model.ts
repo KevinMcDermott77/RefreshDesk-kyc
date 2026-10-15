@@ -77,7 +77,7 @@ export function toState(payload: EvidencePayload): EditorState {
     ownersComplete: payload.owners_complete,
     asAt: payload.as_at ?? '',
     documentDate: payload.document_date ?? '',
-    certified: payload.certified,
+    certified: payload.certified === 'not_applicable' ? 'unclear' : payload.certified,
     certifiedBy: payload.certified_by ?? '',
     certifierCapacity: payload.certifier_capacity ?? 'unclear',
     certificationDate: payload.certification_date ?? '',

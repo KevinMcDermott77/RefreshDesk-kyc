@@ -115,3 +115,17 @@ DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
   --migration supabase/migrations/20261017000000_slice7e_evidence_followup.sql \
   --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence_followup.test.sql
 ```
+
+## Slice 7f: a client's written confirmation (and certified = not_applicable)
+
+`supabase/migrations/20261018000000_slice7f_confirmation_kind.sql` (needs 7a and 7e).
+
+- New evidence kind `client_ownership_confirmation` in the `evidence_kind` check and in `create_ownership_evidence` (the 7e function plus that value). `signed_structure_chart` stays valid and is treated as a confirmation.
+- `certified` gains `not_applicable`, because nobody certifies the client's own statement. A new constraint, `ownership_evidence_certified_matches_kind`, pairs the two confirmation kinds with `not_applicable` and every other kind with yes, no or unclear, on the typed column and on the proposal and confirmed payloads. It is added `NOT VALID`: new and changed rows are checked, rows written before it existed are not re-checked.
+- `ownership_evidence_payload_error` accepts `not_applicable` (its message now lists the four values).
+
+7e and 7f are both unapplied, so ONE command dry-runs them together, in order, with all their tests (every migration and test file runs in the one transaction, which is rolled back):
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs   --migration supabase/migrations/20261017000000_slice7e_evidence_followup.sql   --migration supabase/migrations/20261018000000_slice7f_confirmation_kind.sql   --tests supabase/tests/helpers.sql   --tests supabase/tests/client_evidence_followup.test.sql   --tests supabase/tests/client_evidence_kind.test.sql
+```

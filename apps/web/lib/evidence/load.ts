@@ -29,7 +29,7 @@ const itemSchema = z.object({
   evidence_kind: z.string(),
   as_at: z.string().nullish(),
   document_date: z.string().nullish(),
-  certified: z.enum(['yes', 'no', 'unclear']),
+  certified: z.enum(['yes', 'no', 'unclear', 'not_applicable']),
   confirmed_by: z.string().nullish(),
   edited: z.boolean().nullish(),
   confirmed_at: z.string(),

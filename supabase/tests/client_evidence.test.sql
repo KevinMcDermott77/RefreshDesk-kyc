@@ -280,7 +280,7 @@ select _dryrun.expect_error(
 select _dryrun.expect_error(
   _dryrun.id('member'),
   format('select public.save_evidence_proposal(%L, ''manual'', %L::jsonb)::text', _dryrun.id('e1'), _dryrun.payload('maybe')::text),
-  '%certified must be yes, no or unclear%',
+  '%certified must be yes, no%',
   'certified must be yes, no or unclear'
 );
 select _dryrun.expect_error(

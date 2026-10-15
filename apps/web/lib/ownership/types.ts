@@ -291,7 +291,7 @@ export type ClientEvidenceItem = {
   evidenceKind: string
   asAt: string | null
   documentDate: string | null
-  certified: 'yes' | 'no' | 'unclear'
+  certified: 'yes' | 'no' | 'unclear' | 'not_applicable'
   certifierCapacity: 'notary' | 'lawyer' | 'accountant' | 'company_officer' | 'other' | 'unclear' | null
   certificationDate: string | null
   /** A client's written confirmation (Slice 7): the signatory's capacity, the date, how it arrived, and the "no other holder" statement. */
