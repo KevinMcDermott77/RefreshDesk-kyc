@@ -1,0 +1,5 @@
+
+# Binary fixtures: never convert line endings (a PDF with CRLF breaks its xref offsets).
+*.pdf binary
+*.png binary
+*.jpg binary
