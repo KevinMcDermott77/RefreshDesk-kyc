@@ -1,7 +1,7 @@
 import { classify } from '@/lib/ownership/bands'
 import { initials } from '@/lib/ownership/to-flow'
 import { ruleText } from '@/lib/ownership/terminals'
-import type { Evidence, GleifRecord, WalkResult } from '@/lib/ownership/types'
+import type { CheckRun, Evidence, GleifRecord, WalkResult } from '@/lib/ownership/types'
 
 export type Mark = 'PASS' | 'GAP' | 'INFO'
 
@@ -44,6 +44,8 @@ export type ProfileInput = {
   ownership: OwnershipSummary
   /** Terminal-check evidence for the target; undefined when not checked. */
   listing?: Evidence[]
+  /** The walk's terminal decision; when given, the listing row follows it instead of `listing`. */
+  listingDecision?: ListingDecision
   listingFetchedAt?: string
   fetchedAt: { profile?: string; officers?: string }
 }
@@ -260,8 +262,102 @@ function leiRow(input: ProfileInput): ProfileRow {
 
 export const NO_LISTING_NOTE = 'No EU regulated-market listing or authorisation found'
 
-/** Whether the target is listed on an EU regulated market or authorised, with the evidence. */
-export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string): ProfileRow {
+const CHECK_LABELS: Record<CheckRun['check'], string> = {
+  ch_exemption: 'Companies House PSC exemption (UK regulated market)',
+  esma_firds: 'ESMA FIRDS (EU regulated-market listing)',
+  esma_upreg: 'ESMA register of authorised firms',
+  sec_us: 'SEC US name match (needs SEC_USER_AGENT)',
+}
+const OUTCOME_TEXT: Record<CheckRun['outcome'], string> = {
+  found: 'found',
+  none: 'nothing found',
+  unavailable: 'source unavailable, not checked',
+}
+
+function checksLine(prefix: string, checks: CheckRun[]): string {
+  if (checks.length === 0) return `${prefix}: none recorded`
+  return `${prefix}: ${checks.map((c) => `${CHECK_LABELS[c.check]} ${OUTCOME_TEXT[c.outcome]}`).join('; ')}`
+}
+
+function evidenceLine(e: Evidence): string {
+  return e.kind === 'listed_eu'
+    ? `Listed on a regulated market: ${e.details.isin} on ${e.details.mic} (${e.details.venueName}), ${ruleText(e.details.rule)}`
+    : `Authorised: ${e.details.register}, ${e.details.authority}, ${e.details.status}${e.details.fileMonth ? `, file ${e.details.fileMonth}` : ''}`
+}
+
+/** The walk's listing / authorisation outcome for the target, built from the nodes themselves. */
+export type ListingDecision = {
+  /** The target's own evidence and checks. */
+  target: { evidence: Evidence[]; checks: CheckRun[] }
+  /** Where the walk's terminal decision sits: the target, or the first listed or authorised company up the chain. */
+  terminal?: {
+    name: string
+    isRoot: boolean
+    resolution: 'RESOLVED_LISTED' | 'RESOLVED_REGULATED'
+    evidence: Evidence[]
+    checks: CheckRun[]
+    /** Companies House company page, for a UK node. */
+    companyUrl?: string
+  }
+}
+
+/**
+ * What the walk decided about listing. The root if it is terminal, else the shallowest listed
+ * node, else the shallowest authorised one: the same node the Ownership row's rule refers to.
+ * `extra` adds checks run on the target outside the walk (the UK path looks up the target's LEI).
+ */
+export function listingDecision(result: WalkResult, extra?: { evidence?: Evidence[]; checks?: CheckRun[] }): ListingDecision {
+  const root = result.nodes.find((n) => n.id === result.rootId)
+  const byDepth = [...result.nodes].sort((a, b) => a.depth - b.depth)
+  const pick =
+    root && (root.resolution === 'RESOLVED_LISTED' || root.resolution === 'RESOLVED_REGULATED')
+      ? root
+      : (byDepth.find((n) => n.resolution === 'RESOLVED_LISTED') ?? byDepth.find((n) => n.resolution === 'RESOLVED_REGULATED'))
+
+  const target = {
+    evidence: [...(root?.evidence ?? []), ...(extra?.evidence ?? [])],
+    checks: [...(root?.checks ?? []), ...(extra?.checks ?? [])],
+  }
+  if (!pick || (pick.resolution !== 'RESOLVED_LISTED' && pick.resolution !== 'RESOLVED_REGULATED')) return { target }
+  const isRoot = pick.id === result.rootId
+  return {
+    target,
+    terminal: {
+      name: pick.name,
+      isRoot,
+      resolution: pick.resolution,
+      evidence: isRoot ? target.evidence : (pick.evidence ?? []),
+      checks: isRoot ? target.checks : (pick.checks ?? []),
+      companyUrl: pick.evidenceUrl?.startsWith(CH_COMPANY_URL) ? pick.evidenceUrl : undefined,
+    },
+  }
+}
+
+/** The lines and source for one terminal node: ESMA evidence with venue, MIC and source, or the Companies House exemption. */
+function terminalLines(terminal: NonNullable<ListingDecision['terminal']>): { lines: string[]; source?: { label: string; url: string } } {
+  const found = terminal.evidence.filter((e) => e.kind === 'listed_eu' || e.kind === 'regulated_eu')
+  const lines = found.map(evidenceLine)
+  let source = found[0] ? { label: found[0].source, url: found[0].url } : undefined
+  const exemption = terminal.checks.some((c) => c.check === 'ch_exemption' && c.outcome === 'found')
+  if (exemption) {
+    lines.push(
+      'Listed on a UK regulated market: Companies House PSC exemption (psc-exempt-as-trading-on-uk-regulated-market). Companies House does not state the venue or MIC.',
+    )
+    source ??= terminal.companyUrl
+      ? { label: 'Companies House PSC register', url: `${terminal.companyUrl}/persons-with-significant-control` }
+      : undefined
+  }
+  return { lines, source }
+}
+
+/**
+ * Whether the target is listed on an EU regulated market or authorised, with the evidence.
+ * With a `decision`, the row follows the walk's terminal node and says which checks ran;
+ * without one it only reads the evidence it is given.
+ */
+export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string, decision?: ListingDecision): ProfileRow {
+  if (decision) return decidedListingRow(decision, fetchedAt)
+
   const found = (evidence ?? []).filter((e) => e.kind === 'listed_eu' || e.kind === 'regulated_eu')
   const us = (evidence ?? []).find((e) => e.kind === 'us_listing')
   const usLine = us ? [`US name match, unconfirmed: ${us.details.ticker} on ${us.details.exchange}`] : []
@@ -269,18 +365,43 @@ export function listingRow(evidence: Evidence[] | undefined, fetchedAt?: string)
   if (found.length === 0) {
     return { key: 'listing', label: 'Listing / regulation', mark: 'INFO', lines: [NO_LISTING_NOTE, ...usLine], fetchedAt }
   }
-  const lines = found.map((e) =>
-    e.kind === 'listed_eu'
-      ? `Listed on a regulated market: ${e.details.isin} on ${e.details.mic} (${e.details.venueName}), ${ruleText(e.details.rule)}`
-      : `Authorised: ${e.details.register}, ${e.details.authority}, ${e.details.status}${e.details.fileMonth ? `, file ${e.details.fileMonth}` : ''}`,
-  )
   return {
     key: 'listing',
     label: 'Listing / regulation',
     mark: 'PASS',
-    lines: [...lines, ...usLine],
+    lines: [...found.map(evidenceLine), ...usLine],
     source: { label: found[0].source, url: found[0].url },
     fetchedAt,
+  }
+}
+
+function decidedListingRow(decision: ListingDecision, fetchedAt?: string): ProfileRow {
+  const us = decision.target.evidence.find((e) => e.kind === 'us_listing')
+  const usLine = us ? [`US name match, unconfirmed: ${us.details.ticker} on ${us.details.exchange}`] : []
+  const base = { key: 'listing' as const, label: 'Listing / regulation', fetchedAt }
+
+  const { terminal } = decision
+  if (!terminal) {
+    return { ...base, mark: 'INFO', lines: [NO_LISTING_NOTE, ...usLine, checksLine('Checks run', decision.target.checks)] }
+  }
+
+  const { lines, source } = terminalLines(terminal)
+  if (terminal.isRoot) {
+    return { ...base, mark: 'PASS', lines: [...lines, ...usLine, checksLine('Checks run', terminal.checks)], source }
+  }
+  // The target is not listed itself; the chain ends at a listed or authorised company above it.
+  const kind = terminal.resolution === 'RESOLVED_LISTED' ? 'listed' : 'authorised'
+  return {
+    ...base,
+    mark: 'INFO',
+    lines: [
+      `This entity is not ${kind} itself. The ownership chain ends at a ${kind} company: ${terminal.name}`,
+      ...lines,
+      checksLine(`Checks run on ${terminal.name}`, terminal.checks),
+      ...usLine,
+      checksLine('Checks run on this entity', decision.target.checks),
+    ],
+    source,
   }
 }
 
@@ -360,7 +481,7 @@ export function evaluateProfile(input: ProfileInput): ProfileRow[] {
     chargesRow(input),
     officersRow(input),
     leiRow(input),
-    listingRow(input.listing, input.listingFetchedAt),
+    listingRow(input.listing, input.listingFetchedAt, input.listingDecision),
     ownershipRow(input),
     { key: 'not-covered', label: 'Not covered', mark: 'GAP', lines: [SCREENING_GAP] },
   ]
@@ -374,6 +495,8 @@ export type ForeignProfileInput = {
   record: GleifRecord
   ownership: OwnershipSummary
   listing?: Evidence[]
+  /** The walk's terminal decision; when given, the listing row follows it instead of `listing`. */
+  listingDecision?: ListingDecision
   /** Resolved names for the legal form (ELF) and registration authority (RA) codes. */
   labels?: { legalForm?: string; registrationAuthority?: string }
   fetchedAt?: string
@@ -430,7 +553,7 @@ export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[]
     unavailable('filings', 'Filings'),
     unavailable('officers', 'Officers'),
     lei,
-    listingRow(input.listing, input.fetchedAt),
+    listingRow(input.listing, input.fetchedAt, input.listingDecision),
     {
       key: 'ownership',
       label: 'Ownership',

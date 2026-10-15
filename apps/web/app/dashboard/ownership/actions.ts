@@ -11,6 +11,7 @@ import { summarise, toFlow, type FlowEdge, type FlowNode, type WalkSummary } fro
 import {
   evaluateForeignProfile,
   evaluateProfile,
+  listingDecision,
   ownershipSummary,
   type ProfileRow,
 } from '@/lib/kyc-profile/evaluate'
@@ -20,7 +21,7 @@ import { createSourceLog, type SourceLog } from '@/lib/packs/source-log'
 import { createPackOffer, packFirmId, type PackOfferResult } from '@/lib/packs/offer'
 import { packSigningSecret } from '@/lib/packs/sign'
 import type { PackPolicy, PackSubject } from '@/lib/packs/snapshot'
-import type { Evidence, IndirectMethod, WalkPolicy } from '@/lib/ownership/types'
+import type { CheckRun, Evidence, IndirectMethod, WalkPolicy } from '@/lib/ownership/types'
 
 export type EntryCandidate = {
   lei: string
@@ -49,18 +50,25 @@ export type OwnershipViewState = {
 const METHODS: IndirectMethod[] = ['either', 'multiply', 'majority']
 
 /** Listing / authorisation evidence for a UK target's LEI. A source being down just means no evidence. */
-async function terminalEvidence(lei: string, log: SourceLog): Promise<Evidence[]> {
-  const found: Evidence[] = []
+async function terminalEvidence(lei: string, log: SourceLog): Promise<{ evidence: Evidence[]; checks: CheckRun[] }> {
+  const evidence: Evidence[] = []
+  const checks: CheckRun[] = []
   const terminals = terminalChecksFor(log)
-  for (const check of [() => terminals.listedEU(lei), () => terminals.regulatedEU(lei)]) {
+  const runs: [CheckRun['check'], () => Promise<Evidence | null>][] = [
+    ['esma_firds', () => terminals.listedEU(lei)],
+    ['esma_upreg', () => terminals.regulatedEU(lei)],
+  ]
+  for (const [name, run] of runs) {
     try {
-      const evidence = await check()
-      if (evidence) found.push(evidence)
+      const found = await run()
+      if (found) evidence.push(found)
+      checks.push({ check: name, outcome: found ? 'found' : 'none' })
     } catch {
-      // Reported as "not found"; the walk itself does not depend on it.
+      // The row says the source was unavailable; the walk itself does not depend on it.
+      checks.push({ check: name, outcome: 'unavailable' })
     }
   }
-  return found
+  return { evidence, checks }
 }
 
 function packPolicy(policy: WalkPolicy): PackPolicy {
@@ -154,7 +162,7 @@ export async function walkOwnershipAction(
       const profile = evaluateForeignProfile({
         record,
         labels: { legalForm, registrationAuthority },
-        listing: walked.nodes.find((n) => n.id === walked.rootId)?.evidence,
+        listingDecision: listingDecision(walked),
         ownership: ownershipSummary(walked, threshold),
         fetchedAt: new Date().toISOString(),
       })
@@ -181,9 +189,10 @@ export async function walkOwnershipAction(
       // The panel needs Companies House field names, which the flattened cdd data lacks.
       fetchRawProfile(cdd.companyNumber, token, log),
     ])
-    const listing = gleif.lookup.status === 'found' ? await terminalEvidence(gleif.lookup.lei, log) : []
+    // The listing row follows the walk's own terminal decision; the target's LEI checks add to it.
+    const targetChecks = gleif.lookup.status === 'found' ? await terminalEvidence(gleif.lookup.lei, log) : undefined
     const profile = evaluateProfile({
-      listing,
+      listingDecision: listingDecision(walked, targetChecks),
       listingFetchedAt: new Date().toISOString(),
       profile: raw.profile,
       officers: raw.officers,

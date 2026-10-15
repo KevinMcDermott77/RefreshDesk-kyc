@@ -66,6 +66,15 @@ export const evidenceSchema = z.object({
 })
 export type Evidence = z.infer<typeof evidenceSchema>
 
+/** A listing / authorisation check the walk ran on a node, and what it came back with. */
+export const CHECK_NAMES = ['ch_exemption', 'esma_firds', 'esma_upreg', 'sec_us'] as const
+export const checkRunSchema = z.object({
+  check: z.enum(CHECK_NAMES),
+  // "none" is a clean miss; "unavailable" means the source was down, so absence proves nothing.
+  outcome: z.enum(['found', 'none', 'unavailable']),
+})
+export type CheckRun = z.infer<typeof checkRunSchema>
+
 // The register a walk stopped at, for the UI. Mirrors RegisterProfile (register-profiles.ts).
 export const registerProfileRefSchema = z.object({
   country: z.string(),
@@ -108,6 +117,8 @@ export const ownershipNodeSchema = z.object({
   registerProfile: registerProfileRefSchema.optional(),
   // Listing / authorisation evidence from the terminal checks.
   evidence: z.array(evidenceSchema).optional(),
+  // Which listing / authorisation checks ran on this node, with their outcome.
+  checks: z.array(checkRunSchema).optional(),
   // Edges from the root on the shortest path.
   depth: z.number().int().nonnegative(),
   // Companies House PSC statement code, verbatim (including CH's "signficant" typo).
