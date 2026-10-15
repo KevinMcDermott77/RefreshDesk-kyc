@@ -1,6 +1,6 @@
 # Slice 7: client-provided ownership evidence (spec)
 
-Status: decisions approved 2026-10-15 (see "Decisions"). No code yet.
+Status: approved 2026-10-15, with the changes in "Decisions". Building from slice 7a.
 
 ## Why
 
@@ -23,9 +23,11 @@ The walk stops at foreign nodes where the register is paywalled or restricted (`
 4. The proposal appears in the admin queue. A different admin opens it: the document (signed URL) beside the proposed table. They confirm as proposed, edit rows, or reject with a note.
 5. On confirm, the evidence becomes `confirmed`. The next walk for this client and node applies it. Earlier packs are untouched.
 
-Evidence kinds: `register_extract`, `shareholder_register`, `signed_structure_chart`, `annual_report_page`. All need an "as at" date (the date the holdings are stated for), entered or extracted, shown to the reviewer. Age is measured from `as_at`, or from the document date when no `as_at` is printed.
+Evidence kinds: `register_extract`, `shareholder_register`, `signed_structure_chart`, `annual_report_page`. A later kind, **`signed_client_declaration`** ("no other holder at or above the threshold"), is planned but not part of this slice: it would be the one thing that can close the coverage gap, and it needs its own rules (who signs, wording, certification). Until then coverage cannot be overridden or declared away. The kind column is a text check list so the value can be added by a later migration. All need an "as at" date (the date the holdings are stated for), entered or extracted, shown to the reviewer. Age is measured from `as_at`, or from the document date when no `as_at` is printed.
 
 ## Extraction
+
+Extraction sends the document to the Anthropic API, so it is a firm setting: `firms.evidence_extraction_enabled`, **default false for new firms**; the migration turns it on for the existing demo firm. With it off, a member can still upload a document and an admin can enter the owners by hand on the confirm page; the same confirm, four-eyes and coverage rules apply. Only admins can change the setting, and the change is audited (`firm.evidence_extraction_changed`).
 
 Reuses the extraction pattern in `lib/claude/extract-document.ts` with a new prompt version (`ownership-evidence-v1`) and a Zod schema. Output for each owner:
 
@@ -82,7 +84,8 @@ Two new `WalkPolicy` settings (also recorded in the pack policy):
 **Reviewer override.** When confirming, the admin may accept evidence that is older than the window or not certified. A written note is mandatory (the database refuses an override without one). Rules:
 - The override is stored on the confirmed record as `override: { reasons: ['stale' | 'uncertified'], note }`, and is visible on the node, the profile and the pack.
 - It waives only the reasons listed. Coverage cannot be overridden (decision 6).
-- A stale override is time-limited: the document is accepted for `maxEvidenceAgeMonths` after the confirmation date, then it needs a fresh review. An uncertified override has no end date.
+- A stale override is time-limited: the document is accepted for `maxEvidenceAgeMonths` after the confirmation date, then it needs a fresh review.
+- An uncertified override has no separate end date, but it does not bypass `maxEvidenceAgeMonths`: age is still checked on every run. An item that is both uncertified and stale needs both reasons in its override, and the stale one then runs out as above.
 - The override is the confirmer's, so it follows the four-eyes rule: the uploader cannot confirm, and so cannot override.
 - With `acceptClientEvidenceAsResolved` off, an override has no effect on resolution.
 
@@ -124,7 +127,7 @@ All written in the RPC, in the same transaction, to `audit_events`; payloads hol
 
 Migration `20261016000000_slice7_client_evidence.sql`, dry-run first with `scripts/run-dryrun.cjs`.
 
-1. `client_documents.document_type` check gains `ownership_evidence`.
+1. `client_documents.document_type` check gains `ownership_evidence`; `firms.evidence_extraction_enabled boolean not null default false`, set to true for the existing demo firm by the migration.
 2. Table `ownership_evidence`:
    - `id, firm_id, client_id, document_id (fk client_documents), subject_id, node_key, node_identity jsonb (country, registration_number, lei), evidence_kind, as_at date, document_date date, certified text (yes|no|unclear), certified_by text, document_sha256 text`
    - `status` in `proposed | confirmed | rejected | superseded`
@@ -132,7 +135,7 @@ Migration `20261016000000_slice7_client_evidence.sql`, dry-run first with `scrip
    - `created_by, created_at, confirmed_by, confirmed_at, review_note, superseded_by`
    - Constraints: `confirmed` is not null exactly when status is `confirmed`; `as_at` and `document_date` not in the future; `confirmed_by` not null when confirmed; an override needs a non-empty note and a listed reason.
 3. A guard trigger (as for `refresh_packs`): once `confirmed`, only `status → superseded` and `superseded_by` may change. `proposal`, `confirmed`, hashes, identity and people are immutable.
-4. Partial unique index: one `confirmed` row per `(firm_id, client_id, subject_id, node_key)`; confirming a new one supersedes the old in the same transaction.
+4. Partial unique index: one `confirmed` row per `(firm_id, client_id, subject_id, node_key)`. Confirming a new item sets the old one to `superseded` (with `superseded_by` and `superseded_at`) in the same transaction. **Superseded and rejected rows are kept and never deleted**: the table has no delete path (no policy, no RPC, and a trigger refuses `DELETE`), and the audit trail for them stays intact. Documents are not deleted by this slice either.
 5. A check function that validates the JSON shape of `proposal`/`confirmed` (owner kinds, holding ranges 0 to 100, `low <= high`, required `page_ref`) so a bad client write is refused in the database.
 6. RLS: firm members read; no direct writes (RPCs only), like packs. Decision needed on `read_only` seeing the table (it holds full names); the recommendation is no, and a view without names for them.
 7. RPCs, all `security definer` with `require_role`:
@@ -157,6 +160,7 @@ Migration `20261016000000_slice7_client_evidence.sql`, dry-run first with `scrip
 - **No name matching:** a fake `findByRegistration` and fake GLEIF source; assert that a name-only entity owner is never linked and that two results mean no match; an exact registration number plus country links; a registration number without a country does not.
 - **Walk with a fake `clientEvidence`:** applies only to the allowed reason codes; never overrides `RESOLVED_*` or `PSC_STATEMENT`; original reason kept as secondary; identity mismatch means not applied; stale means not applied and flagged; status transitions per the table above; effective ranges through multiply and majority.
 - **Summary and profile rows:** counts, labels, points to check; unconfirmed proposal is not resolved; the Listing/Ownership rows still agree (see the listing-row fix).
+- **Pack personal-data check (SQL, slice 7a; vitest, slice 7d):** the existing `refresh_packs.snapshot` check constraint (no `date_of_birth`, `dob`, `nationality`, `country_of_residence`, `occupation` keys anywhere) must still accept a snapshot that carries the new `clientEvidence` blocks with initials only, and still reject one that has a personal-data key inside a `clientEvidence` block. The 7a SQL test inserts both through `create_refresh_pack`; the 7d vitest builds a real snapshot from a walk with evidence and asserts it contains no name, no file name, and passes the same key regex.
 - **Pack:** snapshot holds references, hash and label but no names, file name or personal-data keys (the existing leak check runs on it); the source-log entry; fingerprint covers references; superseded evidence does not change an existing pack.
 - **Actions:** upload path must be in the client's folder; byte-sniffing refuses a mismatched type; file bodies posted through the action are refused (1 MB rule); role checks.
 - **SQL (`supabase/tests/client_evidence.test.sql`, run by `run-dryrun.cjs`):** each RPC by role including `read_only`; four-eyes refusal for the uploader; confirm only from `proposed`; edited flag; immutability trigger; supersede on a second confirm; one confirmed row per node; RLS across two firms; audit rows with no names in payloads; JSON shape refusals.
@@ -178,16 +182,11 @@ Approved on 2026-10-15:
 1. Evidence-backed branches may resolve, controlled by `acceptClientEvidenceAsResolved` (default true), with the distinct status "Resolved (client evidence)". With the setting off they stay partial.
 2. Document date and certification (yes/no, who certified) are extracted and confirmed. `maxEvidenceAgeMonths` defaults to 12. Older or uncertified evidence stays partial unless the reviewer overrides with a mandatory note.
 3. Evidence applies only where the walk would otherwise leave a foreign node unresolved.
-
-## Remaining questions, with a recommended answer for each
-
-Approve all in one go, or say which to change. Numbering continues from the decisions above. The first draft had five open questions left after your two answers; question 6 is a sixth that the spec implied, added here so it is decided too.
-
-| # | Question | Recommended answer | Why |
-|---|---|---|---|
-| 4 | **Several documents for one node** (a register extract plus a structure chart). | One confirmed item per node. To combine sources, upload a new document that covers the whole structure; confirming it supersedes the old item. No merging. | Merging two documents' holdings makes the coverage and certification rules ambiguous, and one item keeps the pack reference simple. Revisit if reviewers ask for it. |
-| 5 | **Entity owners with no registration number printed.** | Leave the branch unresolved with a point to check ("registration number not shown; request it"). Never search by name. Once the client supplies a number, a new evidence item is confirmed. | This is the no-name-matching rule applied. A name search would put a guess into a signed pack. |
-| 6 | **Can the reviewer override incomplete coverage?** | No. Only staleness and missing certification can be overridden. If the listed holders leave room for an unlisted one at or above the threshold, the reviewer asks for a fuller document. | An override of coverage is a claim about holders nobody has seen. The other two are claims about the quality of a document that has been seen. |
-| 7 | **Walks started without a client.** | Show "Add client evidence" only when the walk was started from a client page; otherwise show the reason ("start from a client to attach evidence"). | Evidence needs a client, a firm folder and an owner for the record. A free-floating mode would need its own permissions. |
-| 8 | **`read_only` and full names.** | `read_only` cannot read `ownership_evidence`; they get a view without names (kind, node, dates, status, reviewer). Admins and members see names on the evidence row and confirm page only; every other output uses initials. | Matches the initials-only rule and Slice 0b's least-privilege direction. |
-| 9 | **Claude and personal data in documents.** | Treat as covered only if the firm's data-processing terms already cover the passport and incorporation extractions. Add a firm setting that disables evidence extraction (upload and manual entry still work), and record which model processed each document in the audit event. | Same processors as the existing extractions, but shareholder registers can list many third parties. This needs an answer from the firm, not a code default. |
+4. Superseded evidence is kept (status `superseded`, audit trail intact), never deleted. One confirmed item per node, new document supersedes.
+5. Entity owners with no registration number stay unresolved; never a name search.
+6. No override for incomplete coverage. A future evidence type, `signed_client_declaration` ("no other holder at or above threshold"), is noted for later.
+7. "Add client evidence" appears only when the walk was started from a client page.
+8. `read_only` gets a names-free view. The refresh pack snapshot stays initials-only and must keep passing the existing personal-data check constraint (test added).
+9. Document extraction is a firm setting, default OFF for new firms; the migration turns it ON for the existing demo firm.
+10. An uncertified override has no separate end date but does not bypass `maxEvidenceAgeMonths`.
+11. Every `status === 'resolved'` check is found and handled in slice 7c.
