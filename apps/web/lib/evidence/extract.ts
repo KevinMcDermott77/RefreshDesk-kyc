@@ -1,8 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { EVIDENCE_KIND_LABELS, type EvidenceKind } from './types'
+import { CLAUDE_MODEL } from '@/lib/claude/model'
+import { ExtractionFailure } from './extraction-failure'
 import { parseEvidenceResponse, type ParsedExtraction } from './parse-response'
 
-export const EVIDENCE_MODEL = 'claude-sonnet-4-20250514'
+export const EVIDENCE_MODEL = CLAUDE_MODEL
 export const EVIDENCE_PROMPT_VERSION = 'ownership-evidence-v1'
 
 const SYSTEM_PROMPT = `You read ownership documents for a regulated UK compliance tool. You extract only what is printed on the document and return ONLY valid JSON, with no text before or after it.
@@ -66,7 +68,9 @@ export type EvidenceExtraction = ParsedExtraction & { rawResponse: string }
 /** Sends the document to Claude and returns a proposal. The caller must have checked the firm allows extraction. */
 export async function extractOwnershipEvidence(bytes: Buffer, mimeType: string, kind: EvidenceKind): Promise<EvidenceExtraction> {
   // Created here, not at import, so reading the parser in tests needs no API key.
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+  if (!apiKey) throw new ExtractionFailure('no_api_key')
+  const client = new Anthropic({ apiKey })
 
   const response = await client.messages.create({
     model: EVIDENCE_MODEL,
@@ -80,5 +84,8 @@ export async function extractOwnershipEvidence(bytes: Buffer, mimeType: string, 
     .map((block) => block.text)
     .join('')
 
-  return { ...parseEvidenceResponse(rawResponse), rawResponse }
+  const parsed = parseEvidenceResponse(rawResponse)
+  // A reply with no usable owner is a failed read, not an empty proposal for someone to confirm.
+  if (parsed.payload.owners.length === 0) throw new ExtractionFailure('no_owners')
+  return { ...parsed, rawResponse }
 }

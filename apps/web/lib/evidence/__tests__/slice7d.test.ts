@@ -420,3 +420,15 @@ describe('initials', () => {
     expect(initials('Kari Eksempel-Fjeld')).toBe('K.E.')
   })
 })
+
+describe('the path from a client page to the "Add client evidence" button', () => {
+  it('the real sample walk gives the Fjordvik node the facts and reason the link needs', async () => {
+    const flow = toFlow(await demoWalk([]))
+    const node = flow.nodes.find((n) => n.data.name === 'Fjordvik Test Holding AS')!
+    expect(node.data).toMatchObject({ tone: 'unresolved', reasonCode: 'SHAREHOLDERS_NOT_FILED', identity: { country: 'NO', registrationNumber: '999 000 001' } })
+    const link = evidenceLink('client-1', DEMO_SUBJECT, node.data)
+    expect(link?.label).toBe('Add client evidence')
+    // Without the client id (the page opened without ?client=) there is no button.
+    expect(evidenceLink(undefined, DEMO_SUBJECT, node.data)).toBeNull()
+  })
+})

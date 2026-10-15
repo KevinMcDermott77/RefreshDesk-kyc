@@ -10,8 +10,9 @@ import { matchesMimeType, uploadBelongsTo } from '@/lib/entity-cdd/fetch-input'
 import { parseDocumentUploadInput } from '@/lib/documents/upload-input'
 import { extractDocument, PROMPT_VERSION } from '@/lib/claude/extract-document'
 import { MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
+import { CLAUDE_MODEL } from '@/lib/claude/model'
 
-const MODEL_USED = 'claude-sonnet-4-20250514'
+const MODEL_USED = CLAUDE_MODEL
 
 export type UploadState = { error?: string }
 

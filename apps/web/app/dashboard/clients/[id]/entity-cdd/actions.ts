@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { downloadDocument } from '@/lib/supabase/storage'
+import { CLAUDE_MODEL } from '@/lib/claude/model'
 import { MAX_FILE_SIZE_BYTES } from '@/lib/types/documents'
 import { COMPANY_NUMBER_PATTERN, matchesMimeType, parseFetchInput, uploadBelongsTo } from '@/lib/entity-cdd/fetch-input'
 import { extractCompanyNumber, PROMPT_VERSION } from '@/lib/claude/extract-company-number'
@@ -17,7 +18,7 @@ import { toEntityCddOwnership } from '@/lib/ownership/to-entity-cdd'
 
 export type FetchEntityCddState = { error?: string }
 
-const MODEL_USED = 'claude-sonnet-4-20250514'
+const MODEL_USED = CLAUDE_MODEL
 
 export async function fetchEntityCddAction(
   _prev: FetchEntityCddState,

@@ -70,6 +70,17 @@ const PROBES = [
              to_regprocedure('public.confirm_ownership_evidence(uuid,jsonb,text)')::text as confirm_ownership_evidence`,
     applied: (r) => r.ownership_evidence_table !== null || r.extraction_columns > 0 || r.confirm_ownership_evidence !== null,
   },
+  {
+    match: /slice7e/,
+    name: 'Slice 7e (evidence follow-up)',
+    sql: `
+      select (select pg_get_constraintdef(c.oid)
+                from pg_constraint c
+               where c.conname = 'ownership_evidence_proposal_present'
+                 and c.conrelid = to_regclass('public.ownership_evidence')) as proposal_present_check`,
+    // Absent when 7a is not applied (the migration would fail); applied once the check allows a rejected draft.
+    applied: (r) => typeof r.proposal_present_check === 'string' && r.proposal_present_check.includes('rejected'),
+  },
 ]
 
 function parseArgs(argv) {

@@ -100,3 +100,18 @@ DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
 - **Confirm:** `/dashboard/clients/<id>/evidence/<evidenceId>` shows the document beside an editable table. A different admin (four-eyes) confirms, edits, or rejects with a note; the uploader can withdraw. Printed registration numbers are looked up in GLEIF for the reviewer to compare (exact number and country only, display only, nothing is linked). The coverage rule is shown as the reviewer edits and cannot be overridden.
 - **Queue:** `/dashboard/evidence` (a link on the dashboard) lists items awaiting confirmation, drafts and recent decisions from the names-free overview, so every role can open it; `read_only` sees status only.
 - Node keys are `LEI:<lei>` or `REG:<country>:<normalised number>`, built from the identity alone, so slice 7c can find evidence for a walk node from the same facts.
+
+## Slice 7e: follow-up to 7a
+
+`supabase/migrations/20261017000000_slice7e_evidence_followup.sql` (needs 7a, which is already applied).
+
+- A draft (uploaded, no owners entered) could not be withdrawn or rejected: the row becomes `rejected` with no proposal, and `ownership_evidence_proposal_present` only allowed that on a draft. The check now allows a missing proposal on a draft or a rejected item; proposed, confirmed and superseded items still need one, and a rejected item is still frozen.
+- The "already open" message now says "an evidence item for this node is already open (draft or awaiting confirmation)". `create_ownership_evidence` is the 7a function with only that line changed.
+
+Dry-run ONLY this migration:
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+  --migration supabase/migrations/20261017000000_slice7e_evidence_followup.sql \
+  --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence_followup.test.sql
+```

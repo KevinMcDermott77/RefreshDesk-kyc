@@ -18,12 +18,12 @@ import {
   type EvidenceStatus,
 } from '@/lib/evidence/types'
 import { DEMO_SUBJECT } from '@/lib/demo/fjordvik'
+import { extractionFailureNotice } from '@/lib/evidence/extraction-failure'
 import { EvidenceEditor } from './evidence-editor'
 import { RejectForm } from './reject-form'
 
 const NOTICES: Record<string, string> = {
   extraction_off: 'Document extraction is switched off for this firm, so the owners need to be entered by hand.',
-  extraction_failed: 'The document was uploaded but Claude could not read it. Enter the owners by hand, or reject this item and upload a clearer copy.',
 }
 
 type Row = {
@@ -96,10 +96,10 @@ export default async function EvidencePage({
   searchParams,
 }: {
   params: Promise<{ id: string; evidenceId: string }>
-  searchParams: Promise<{ notice?: string }>
+  searchParams: Promise<{ notice?: string; reason?: string }>
 }) {
   const { id, evidenceId } = await params
-  const { notice } = await searchParams
+  const { notice, reason } = await searchParams
 
   const supabase = await createClient()
   const {
@@ -215,9 +215,13 @@ export default async function EvidencePage({
           ) : null}
         </header>
 
-        {notice && NOTICES[notice] && (
+        {notice === 'extraction_failed' ? (
+          <p role="alert" className="mt-6 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {extractionFailureNotice(reason)}
+          </p>
+        ) : notice && NOTICES[notice] ? (
           <p className="mt-6 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{NOTICES[notice]}</p>
-        )}
+        ) : null}
 
         <div className="mt-6 grid gap-4 border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">

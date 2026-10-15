@@ -278,6 +278,15 @@ function SidePanel({
           <X className="h-4 w-4" />
         </button>
       </div>
+      {link ? (
+        // At the top: the register profile below is long, and the button must not hide under it.
+        <a
+          href={link.href}
+          className="mt-3 block border border-[var(--accent-strong)] bg-[var(--accent)] px-4 py-2 text-center text-sm font-semibold text-white"
+        >
+          {link.label}
+        </a>
+      ) : null}
       <dl className="mt-4 space-y-3">
         <Field label="Resolution">
           {data.resolution}
@@ -321,14 +330,6 @@ function SidePanel({
         {data.clientEvidence ? <ClientEvidenceBlock evidence={data.clientEvidence} clientId={client?.id} /> : null}
         {data.registerProfile ? <RegisterProfileBlock profile={data.registerProfile} /> : null}
       </dl>
-      {link ? (
-        <a
-          href={link.href}
-          className="mt-4 inline-block border border-[var(--accent-strong)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-        >
-          {link.label}
-        </a>
-      ) : null}
       {data.companyUrl ? (
         <a
           href={data.companyUrl}
@@ -413,7 +414,7 @@ export function OwnershipViewer({ client }: { client?: { id: string; name: strin
               <span>
                 Let confirmed client evidence resolve branches the registers cannot.
                 <span className="block text-xs text-[var(--muted)]">
-                  Shown as &ldquo;Resolved (client evidence)&rdquo;. When unticked, the evidence is shown but those branches stay partial.
+                  Shown as &ldquo;Resolved (client evidence)&rdquo;. When unticked, the evidence is shown but those branches stay partial. To add evidence, click an unresolved foreign company in the chart: its panel has an &ldquo;Add client evidence&rdquo; button at the top.
                 </span>
               </span>
             </label>

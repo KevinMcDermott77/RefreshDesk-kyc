@@ -12,13 +12,15 @@ import { sha256Hex } from '@/lib/evidence/hash'
 import { parseEvidenceUploadInput } from '@/lib/evidence/input'
 import { normalisePayload } from '@/lib/evidence/payload'
 import { extractOwnershipEvidence, EVIDENCE_MODEL, EVIDENCE_PROMPT_VERSION } from '@/lib/evidence/extract'
+import { classifyExtractionError } from '@/lib/evidence/extraction-failure'
 
 export type EvidenceActionState = { error?: string }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function itemPath(clientId: string, evidenceId: string, notice?: string): string {
-  return `/dashboard/clients/${clientId}/evidence/${evidenceId}${notice ? `?notice=${notice}` : ''}`
+function itemPath(clientId: string, evidenceId: string, notice?: string, reason?: string): string {
+  const query = notice ? `?notice=${notice}${reason ? `&reason=${reason}` : ''}` : ''
+  return `/dashboard/clients/${clientId}/evidence/${evidenceId}${query}`
 }
 
 /** Opens an evidence item from a file the browser has already put in Storage, and runs extraction if asked and allowed. */
@@ -64,6 +66,7 @@ export async function createEvidenceAction(_prev: EvidenceActionState, formData:
   if (createError || !evidenceId) return { error: createError?.message ?? 'Failed to open the evidence item' }
 
   let notice: string | undefined
+  let reason: string | undefined
   if (wantExtraction) {
     const { data: firm } = await supabase.from('firms').select('evidence_extraction_enabled').eq('id', client.firm_id).maybeSingle()
     if (!firm?.evidence_extraction_enabled) {
@@ -80,17 +83,34 @@ export async function createEvidenceAction(_prev: EvidenceActionState, formData:
           p_confidence: extraction.confidence,
           p_raw_response: extraction.rawResponse,
         })
-        if (saveError) notice = 'extraction_failed'
-      } catch {
-        // The upload is kept: the item stays a draft and the owners can be entered by hand.
+        if (saveError) {
+          notice = 'extraction_failed'
+          reason = 'save_failed'
+          console.error('[evidence-extraction] proposal not saved', { evidenceId, kind, model: EVIDENCE_MODEL, message: saveError.message })
+        }
+      } catch (err) {
+        // The upload is kept: the item stays a draft and the owners can be entered by hand. The log has the
+        // code, status and Anthropic's request id: never the document or the model's reply.
+        const failure = classifyExtractionError(err)
         notice = 'extraction_failed'
+        reason = failure.code
+        console.error('[evidence-extraction] failed', {
+          evidenceId,
+          kind,
+          model: EVIDENCE_MODEL,
+          mime: upload.type,
+          bytes: buffer.byteLength,
+          code: failure.code,
+          status: failure.status,
+          requestId: failure.requestId,
+        })
       }
     }
   }
 
   revalidatePath(`/dashboard/clients/${clientId}`)
   revalidatePath('/dashboard/evidence')
-  redirect(itemPath(clientId, evidenceId, notice))
+  redirect(itemPath(clientId, evidenceId, notice, reason))
 }
 
 function readIds(formData: FormData): { evidenceId: string; clientId: string } | { error: string } {

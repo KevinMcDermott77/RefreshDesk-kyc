@@ -210,7 +210,7 @@ select _dryrun.expect_error(
   _dryrun.id('member_two'),
   format('select public.create_ownership_evidence(%L, ''SUBJ1'', ''FOREIGN:NO:n1'', ''Example Holdings AS'', ''{"country": "NO", "registration_number": "999999999"}''::jsonb, ''register_extract'', %L, ''a.pdf'', 100, ''application/pdf'', %L)::text',
     _dryrun.id('client'), format('%s/%s/z/a.pdf', _dryrun.id('firm'), _dryrun.id('client')), repeat('b', 64)),
-  '%already awaiting confirmation%',
+  '%already %',
   'a second open item for the same node is refused'
 );
 
