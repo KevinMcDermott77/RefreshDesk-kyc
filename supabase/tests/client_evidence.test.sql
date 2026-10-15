@@ -260,6 +260,19 @@ select _dryrun.expect_error(
 select _dryrun.expect_error(
   _dryrun.id('member'),
   format('select public.save_evidence_proposal(%L, ''manual'', %L::jsonb)::text', _dryrun.id('e1'),
+    jsonb_set(_dryrun.payload(), '{owners,0,initials}', '"Testperson"')::text),
+  '%needs initials%',
+  'a whole name in the initials field is refused'
+);
+select _dryrun.expect_ok(
+  _dryrun.id('member'),
+  format('select public.save_evidence_proposal(%L, ''manual'', %L::jsonb)::text', _dryrun.id('e1'),
+    jsonb_set(_dryrun.payload(), '{owners,0,initials}', '"Ø.Å."')::text),
+  'initials of non-English letters (Ø.Å.) are accepted: Nordic names are the point'
+);
+select _dryrun.expect_error(
+  _dryrun.id('member'),
+  format('select public.save_evidence_proposal(%L, ''manual'', %L::jsonb)::text', _dryrun.id('e1'),
     jsonb_set(_dryrun.payload(), '{owners,0,date_of_birth}', '"1970-01-01"')::text),
   '%personal-data keys%',
   'a date-of-birth key is refused'
@@ -686,7 +699,7 @@ select _dryrun.expect_true(
 
 select _dryrun.expect_true(
   (select count(*) filter (where event_type = 'ownership_evidence.created') = 7
-      and count(*) filter (where event_type = 'ownership_evidence.proposed') = 6
+      and count(*) filter (where event_type = 'ownership_evidence.proposed') = 7
       and count(*) filter (where event_type = 'ownership_evidence.confirmed') = 4
       and count(*) filter (where event_type = 'ownership_evidence.rejected') = 2
       and count(*) filter (where event_type = 'ownership_evidence.superseded') = 1

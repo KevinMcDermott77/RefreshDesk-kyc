@@ -23,20 +23,12 @@ alter table public.firms
 comment on column public.firms.evidence_extraction_enabled is
   'When true, client-evidence documents may be sent to the Anthropic API for extraction. Default false; without it, owners are entered by hand and confirmed the same way.';
 
--- The existing demo firm keeps extraction on. This only acts when there is exactly one firm, so it
--- cannot switch it on for firms that are not the demo firm.
-do $$
-declare
-  v_firms int;
-begin
-  select count(*) into v_firms from public.firms;
-  if v_firms = 1 then
-    update public.firms set evidence_extraction_enabled = true;
-  else
-    raise notice 'Slice 7a: % firms exist, so evidence_extraction_enabled was left off for all of them; an admin can switch it on with set_evidence_extraction', v_firms;
-  end if;
-end;
-$$;
+-- Extraction is switched on for the demo firm only, by slug (a no-op where that firm does not
+-- exist, such as a fresh database); every other firm stays off. Others are switched on by an
+-- admin with set_evidence_extraction.
+update public.firms
+set evidence_extraction_enabled = true
+where slug = 'refreshdesk-sql-test-1778359800';
 
 -- ─── 2. Documents: a new document type ───────────────────────────────────────
 
@@ -118,7 +110,8 @@ begin
       return format('owner %s: page_ref is required', v_i);
     end if;
     if (v_owner ->> 'kind') = 'individual'
-      and coalesce(v_owner ->> 'initials', '') !~ '^(([A-Z]\.)+|\?)$' then
+      -- Any letter followed by a dot (Ø.Å. is as valid as J.P.), or "?" when no initial could be read.
+      and coalesce(v_owner ->> 'initials', '') !~ '^(([^[:space:].]\.)+|\?)$' then
       return format('owner %s: an individual needs initials such as J.P.S.', v_i);
     end if;
 
