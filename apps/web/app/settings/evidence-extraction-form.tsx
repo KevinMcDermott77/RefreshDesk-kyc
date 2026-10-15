@@ -17,7 +17,7 @@ export function EvidenceExtractionForm({ firmId, enabled }: Props) {
         <span>
           Let Claude read documents clients provide for ownership evidence.
           <span className="block text-xs text-[var(--muted)]">
-            When on, an uploaded register extract, shareholder register or structure chart is sent to the Anthropic API to propose the
+            When on, an uploaded confirmation letter, email, shareholder register or structure chart is sent to the Anthropic API to propose the
             owners. Names of shareholders can be in these documents, so check your data-processing terms first. When off, owners are
             entered by hand. Either way a different admin confirms everything before it is used. The change is recorded in the audit log.
           </span>

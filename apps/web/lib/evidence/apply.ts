@@ -1,6 +1,7 @@
 import { sameRegistration } from '@/lib/ownership/registration-number'
 import type { ClientEvidenceItem, ClientEvidenceOwner, Range, ReasonCode } from '@/lib/ownership/types'
 import { coverage } from './coverage'
+import { isConfirmationKind } from './types'
 
 /**
  * The rules for using confirmed client evidence in an ownership walk (docs/slice7-client-evidence.md).
@@ -54,10 +55,12 @@ export function addMonths(isoDate: string, months: number): Date {
   return target
 }
 
-export type EvidenceBlocker = 'incomplete' | 'stale' | 'uncertified'
+export type EvidenceBlocker = 'incomplete' | 'stale' | 'uncertified' | 'email'
 
 export type EvidencePolicy = {
   accept: boolean
+  /** An emailed confirmation may resolve a branch. Off: it stays partial. */
+  acceptEmail?: boolean
   maxAgeMonths: number
   threshold: number
   /** The run's date and time (ISO). */
@@ -75,8 +78,10 @@ export type EvidenceAssessment = {
 
 /**
  * Whether an item can resolve its node:
- * - certified "yes", or an override for "uncertified";
- * - not older than maxEvidenceAgeMonths (from as_at, else the document date), or an override for "stale"
+ * - certified "yes", or an override for "uncertified". A client's written confirmation is nobody's certification, so
+ *   this does not apply to it, and it has no uncertified override;
+ * - an emailed confirmation only if the policy accepts one;
+ * - not older than maxEvidenceAgeMonths (from as_at, else the confirmation or document date), or an override for "stale"
  *   that is itself still inside maxEvidenceAgeMonths of the day it was confirmed. An uncertified override
  *   never waives age;
  * - the coverage rule passes. Nothing overrides that;
@@ -86,7 +91,8 @@ export function assessEvidence(item: ClientEvidenceItem, policy: EvidencePolicy)
   const reasons = item.override?.reasons ?? []
   const blockers: EvidenceBlocker[] = []
 
-  const basis = item.asAt ?? item.documentDate
+  const confirmation = isConfirmationKind(item.evidenceKind)
+  const basis = item.asAt ?? (confirmation ? item.confirmationDate : null) ?? item.documentDate
   // Whole days: evidence from 16 Oct 2025 is still in date on 16 Oct 2026, whatever the time of day.
   const today = policy.now.slice(0, 10)
   const lastDay = (from: string) => addMonths(from, policy.maxAgeMonths).toISOString().slice(0, 10)
@@ -94,9 +100,10 @@ export function assessEvidence(item: ClientEvidenceItem, policy: EvidencePolicy)
   const staleOverrideOpen = reasons.includes('stale') && today <= lastDay(item.confirmedAt)
 
   const listed = item.owners.map((owner) => ({ holding: owner.holding ?? undefined }))
-  if (!coverage(listed, item.ownersComplete, policy.threshold).covers) blockers.push('incomplete')
+  if (!coverage(listed, item.ownersComplete, policy.threshold, item.noOtherHolderAtOrAbove).covers) blockers.push('incomplete')
   if (stale && !staleOverrideOpen) blockers.push('stale')
-  if (item.certified !== 'yes' && !reasons.includes('uncertified')) blockers.push('uncertified')
+  if (!confirmation && item.certified !== 'yes' && !reasons.includes('uncertified')) blockers.push('uncertified')
+  if (confirmation && item.receivedAs === 'email' && policy.acceptEmail === false) blockers.push('email')
 
   return { apply: blockers.length === 0 && policy.accept, blockers, policyOff: !policy.accept, stale }
 }
@@ -113,4 +120,5 @@ export const BLOCKER_CODE: Record<EvidenceBlocker, ReasonCode> = {
   incomplete: 'CLIENT_EVIDENCE_INCOMPLETE',
   stale: 'CLIENT_EVIDENCE_STALE',
   uncertified: 'CLIENT_EVIDENCE_UNCERTIFIED',
+  email: 'CLIENT_EVIDENCE_EMAIL_NOT_ACCEPTED',
 }

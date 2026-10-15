@@ -25,9 +25,21 @@ export type Coverage = {
  * or above the threshold, an unlisted holder could be a beneficial owner, so the evidence does not
  * resolve the node. It cannot be overridden by a reviewer.
  */
-export function coverage(owners: Pick<EvidenceOwner, 'holding'>[], ownersComplete: boolean, threshold = DEFAULT_THRESHOLD): Coverage {
+export function coverage(
+  owners: Pick<EvidenceOwner, 'holding'>[],
+  ownersComplete: boolean,
+  threshold = DEFAULT_THRESHOLD,
+  /** The document states that no other person holds this percentage or more. */
+  noOtherAtOrAbove?: number | null,
+): Coverage {
   const listed = owners.reduce((sum, owner) => sum + lowerBound(owner), 0)
   const unaccountedUpTo = Math.max(0, Math.round((100 - listed) * 1e6) / 1e6)
+
+  // "No other person holds X% or more", with X at or below the threshold, is the same assurance as a full list:
+  // any holder not named holds less than X, so less than the threshold.
+  if (typeof noOtherAtOrAbove === 'number' && noOtherAtOrAbove <= threshold) {
+    return { unaccountedUpTo: Math.min(unaccountedUpTo, noOtherAtOrAbove), covers: true }
+  }
 
   if (!ownersComplete) {
     return { unaccountedUpTo, covers: false, reason: 'The document does not say it lists every holder' }

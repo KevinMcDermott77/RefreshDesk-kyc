@@ -121,6 +121,12 @@ function readIds(formData: FormData): { evidenceId: string; clientId: string } |
   return { evidenceId, clientId }
 }
 
+/** The kind of an evidence item (it decides which fields apply). Row-level security limits this to the user's firm. */
+async function kindOf(supabase: Awaited<ReturnType<typeof createClient>>, evidenceId: string): Promise<string | undefined> {
+  const { data } = await supabase.from('ownership_evidence').select('evidence_kind').eq('id', evidenceId).maybeSingle()
+  return (data as { evidence_kind?: string } | null)?.evidence_kind
+}
+
 function readPayload(formData: FormData): unknown {
   try {
     return JSON.parse(String(formData.get('payload') ?? ''))
@@ -140,7 +146,7 @@ export async function saveProposalAction(_prev: EvidenceActionState, formData: F
   const ids = readIds(formData)
   if ('error' in ids) return ids
 
-  const normalised = normalisePayload(readPayload(formData))
+  const normalised = normalisePayload(readPayload(formData), { kind: await kindOf(supabase, ids.evidenceId) })
   if (!normalised.ok) return { error: normalised.error }
 
   const { error } = await supabase.rpc('save_evidence_proposal', {
@@ -169,7 +175,7 @@ export async function confirmEvidenceAction(_prev: EvidenceActionState, formData
   const membership = client ? await getMembership(supabase, user.id, client.firm_id) : null
   if (!membership || !canReview(membership.role)) return { error: 'Only an admin (reviewer) can confirm client evidence' }
 
-  const normalised = normalisePayload(readPayload(formData), { forConfirm: true })
+  const normalised = normalisePayload(readPayload(formData), { forConfirm: true, kind: await kindOf(supabase, ids.evidenceId) })
   if (!normalised.ok) return { error: normalised.error }
 
   const note = String(formData.get('note') ?? '').trim() || null

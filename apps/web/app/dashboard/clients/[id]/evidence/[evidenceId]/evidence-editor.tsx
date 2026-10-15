@@ -2,7 +2,16 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { blankOwner, coverageOf, toPayloadInput, toState, type EditorState, type OwnerRow } from '@/lib/evidence/editor-model'
-import { CERTIFIER_CAPACITIES, CERTIFIER_CAPACITY_LABELS, type EvidencePayload } from '@/lib/evidence/types'
+import {
+  CERTIFIER_CAPACITIES,
+  CERTIFIER_CAPACITY_LABELS,
+  CONFIRMER_CAPACITIES,
+  CONFIRMER_CAPACITY_LABELS,
+  isConfirmationKind,
+  RECEIVED_AS,
+  RECEIVED_AS_LABELS,
+  type EvidencePayload,
+} from '@/lib/evidence/types'
 import { confirmEvidenceAction, saveProposalAction } from '../actions'
 
 type Props = {
@@ -11,6 +20,8 @@ type Props = {
   evidenceId: string
   clientId: string
   initial: EvidencePayload
+  /** The kind of evidence: a client's written confirmation has a confirmer and no certification. */
+  kind?: string
   canSubmit: boolean
   /** Why the button is disabled; shown beside it. */
   reason?: string
@@ -18,11 +29,12 @@ type Props = {
 
 const field = 'mt-1 w-full border border-[var(--line)] bg-white px-2 py-2 text-sm outline-none focus:border-[var(--accent)]'
 
-export function EvidenceEditor({ mode, evidenceId, clientId, initial, canSubmit, reason }: Props) {
+export function EvidenceEditor({ mode, evidenceId, clientId, initial, kind, canSubmit, reason }: Props) {
+  const confirmation = isConfirmationKind(kind)
   const [state, setState] = useState<EditorState>(() => toState(initial))
   const [result, dispatch, pending] = useActionState(mode === 'confirm' ? confirmEvidenceAction : saveProposalAction, {})
 
-  const payload = useMemo(() => JSON.stringify(toPayloadInput(state, mode === 'confirm')), [state, mode])
+  const payload = useMemo(() => JSON.stringify(toPayloadInput(state, mode === 'confirm', kind)), [state, mode, kind])
   const cover = useMemo(() => coverageOf(state), [state])
 
   const update = (patch: Partial<EditorState>) => setState((s) => ({ ...s, ...patch }))
@@ -155,6 +167,49 @@ export function EvidenceEditor({ mode, evidenceId, clientId, initial, canSubmit,
           <span className="font-medium">Document date</span>
           <input type="date" className={field} value={state.documentDate} onChange={(e) => update({ documentDate: e.target.value })} />
         </label>
+        {confirmation ? (
+          <>
+            <label className="block text-sm">
+              <span className="font-medium">Confirmed by (capacity: never the name)</span>
+              <select className={field} value={state.confirmedByCapacity} onChange={(e) => update({ confirmedByCapacity: e.target.value as EditorState['confirmedByCapacity'] })}>
+                {CONFIRMER_CAPACITIES.map((capacity) => (
+                  <option key={capacity} value={capacity}>
+                    {CONFIRMER_CAPACITY_LABELS[capacity]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium">Date of the confirmation</span>
+              <input type="date" className={field} value={state.confirmationDate} onChange={(e) => update({ confirmationDate: e.target.value })} />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium">Received as</span>
+              <select className={field} value={state.receivedAs} onChange={(e) => update({ receivedAs: e.target.value as EditorState['receivedAs'] })}>
+                {RECEIVED_AS.map((how) => (
+                  <option key={how} value={how}>
+                    {RECEIVED_AS_LABELS[how]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium">&ldquo;No other person holds … % or more&rdquo;</span>
+              <input
+                className={field}
+                inputMode="decimal"
+                placeholder="e.g. 25 (leave empty if it does not say so)"
+                value={state.noOtherHolder}
+                onChange={(e) => update({ noOtherHolder: e.target.value })}
+              />
+            </label>
+            <p className="text-xs text-[var(--muted)] md:col-span-2">
+              A client&apos;s own written confirmation is nobody&apos;s certification, so there is nothing to certify. If it states that no other person holds
+              the threshold or less than it, that completes the picture, like a full list.
+            </p>
+          </>
+        ) : (
+          <>
         <label className="block text-sm">
           <span className="font-medium">Certified?</span>
           <select className={field} value={state.certified} onChange={(e) => update({ certified: e.target.value as EditorState['certified'] })}>
@@ -185,6 +240,8 @@ export function EvidenceEditor({ mode, evidenceId, clientId, initial, canSubmit,
             </label>
           </>
         )}
+          </>
+        )}
         <label className="flex items-start gap-3 text-sm md:col-span-2">
           <input type="checkbox" className="mt-1" checked={state.ownersComplete} onChange={(e) => update({ ownersComplete: e.target.checked })} />
           <span>The document says it lists every holder.</span>
@@ -204,18 +261,20 @@ export function EvidenceEditor({ mode, evidenceId, clientId, initial, canSubmit,
         <div className="grid gap-3 border border-[var(--line)] bg-white p-4">
           <h3 className="text-sm font-semibold">Accept despite a problem (override)</h3>
           <p className="text-xs text-[var(--muted)]">
-            Only for evidence that is older than the firm&apos;s age limit or not certified. A note is required, and it is kept with the
+            {confirmation ? 'Only for a confirmation that is older than the firm\'s age limit.' : 'Only for evidence that is older than the firm\'s age limit or not certified.'} A note is required, and it is kept with the
             evidence and in the refresh pack. Incomplete coverage cannot be overridden.
           </p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={state.stale} onChange={(e) => update({ stale: e.target.checked })} />
             Accept although it is older than the age limit
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={state.uncertifiedOverride} onChange={(e) => update({ uncertifiedOverride: e.target.checked })} />
-            Accept although it is not certified
-          </label>
-          {(state.stale || state.uncertifiedOverride) && (
+          {!confirmation ? (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={state.uncertifiedOverride} onChange={(e) => update({ uncertifiedOverride: e.target.checked })} />
+              Accept although it is not certified
+            </label>
+          ) : null}
+          {(state.stale || (!confirmation && state.uncertifiedOverride)) && (
             <label className="block text-sm">
               <span className="font-medium">Why (required)</span>
               <textarea className={field} rows={2} value={state.overrideNote} onChange={(e) => update({ overrideNote: e.target.value })} />

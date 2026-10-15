@@ -1,5 +1,5 @@
 import { coverage, type Coverage } from './coverage'
-import type { Certified, CertifierCapacity, EvidenceOwner, EvidencePayload } from './types'
+import { isConfirmationKind, type Certified, type CertifierCapacity, type ConfirmerCapacity, type EvidenceOwner, type EvidencePayload, type ReceivedAs } from './types'
 
 /**
  * The editor keeps every field as text, the way a form does, and turns it into a payload on submit.
@@ -30,6 +30,12 @@ export type EditorState = {
   certifiedBy: string
   certifierCapacity: CertifierCapacity
   certificationDate: string
+  /** A client's written confirmation. */
+  confirmedByCapacity: ConfirmerCapacity
+  confirmationDate: string
+  receivedAs: ReceivedAs
+  /** "No other person holds X% or more": X, as typed; empty when the document says nothing of the kind. */
+  noOtherHolder: string
   stale: boolean
   uncertifiedOverride: boolean
   overrideNote: string
@@ -75,6 +81,10 @@ export function toState(payload: EvidencePayload): EditorState {
     certifiedBy: payload.certified_by ?? '',
     certifierCapacity: payload.certifier_capacity ?? 'unclear',
     certificationDate: payload.certification_date ?? '',
+    confirmedByCapacity: payload.confirmed_by_capacity ?? 'unclear',
+    confirmationDate: payload.confirmation_date ?? '',
+    receivedAs: payload.received_as ?? 'signed_letter',
+    noOtherHolder: payload.no_other_holder_at_or_above === undefined ? '' : String(payload.no_other_holder_at_or_above),
     stale: payload.override?.reasons.includes('stale') ?? false,
     uncertifiedOverride: payload.override?.reasons.includes('uncertified') ?? false,
     overrideNote: payload.override?.note ?? '',
@@ -89,7 +99,8 @@ function number(text: string): number | undefined {
 }
 
 /** The raw object sent to the server (unvalidated): empty fields are left out, bad numbers stay NaN-free as null so the server rejects them. */
-export function toPayloadInput(state: EditorState, withOverride: boolean): Record<string, unknown> {
+export function toPayloadInput(state: EditorState, withOverride: boolean, kind?: string): Record<string, unknown> {
+  const confirmation = isConfirmationKind(kind)
   const owners = state.owners.map((row) => {
     const holding =
       row.holdingType === 'percent'
@@ -109,7 +120,8 @@ export function toPayloadInput(state: EditorState, withOverride: boolean): Recor
     }
   })
 
-  const reasons = [...(state.stale ? ['stale'] : []), ...(state.uncertifiedOverride ? ['uncertified'] : [])]
+  // A written confirmation has no certification, so no uncertified override either.
+  const reasons = [...(state.stale ? ['stale'] : []), ...(!confirmation && state.uncertifiedOverride ? ['uncertified'] : [])]
   return {
     owners,
     owners_complete: state.ownersComplete,
@@ -117,8 +129,17 @@ export function toPayloadInput(state: EditorState, withOverride: boolean): Recor
     document_date: state.documentDate.trim() || null,
     certified: state.certified,
     certified_by: state.certifiedBy.trim() || null,
-    certifier_capacity: state.certified === 'no' ? null : state.certifierCapacity,
-    certification_date: state.certified === 'no' ? null : state.certificationDate.trim() || null,
+    ...(confirmation
+      ? {
+          confirmed_by_capacity: state.confirmedByCapacity,
+          confirmation_date: state.confirmationDate.trim() || null,
+          received_as: state.receivedAs,
+        }
+      : {
+          certifier_capacity: state.certified === 'no' ? null : state.certifierCapacity,
+          certification_date: state.certified === 'no' ? null : state.certificationDate.trim() || null,
+        }),
+    no_other_holder_at_or_above: state.noOtherHolder.trim() ? Number(state.noOtherHolder) : null,
     override: withOverride && reasons.length > 0 ? { reasons, note: state.overrideNote } : null,
   }
 }
@@ -136,5 +157,6 @@ export function coverageOf(state: EditorState, threshold?: number): Coverage {
     }
     return { holding: undefined }
   })
-  return coverage(owners, state.ownersComplete, threshold)
+  const stated = state.noOtherHolder.trim() ? Number(state.noOtherHolder) : null
+  return coverage(owners, state.ownersComplete, threshold, stated !== null && Number.isFinite(stated) ? stated : null)
 }

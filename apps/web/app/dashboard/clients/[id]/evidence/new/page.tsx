@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { canWrite } from '@/lib/entity-cdd/permissions'
-import { EVIDENCE_KINDS } from '@/lib/evidence/types'
+import { OFFERED_EVIDENCE_KINDS } from '@/lib/evidence/types'
 import { EvidenceUploadForm } from './evidence-upload-form'
 
 type Search = { subject?: string; name?: string; lei?: string; country?: string; registration?: string; kind?: string }
@@ -36,7 +36,7 @@ export default async function NewEvidencePage({
 
   const { data: firm } = await supabase.from('firms').select('evidence_extraction_enabled').eq('id', client.firm_id).maybeSingle()
 
-  const kind = (EVIDENCE_KINDS as readonly string[]).includes(query.kind ?? '') ? (query.kind as string) : 'shareholder_register'
+  const kind = (OFFERED_EVIDENCE_KINDS as readonly string[]).includes(query.kind ?? '') ? (query.kind as string) : 'client_ownership_confirmation'
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -45,8 +45,9 @@ export default async function NewEvidencePage({
           <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">{client.display_name}</p>
           <h1 className="mt-2 text-2xl font-semibold">Add client-provided ownership evidence</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            For a company the ownership walk could not resolve from a register: a register extract, shareholder register, signed
-            structure chart or annual report page. Nothing is used until a different admin confirms it.
+            For a company the ownership walk could not resolve from a register. The usual document is the client&apos;s own written
+            confirmation of its ownership (a signed letter or email, ideally with a structure chart); a shareholder register, register
+            extract or annual report page also works. Nothing is used until a different admin confirms it.
           </p>
         </header>
 

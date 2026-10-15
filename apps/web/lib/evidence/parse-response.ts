@@ -21,7 +21,7 @@ function rec(value: unknown): Rec {
  * reference or a name are dropped with a warning, an override is never accepted from the model,
  * and certification defaults to "unclear" unless the document visibly says otherwise.
  */
-export function parseEvidenceResponse(raw: string, today?: string): ParsedExtraction {
+export function parseEvidenceResponse(raw: string, today?: string, kind?: string): ParsedExtraction {
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Claude did not return valid JSON')
 
@@ -47,16 +47,22 @@ export function parseEvidenceResponse(raw: string, today?: string): ParsedExtrac
     certified_by: obj.certified_by,
     certifier_capacity: obj.certifier_capacity,
     certification_date: obj.certification_date,
+    confirmed_by_capacity: obj.confirmed_by_capacity,
+    confirmation_date: obj.confirmation_date,
+    received_as: obj.received_as,
+    no_other_holder_at_or_above: typeof obj.no_other_holder_at_or_above === 'number' ? obj.no_other_holder_at_or_above : undefined,
     document_title: obj.document_title,
     signed: obj.signed,
     // An override is a reviewer's act. The model cannot make one.
   }
-  const options = { today }
+  const options = { today, kind }
+  // Dates the model could not read must not cost an owner row, or the whole read.
+  const noDates = { as_at: undefined, document_date: undefined, confirmation_date: undefined, certification_date: undefined }
 
   const rawOwners = Array.isArray(obj.owners) ? obj.owners : []
   const kept: unknown[] = []
   rawOwners.forEach((owner, index) => {
-    const check = normalisePayload({ ...base, as_at: undefined, document_date: undefined, owners: [owner] }, options)
+    const check = normalisePayload({ ...base, ...noDates, owners: [owner] }, options)
     if (check.ok) kept.push(owner)
     else warnings.push(`Row ${index + 1} was dropped: ${check.error.replace(/^Owner 1: /, '')}`)
   })
@@ -65,7 +71,7 @@ export function parseEvidenceResponse(raw: string, today?: string): ParsedExtrac
   if (!result.ok) {
     // Most likely an unreadable or impossible date: keep the owners and leave the dates for the reviewer.
     warnings.push(`The dates were not usable (${result.error}); enter them by hand.`)
-    result = normalisePayload({ ...base, as_at: undefined, document_date: undefined, owners: kept }, options)
+    result = normalisePayload({ ...base, ...noDates, owners: kept }, options)
   }
   if (!result.ok) throw new Error(`The extraction could not be used: ${result.error}`)
 

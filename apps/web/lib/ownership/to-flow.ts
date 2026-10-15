@@ -246,9 +246,12 @@ export type WalkSummary = {
     kind: string
     asAt?: string
     documentDate?: string
-    certified: 'yes' | 'no' | 'unclear'
+    certified?: 'yes' | 'no' | 'unclear'
     certifierCapacity?: NodeClientEvidence['certifierCapacity']
     certificationDate?: string
+    confirmedByCapacity?: NodeClientEvidence['confirmedByCapacity']
+    confirmationDate?: string
+    receivedAs?: NodeClientEvidence['receivedAs']
     confirmedAt: string
     edited: boolean
     override?: ('stale' | 'uncertified')[]
@@ -318,9 +321,12 @@ export function summarise(result: WalkResult): WalkSummary {
           kind: ev.kind,
           ...(ev.asAt ? { asAt: ev.asAt } : {}),
           ...(ev.documentDate ? { documentDate: ev.documentDate } : {}),
-          certified: ev.certified,
+          ...(ev.certified ? { certified: ev.certified } : {}),
           ...(ev.certifierCapacity ? { certifierCapacity: ev.certifierCapacity } : {}),
           ...(ev.certificationDate ? { certificationDate: ev.certificationDate } : {}),
+          ...(ev.confirmedByCapacity ? { confirmedByCapacity: ev.confirmedByCapacity } : {}),
+          ...(ev.confirmationDate ? { confirmationDate: ev.confirmationDate } : {}),
+          ...(ev.receivedAs ? { receivedAs: ev.receivedAs } : {}),
           confirmedAt: ev.confirmedAt,
           edited: ev.edited,
           ...(ev.override ? { override: ev.override.reasons } : {}),

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { initials } from '@/lib/ownership/to-flow'
-import { CERTIFIER_CAPACITIES, type EvidencePayload } from './types'
+import { CERTIFIER_CAPACITIES, CONFIRMER_CAPACITIES, isConfirmationKind, RECEIVED_AS, type EvidencePayload } from './types'
 
 /**
  * Validates and normalises an evidence payload that came from the browser (the editor) or from
@@ -77,10 +77,20 @@ const payloadSchema = z.object({
   owners_complete: z.boolean(),
   as_at: isoDate,
   document_date: isoDate,
-  certified: z.enum(['yes', 'no', 'unclear']),
+  // Missing means "unclear": a document is never assumed to be certified.
+  certified: z.enum(['yes', 'no', 'unclear']).default('unclear'),
   certified_by: optionalText,
   certifier_capacity: z.enum(CERTIFIER_CAPACITIES).nullish().transform((value) => value ?? undefined),
   certification_date: isoDate,
+  confirmed_by_capacity: z.enum(CONFIRMER_CAPACITIES).nullish().transform((value) => value ?? undefined),
+  confirmation_date: isoDate,
+  received_as: z.enum(RECEIVED_AS).nullish().transform((value) => value ?? undefined),
+  no_other_holder_at_or_above: z
+    .number()
+    .min(0, 'The "no other holder" percentage must be between 0 and 100')
+    .max(100, 'The "no other holder" percentage must be between 0 and 100')
+    .nullish()
+    .transform((value) => value ?? undefined),
   document_title: optionalText,
   signed: z.boolean().nullish().transform((value) => (typeof value === 'boolean' ? value : undefined)),
   override: overrideSchema.nullish().transform((value) => value ?? undefined),
@@ -93,6 +103,8 @@ export type NormaliseOptions = {
   forConfirm?: boolean
   /** Today (yyyy-mm-dd), for the "not in the future" rule. */
   today?: string
+  /** The kind of evidence. A client's written confirmation has no certification: it has a confirmer's capacity and how it was received. */
+  kind?: string
 }
 
 function describe(error: z.ZodError): string {
@@ -111,13 +123,26 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
   if ((value.as_at && value.as_at > today) || (value.document_date && value.document_date > today)) {
     return { ok: false, error: 'The as-at date and document date cannot be in the future' }
   }
+  const confirmation = isConfirmationKind(options.kind)
   if (value.certification_date && value.certification_date > today) {
     return { ok: false, error: 'The certification date cannot be in the future' }
   }
-  if (options.forConfirm && !value.as_at && !value.document_date) {
-    return { ok: false, error: "Enter the as-at date or the document date: it is needed to measure the evidence's age" }
+  if (value.confirmation_date && value.confirmation_date > today) {
+    return { ok: false, error: 'The confirmation date cannot be in the future' }
   }
-  if (value.override?.reasons.includes('uncertified') && value.certified === 'yes') {
+  const ageDate = value.as_at ?? (confirmation ? value.confirmation_date : undefined) ?? value.document_date
+  if (options.forConfirm && !ageDate) {
+    return {
+      ok: false,
+      error: confirmation
+        ? "Enter the date of the confirmation (or the as-at date): it is needed to measure the evidence's age"
+        : "Enter the as-at date or the document date: it is needed to measure the evidence's age",
+    }
+  }
+  if (confirmation && value.override?.reasons.includes('uncertified')) {
+    return { ok: false, error: "A client's written confirmation is not certified, so there is no uncertified override for it" }
+  }
+  if (!confirmation && value.override?.reasons.includes('uncertified') && value.certified === 'yes') {
     return { ok: false, error: 'An uncertified override cannot be given for a certified document' }
   }
 
@@ -139,8 +164,10 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
 
   // Capacity and date only mean something on a document that is, or may be, certified; a certified one with no
   // stated capacity is "unclear", never assumed.
+  // A client's written confirmation is nobody's certification: the database still wants a value, so it is
+  // "unclear", and everything that reads it looks at the kind first.
   const certification =
-    value.certified === 'no'
+    confirmation || value.certified === 'no'
       ? {}
       : {
           certifier_capacity: value.certifier_capacity ?? ('unclear' as const),
@@ -152,9 +179,17 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
     owners_complete: value.owners_complete,
     ...(value.as_at ? { as_at: value.as_at } : {}),
     ...(value.document_date ? { document_date: value.document_date } : {}),
-    certified: value.certified,
-    ...(value.certified_by ? { certified_by: value.certified_by } : {}),
+    certified: confirmation ? ('unclear' as const) : value.certified,
+    ...(!confirmation && value.certified_by ? { certified_by: value.certified_by } : {}),
     ...certification,
+    ...(confirmation
+      ? {
+          confirmed_by_capacity: value.confirmed_by_capacity ?? ('unclear' as const),
+          received_as: value.received_as ?? ('other' as const),
+          ...(value.confirmation_date ? { confirmation_date: value.confirmation_date } : {}),
+        }
+      : {}),
+    ...(value.no_other_holder_at_or_above !== undefined ? { no_other_holder_at_or_above: value.no_other_holder_at_or_above } : {}),
     ...(value.document_title ? { document_title: value.document_title } : {}),
     ...(typeof value.signed === 'boolean' ? { signed: value.signed } : {}),
     ...(value.override ? { override: { reasons: value.override.reasons, note: value.override.note } } : {}),

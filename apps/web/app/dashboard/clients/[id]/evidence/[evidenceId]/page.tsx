@@ -10,11 +10,14 @@ import { emptyPayload } from '@/lib/evidence/payload'
 import { lookupRegistrations } from '@/lib/evidence/registration-lookup'
 import {
   CERTIFIER_CAPACITY_LABELS,
+  CONFIRMER_CAPACITY_LABELS,
   EVIDENCE_KIND_LABELS,
   EVIDENCE_LABEL,
   EVIDENCE_STATUS_LABELS,
   type EvidenceKind,
   type EvidencePayload,
+  isConfirmationKind,
+  RECEIVED_AS_LABELS,
   type EvidenceStatus,
 } from '@/lib/evidence/types'
 import { DEMO_SUBJECT } from '@/lib/demo/fjordvik'
@@ -184,7 +187,7 @@ export default async function EvidencePage({
   let warnings: string[] = []
   if (ev.proposal_source === 'extraction' && ev.raw_response) {
     try {
-      warnings = parseEvidenceResponse(ev.raw_response).warnings
+      warnings = parseEvidenceResponse(ev.raw_response, undefined, ev.evidence_kind).warnings
     } catch {
       warnings = []
     }
@@ -194,7 +197,7 @@ export default async function EvidencePage({
     showConfirm && ev.proposal ? await lookupRegistrations(ev.proposal.owners, createGleifSource(gleifHttp)) : []
 
   const shown = ev.confirmed ?? ev.proposal
-  const cover = shown ? coverage(shown.owners, shown.owners_complete) : null
+  const cover = shown ? coverage(shown.owners, shown.owners_complete, undefined, shown.no_other_holder_at_or_above) : null
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -257,10 +260,23 @@ export default async function EvidencePage({
             <p className="text-sm text-emerald-900">
               Confirmed by {who(ev.reviewed_by)} on {when(ev.reviewed_at)}
               {ev.edited ? ' with edits to the proposal' : ''}. As at {ev.as_at ?? '—'}, document date {ev.document_date ?? '—'},
-              certified: {ev.certified}
-              {ev.confirmed.certified_by ? ` (${ev.confirmed.certified_by})` : ''}
-              {ev.confirmed.certifier_capacity ? `, capacity: ${CERTIFIER_CAPACITY_LABELS[ev.confirmed.certifier_capacity]}` : ''}
-              {ev.confirmed.certification_date ? `, certified on ${ev.confirmed.certification_date}` : ''}.
+              {isConfirmationKind(ev.evidence_kind) ? (
+                <>
+                  {ev.confirmed.received_as ? RECEIVED_AS_LABELS[ev.confirmed.received_as] : 'Written confirmation'} from the client, confirmed by a{' '}
+                  {CONFIRMER_CAPACITY_LABELS[ev.confirmed.confirmed_by_capacity ?? 'unclear'].toLowerCase()}
+                  {ev.confirmed.confirmation_date ? ` on ${ev.confirmed.confirmation_date}` : ''} (a written confirmation has no certification).
+                  {typeof ev.confirmed.no_other_holder_at_or_above === 'number'
+                    ? ` It states that no other person holds ${ev.confirmed.no_other_holder_at_or_above}% or more.`
+                    : ''}
+                </>
+              ) : (
+                <>
+                  certified: {ev.certified}
+                  {ev.confirmed.certified_by ? ` (${ev.confirmed.certified_by})` : ''}
+                  {ev.confirmed.certifier_capacity ? `, capacity: ${CERTIFIER_CAPACITY_LABELS[ev.confirmed.certifier_capacity]}` : ''}
+                  {ev.confirmed.certification_date ? `, certified on ${ev.confirmed.certification_date}` : ''}.
+                </>
+              )}
             </p>
             {ev.confirmed.override && (
               <p className="text-sm text-amber-900">
@@ -315,7 +331,7 @@ export default async function EvidencePage({
             <p className="mt-1 mb-4 text-xs text-[var(--muted)]">
               Copy only what is printed. A different admin checks it against the document before it is used.
             </p>
-            <EvidenceEditor mode="propose" evidenceId={ev.id} clientId={id} initial={initial} canSubmit={gate.canEditProposal} />
+            <EvidenceEditor mode="propose" evidenceId={ev.id} clientId={id} initial={initial} kind={ev.evidence_kind} canSubmit={gate.canEditProposal} />
           </div>
         )}
 
@@ -330,6 +346,7 @@ export default async function EvidencePage({
               evidenceId={ev.id}
               clientId={id}
               initial={initial}
+              kind={ev.evidence_kind}
               canSubmit={gate.canConfirm}
               reason={gate.reason}
             />

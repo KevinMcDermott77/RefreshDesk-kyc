@@ -10,7 +10,8 @@ are all invented, and everything the sample produces says **Sample data**, inclu
 - `apps/web/.env.local` has `ANTHROPIC_API_KEY` and `PACK_SIGNING_SECRET` (16+ characters). Restart `npm run dev` after changing it.
 - Extraction is on for your firm (Settings → Client ownership evidence). It is, for `bubble-up`.
 - The sample subject is offered only to firms whose slug is in `DEMO_SUBJECT_FIRM_SLUGS` (comma-separated), which defaults to `bubble-up`. Any other firm gets "The sample subject is not available to this firm."
-- The file to upload: `__fixtures__/evidence/SAMPLE-shareholder-register.pdf` (regenerate with `node scripts/make-sample-register.cjs`).
+- **The migration for the new evidence kind is applied** (see the report; until it is, uploading a written confirmation is refused with "invalid evidence kind"). Also `20261017000000_slice7e_evidence_followup.sql`.
+- The files to upload: `__fixtures__/evidence/SAMPLE-ownership-confirmation.pdf` (the client's signed letter: use this one first) and `__fixtures__/evidence/SAMPLE-shareholder-register.pdf` (the register: the fallback). Regenerate both with `node scripts/make-sample-register.cjs`.
 
 ## Steps
 
@@ -22,7 +23,7 @@ are all invented, and everything the sample produces says **Sample data**, inclu
    - "Overall: unresolved";
    - every profile row noting "Sample data: invented for testing…", with no links to Companies House.
 4. Click the **Fjordvik Test Holding AS** node. The side panel shows the register stop for Norway and an **Add client evidence** button. Click it.
-5. The form opens filled in: company name, **country NO**, **registration number 999 000 001**, walk subject `DEMO-FJORDVIK`, kind "Shareholder register". Choose the SAMPLE PDF. Leave **"Have Claude read the document"** ticked and click **Upload**. It takes 10 to 30 seconds.
+5. The form opens filled in: company name, **country NO**, **registration number 999 000 001**, walk subject `DEMO-FJORDVIK`, kind "Shareholder register". Leave the kind as **"Client's written confirmation of ownership"** (the default), choose `SAMPLE-ownership-confirmation.pdf`, leave **"Have Claude read the document"** ticked and click **Upload**. It takes 10 to 30 seconds.
 6. **Claude's proposal** (the item page, status "Awaiting confirmation", a red "Sample data" tag, "Read by Claude · confidence …%"). Check it against the PDF. It should read:
 
    | Owner | Kind | Holding | Registration |
@@ -33,7 +34,7 @@ are all invented, and everything the sample produces says **Sample data**, inclu
    | Bjørn Prøve | Individual | 10% | |
    | Mia Sampleby | Individual | 5% | |
 
-   with as-at **2026-06-30**, document date **2026-07-15**, certified **Yes**, capacity **Company officer**, certification date **2026-07-15**, and "The document says it lists every holder" ticked. Each owner's page/section should say page 2, table 1. The coverage box should be green ("rules out an unlisted holder at or above 25%"). A "Registration numbers in the proposal, looked up in GLEIF" panel says GLEIF has no record for 999 000 002: nothing is matched or linked. If Claude got anything wrong, correct it in the editor: you are confirming it, so you may edit.
+   with as-at **2026-06-30**, document date **2026-07-16**, and the confirmation block: **Confirmed by: Director**, **Date of the confirmation 2026-07-16**, **Received as: Signed letter**, and **"No other person holds 25 % or more"**. There is no "Certified?" field: a client's own confirmation is nobody's certification. "The document says it lists every holder" is **not** ticked (the letter does not say so), and the coverage box is still green because of the "no other person holds 25%" statement. The signatory's name is not in the proposal: only the capacity. Each owner's page/section should name the paragraph. A "Registration numbers in the proposal, looked up in GLEIF" panel says GLEIF has no record for 999 000 002: nothing is matched or linked. If Claude got anything wrong, correct it in the editor: you are confirming it, so you may edit.
 7. **Four-eyes blocks you.** You uploaded it, so **Confirm evidence** is disabled and the page says "Four-eyes rule: the person who uploaded this evidence cannot confirm it. Ask another admin to confirm it." (With a second admin account you would stop here and sign in as them.)
 8. **Turn four-eyes off for the test.** In the Supabase SQL editor, one statement:
 
@@ -50,7 +51,7 @@ are all invented, and everything the sample produces says **Sample data**, inclu
     - the Ownership profile row: "Walk status: resolved (client evidence)" and "1 branch resolved on client-provided, reviewer-verified evidence", marked PASS;
     - click the Fjordvik node: the **Client evidence** block shows the document kind, as-at date, "certified (company officer, 2026-07-15)", the confirmation time and a link to the evidence record.
 11. **Save the pack**: click **Save as refresh pack** (the button above the profile). It opens `/dashboard/packs/<id>`.
-12. On the pack page check: the red **Sample data** banner; the title "SAMPLE DATA: Fjordvik Demo (UK) Limited"; the policy line includes "client evidence may resolve a branch, up to 12 months old"; Summary "Complete … walk status resolved_client_evidence"; a **Client-provided evidence** section (document, as at, certified + capacity + date, "client-provided, reviewer-verified", confirmed time, the document's sha-256, and no names); the **Source log** with a "SAMPLE DATA (built-in fixture…)" line and a "Client-provided evidence (reviewer-verified)" line.
+12. On the pack page check: the red **Sample data** banner; the title "SAMPLE DATA: Fjordvik Demo (UK) Limited"; the policy line includes "client evidence may resolve a branch, up to 12 months old"; Summary "Complete … walk status resolved_client_evidence"; a **Client-provided evidence** section ("client ownership confirmation · as at 2026-06-30 · written confirmation from the client (signed letter), by a director, 2026-07-16; no certification applies", "client-provided, reviewer-verified", confirmed time, the document's sha-256, and no names); the **Source log** with a "SAMPLE DATA (built-in fixture…)" line and a "Client-provided evidence (reviewer-verified)" line.
 13. **Fingerprint verified**: the green "✓ Fingerprint verified: the snapshot matches the stored fingerprint." line under the SHA-256. Try **Download PDF** (the browser print dialog): the banner and the fingerprint footer are on every page.
 14. **Put four-eyes back:**
 
@@ -59,6 +60,10 @@ are all invented, and everything the sample produces says **Sample data**, inclu
     ```
 
 ## Things worth trying afterwards
+
+- **Email policy**: in the client box on the ownership page, untick **Accept an emailed confirmation**. Re-upload the letter as "Received as: Email" (edit it in the confirm editor): the node goes back to red with `CLIENT_EVIDENCE_EMAIL_NOT_ACCEPTED` and "ask for a signed letter or a signed structure chart". Tick it again and walk: resolved.
+- **No statement**: clear the "No other person holds…" box before confirming: the coverage box turns amber (the letter does not say it lists every holder), and `CLIENT_EVIDENCE_INCOMPLETE` cannot be overridden. Set it to 30: still amber (30 is above the 25% threshold).
+- **The register instead**: upload `SAMPLE-shareholder-register.pdf` as kind "Shareholder register": it has certification fields (certified yes, company officer, 2026-07-15) and an "uncertified" override, which the letter does not.
 
 - **Policy off**: untick "Let confirmed client evidence resolve branches" and walk again: the node stays red with "CLIENT_EVIDENCE_NOT_ACCEPTED" and the status goes back to unresolved.
 - **Age limit**: set "Oldest evidence accepted" to 1 month and walk again: `CLIENT_EVIDENCE_STALE`, and the button offers "Add newer or fuller client evidence".

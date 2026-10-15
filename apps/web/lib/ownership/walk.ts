@@ -1,6 +1,7 @@
 import { classify, governingBand, maxRanges, multiplyRanges, parseNatures } from './bands'
 import { countryCode } from './countries'
 import { sameRegistration } from './registration-number'
+import { isConfirmationKind } from '@/lib/evidence/types'
 import { assessEvidence, BLOCKER_CODE, EVIDENCE_ELIGIBLE_REASONS, holdingRange, matchEvidence, type NodeFacts } from '@/lib/evidence/apply'
 import { profileFor, stopReasonFor } from './register-profiles'
 import type {
@@ -196,6 +197,7 @@ export async function walk(
   const acceptRegulated = policy.acceptRegulatedAsTerminal ?? true
   const acceptEvidence = policy.acceptClientEvidenceAsResolved ?? true
   const maxEvidenceAgeMonths = policy.maxEvidenceAgeMonths ?? 12
+  const acceptEmail = policy.acceptEmailConfirmation ?? true
   const now = policy.now ?? new Date().toISOString()
 
   const nodes = new Map<string, OwnershipNode>()
@@ -419,15 +421,24 @@ export async function walk(
     const item = matchEvidence(await loadEvidence(), facts)
     if (!item || context.used.has(item.id)) return
 
-    const assessment = assessEvidence(item, { accept: acceptEvidence, maxAgeMonths: maxEvidenceAgeMonths, threshold, now })
+    const assessment = assessEvidence(item, { accept: acceptEvidence, acceptEmail, maxAgeMonths: maxEvidenceAgeMonths, threshold, now })
     const record = {
       id: item.id,
       kind: item.evidenceKind,
       ...(item.asAt ? { asAt: item.asAt } : {}),
       ...(item.documentDate ? { documentDate: item.documentDate } : {}),
-      certified: item.certified,
-      ...(item.certifierCapacity ? { certifierCapacity: item.certifierCapacity } : {}),
-      ...(item.certificationDate ? { certificationDate: item.certificationDate } : {}),
+      // A client's written confirmation is nobody's certification: it carries who confirmed it (capacity), when and how.
+      ...(isConfirmationKind(item.evidenceKind)
+        ? {
+            ...(item.confirmedByCapacity ? { confirmedByCapacity: item.confirmedByCapacity } : {}),
+            ...(item.confirmationDate ? { confirmationDate: item.confirmationDate } : {}),
+            ...(item.receivedAs ? { receivedAs: item.receivedAs } : {}),
+          }
+        : {
+            certified: item.certified,
+            ...(item.certifierCapacity ? { certifierCapacity: item.certifierCapacity } : {}),
+            ...(item.certificationDate ? { certificationDate: item.certificationDate } : {}),
+          }),
       ...(item.confirmedBy ? { confirmedBy: item.confirmedBy } : {}),
       confirmedAt: item.confirmedAt,
       edited: item.edited,

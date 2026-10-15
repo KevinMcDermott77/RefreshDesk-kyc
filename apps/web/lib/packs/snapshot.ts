@@ -22,6 +22,8 @@ export type PackPolicy = {
   acceptRegulatedAsTerminal: boolean
   /** Slice 7: whether confirmed client evidence may resolve a branch (absent in packs saved before it existed). */
   acceptClientEvidenceAsResolved?: boolean
+  /** Slice 7: an emailed confirmation from the client may resolve a branch. */
+  acceptEmailConfirmation?: boolean
   /** Slice 7: the age limit for client evidence, in months. */
   maxEvidenceAgeMonths?: number
 }
@@ -38,9 +40,14 @@ export type PackClientEvidence = {
   nodeName: string
   asAt?: string
   documentDate?: string
-  certified: 'yes' | 'no' | 'unclear'
+  /** Absent on a client's written confirmation, which nobody certifies. */
+  certified?: 'yes' | 'no' | 'unclear'
   certifierCapacity?: string
   certificationDate?: string
+  /** A client's written confirmation: the capacity of whoever confirmed it (never their name), the date, and how it arrived. */
+  confirmedByCapacity?: string
+  confirmationDate?: string
+  receivedAs?: string
   confirmedAt: string
   /** The confirming admin's user id. */
   confirmedBy?: string
@@ -155,9 +162,12 @@ export function evidenceBlocks(walked: WalkResult): PackClientEvidence[] {
         nodeName: node.name,
         ...(ev.asAt ? { asAt: ev.asAt } : {}),
         ...(ev.documentDate ? { documentDate: ev.documentDate } : {}),
-        certified: ev.certified,
+        ...(ev.certified ? { certified: ev.certified } : {}),
         ...(ev.certifierCapacity ? { certifierCapacity: ev.certifierCapacity } : {}),
         ...(ev.certificationDate ? { certificationDate: ev.certificationDate } : {}),
+        ...(ev.confirmedByCapacity ? { confirmedByCapacity: ev.confirmedByCapacity } : {}),
+        ...(ev.confirmationDate ? { confirmationDate: ev.confirmationDate } : {}),
+        ...(ev.receivedAs ? { receivedAs: ev.receivedAs } : {}),
         confirmedAt: ev.confirmedAt,
         ...(ev.confirmedBy ? { confirmedBy: ev.confirmedBy } : {}),
         edited: ev.edited,
@@ -251,6 +261,7 @@ export const packSnapshotSchema = z.object({
     indirectMethod: z.enum(['either', 'multiply', 'majority']),
     acceptRegulatedAsTerminal: z.boolean(),
     acceptClientEvidenceAsResolved: z.boolean().optional(),
+    acceptEmailConfirmation: z.boolean().optional(),
     maxEvidenceAgeMonths: z.number().optional(),
   }),
   profile: z.array(profileRowSchema),
@@ -297,9 +308,12 @@ export const packSnapshotSchema = z.object({
         nodeName: z.string(),
         asAt: z.string().optional(),
         documentDate: z.string().optional(),
-        certified: z.enum(['yes', 'no', 'unclear']),
+        certified: z.enum(['yes', 'no', 'unclear']).optional(),
         certifierCapacity: z.string().optional(),
         certificationDate: z.string().optional(),
+        confirmedByCapacity: z.string().optional(),
+        confirmationDate: z.string().optional(),
+        receivedAs: z.string().optional(),
         confirmedAt: z.string(),
         confirmedBy: z.string().optional(),
         edited: z.boolean(),

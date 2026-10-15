@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useRef, useState } from 'react'
 import { uploadClientDocument } from '@/lib/documents/upload-client-document'
-import { EVIDENCE_KINDS, EVIDENCE_KIND_LABELS } from '@/lib/evidence/types'
+import { EVIDENCE_KIND_LABELS, OFFERED_EVIDENCE_KINDS, type EvidenceKind } from '@/lib/evidence/types'
 import { createEvidenceAction } from '../actions'
 
 type Props = {
@@ -91,12 +91,16 @@ export function EvidenceUploadForm({ clientId, firmId, extractionEnabled, defaul
       <label className="block">
         <span className="text-sm font-medium">What kind of document is it?</span>
         <select name="evidence_kind" defaultValue={defaults.kind} className={inputClass}>
-          {EVIDENCE_KINDS.map((kind) => (
+          {OFFERED_EVIDENCE_KINDS.map((kind) => (
             <option key={kind} value={kind}>
-              {EVIDENCE_KIND_LABELS[kind]}
+              {EVIDENCE_KIND_LABELS[kind as EvidenceKind]}
             </option>
           ))}
         </select>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Ask the client first for written confirmation of its ownership: a signed letter or an email, ideally with a structure chart. It
+          needs no certification. A register document is the fallback.
+        </p>
       </label>
 
       <label className="block">

@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
-import { reasonText } from '@/lib/ownership/reason-text'
+import { REQUEST_CONFIRMATION, reasonText } from '@/lib/ownership/reason-text'
 import { evidenceLink } from '@/lib/evidence/entry-link'
 import { formatFetchedAt, formatRange, overallText, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
@@ -204,7 +204,10 @@ function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['
             </ul>
           ) : null}
         </Field>
-        <Field label="Document to request">{profile.documentToRequest}</Field>
+        <Field label="Document to request">
+          {REQUEST_CONFIRMATION}.
+          <span className="mt-1 block text-xs text-[var(--muted)]">If a register document is wanted instead: {profile.documentToRequest}.</span>
+        </Field>
         <Field label="Note">{profile.note}</Field>
       </dl>
     </div>
@@ -227,10 +230,18 @@ function ClientEvidenceBlock({ evidence, clientId }: { evidence: NonNullable<Flo
         <li>
           <span className="text-[var(--muted)]">as at:</span> {evidence.asAt ?? evidence.documentDate ?? 'not stated'}
         </li>
-        <li>
-          <span className="text-[var(--muted)]">certification:</span> {CERTIFIED_TEXT[evidence.certified]}
-          {evidence.certifierCapacity ? ` (${evidence.certifierCapacity.replace(/_/g, ' ')}${evidence.certificationDate ? `, ${evidence.certificationDate}` : ''})` : ''}
-        </li>
+        {evidence.certified ? (
+          <li>
+            <span className="text-[var(--muted)]">certification:</span> {CERTIFIED_TEXT[evidence.certified]}
+            {evidence.certifierCapacity ? ` (${evidence.certifierCapacity.replace(/_/g, ' ')}${evidence.certificationDate ? `, ${evidence.certificationDate}` : ''})` : ''}
+          </li>
+        ) : (
+          <li>
+            <span className="text-[var(--muted)]">written confirmation:</span> {(evidence.receivedAs ?? 'other').replace(/_/g, ' ')} from the client, confirmed by a{' '}
+            {(evidence.confirmedByCapacity ?? 'unclear').replace(/_/g, ' ')}
+            {evidence.confirmationDate ? `, ${evidence.confirmationDate}` : ''} (no certification applies)
+          </li>
+        )}
         <li>
           <span className="text-[var(--muted)]">confirmed:</span> {formatFetchedAt(evidence.confirmedAt)}
           {evidence.edited ? ' (with edits by the reviewer)' : ''}
@@ -416,6 +427,13 @@ export function OwnershipViewer({ client }: { client?: { id: string; name: strin
                 <span className="block text-xs text-[var(--muted)]">
                   Shown as &ldquo;Resolved (client evidence)&rdquo;. When unticked, the evidence is shown but those branches stay partial. To add evidence, click an unresolved foreign company in the chart: its panel has an &ldquo;Add client evidence&rdquo; button at the top.
                 </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="accept_email_confirmation" defaultChecked className="mt-1" />
+              <span>
+                Accept an emailed confirmation.
+                <span className="block text-xs text-[var(--muted)]">Unticked: a confirmation that arrived by email stays partial; ask for a signed letter or chart.</span>
               </span>
             </label>
             <label className="text-sm font-medium">

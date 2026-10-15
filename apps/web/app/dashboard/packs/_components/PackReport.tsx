@@ -109,7 +109,7 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
               {policy.acceptRegulatedAsTerminal ? 'end the walk' : 'do not end the walk'}
               {policy.acceptClientEvidenceAsResolved === undefined
                 ? ''
-                : ` · client evidence ${policy.acceptClientEvidenceAsResolved ? 'may resolve a branch' : 'is shown but does not resolve'}, up to ${policy.maxEvidenceAgeMonths ?? 12} months old`}
+                : ` · client evidence ${policy.acceptClientEvidenceAsResolved ? 'may resolve a branch' : 'is shown but does not resolve'}, up to ${policy.maxEvidenceAgeMonths ?? 12} months old${policy.acceptEmailConfirmation === false ? ', emailed confirmations not accepted' : ''}`}
             </dd>
           </div>
           <div className="md:col-span-2">
@@ -216,7 +216,10 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
                   {block.nodeName} · {block.applied ? 'resolved on this evidence' : 'found but not used'}
                 </p>
                 <p>
-                  {block.kind.replace(/_/g, ' ')} · as at {block.asAt ?? block.documentDate ?? 'not stated'} · {block.certified === 'yes' ? 'certified' : block.certified === 'no' ? 'not certified' : 'certification unclear'}
+                  {block.kind.replace(/_/g, ' ')} · as at {block.asAt ?? block.confirmationDate ?? block.documentDate ?? 'not stated'}
+                  {block.certified === undefined
+                    ? ` · written confirmation from the client (${(block.receivedAs ?? 'other').replace(/_/g, ' ')}), by a ${(block.confirmedByCapacity ?? 'unclear').replace(/_/g, ' ')}${block.confirmationDate ? `, ${block.confirmationDate}` : ''}; no certification applies`
+                    : ` · ${block.certified === 'yes' ? 'certified' : block.certified === 'no' ? 'not certified' : 'certification unclear'}`}
                   {block.certifierCapacity ? ` (${block.certifierCapacity.replace(/_/g, ' ')}${block.certificationDate ? `, ${block.certificationDate}` : ''})` : ''}
                 </p>
                 <p>

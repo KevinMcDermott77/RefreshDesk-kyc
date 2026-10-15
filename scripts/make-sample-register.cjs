@@ -1,6 +1,10 @@
 #!/usr/bin/env node
-// Writes __fixtures__/evidence/SAMPLE-shareholder-register.pdf: an invented Norwegian shareholder
-// register for trying out the client-evidence upload, extraction and confirm flow by hand.
+// Writes two invented documents into __fixtures__/evidence/ for trying out the client-evidence upload, extraction
+// and confirm flow by hand:
+//   SAMPLE-ownership-confirmation.pdf  a signed letter from the fictional company's director confirming its
+//                                      shareholders and stating that no other person holds 25% or more. This is the
+//                                      document KYC practice asks for first: the client's own written confirmation.
+//   SAMPLE-shareholder-register.pdf    an invented Norwegian shareholder register, the fallback.
 //
 //   node scripts/make-sample-register.cjs
 //
@@ -15,7 +19,9 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const OUT = path.resolve(__dirname, '..', '__fixtures__', 'evidence', 'SAMPLE-shareholder-register.pdf')
+const DIR = path.resolve(__dirname, '..', '__fixtures__', 'evidence')
+const OUT = path.join(DIR, 'SAMPLE-shareholder-register.pdf')
+const OUT_LETTER = path.join(DIR, 'SAMPLE-ownership-confirmation.pdf')
 
 // WinAnsi bytes for the few non-ASCII letters used (the standard fonts use WinAnsiEncoding).
 const WIN_ANSI = { 'Ø': 0xd8, 'ø': 0xf8, 'Å': 0xc5, 'å': 0xe5, 'Æ': 0xc6, 'æ': 0xe6 }
@@ -147,6 +153,72 @@ function pageTwo() {
   return p
 }
 
+function pageLetter() {
+  const p = new Page()
+  p.watermark()
+  p.rect(40, 770, 515, 34, '0.85 0.1 0.1')
+  p.raw('1 g')
+  p.text(52, 782, 13, 'SAMPLE - INVENTED LETTER FOR TESTING - NOT A REAL CONFIRMATION', true, 1)
+
+  p.text(50, 735, 18, 'Fjordvik Test Holding AS', true)
+  p.text(50, 718, 10, 'Org. no. 999 000 001  |  Testgata 1, 0000 Testby, Norway', false, 0.3)
+  p.line(50, 708, 545, 708, 1)
+
+  p.text(50, 680, 11, 'Testby, 16 July 2026')
+  p.text(50, 656, 11, 'To: Compliance / KYC team')
+  p.text(50, 640, 11, 'SAMPLE DATA: Fjordvik Demo (UK) Limited')
+
+  p.text(50, 606, 12, 'Confirmation of ownership of Fjordvik Test Holding AS', true)
+
+  const body = [
+    'I am a director of Fjordvik Test Holding AS (org. no. 999 000 001, "the Company"). For the',
+    'purposes of your customer due diligence, I confirm that on 30 June 2026 the shareholders of the',
+    'Company, and their holdings of the share capital and voting rights, were as follows:',
+  ]
+  let y = 580
+  for (const line of body) {
+    p.text(50, y, 11, line)
+    y -= 16
+  }
+
+  y -= 6
+  const holders = [
+    ['1.', 'Øystein Åsmund Testersen', 'holds 45.0 %'],
+    ['2.', 'Nordlys Invest Test AS (org. no. 999 000 002, Norway)', 'holds 20.0 %'],
+    ['3.', 'Kari Eksempel-Fjeld', 'holds 20.0 %'],
+    ['4.', 'Bjørn Prøve', 'holds 10.0 %'],
+    ['5.', 'Mia Sampleby', 'holds 5.0 %'],
+  ]
+  for (const [n, who, how] of holders) {
+    p.text(70, y, 11, n)
+    p.text(92, y, 11, who)
+    p.text(430, y, 11, how)
+    y -= 18
+  }
+
+  y -= 8
+  const after = [
+    'No other person holds 25% or more of the shares or the voting rights in the Company, directly',
+    'or indirectly. Natural persons are shown by name only.',
+    '',
+    'I give this confirmation as a director of the Company and will tell you promptly if any of it',
+    'changes.',
+  ]
+  for (const line of after) {
+    if (line) p.text(50, y, 11, line)
+    y -= 16
+  }
+
+  y -= 30
+  p.text(50, y, 11, '[signature]')
+  p.line(50, y - 5, 250, y - 5, 0.6)
+  p.text(50, y - 22, 11, 'Sample Signatory')
+  p.text(50, y - 38, 11, 'Director, Fjordvik Test Holding AS')
+
+  p.text(50, 60, 9, 'SAMPLE - every name and number in this document is invented.', false, 0.4)
+  return p
+}
+
 function build(pages) {
   // Objects: 1 catalog, 2 pages, 3 Helvetica, 4 Helvetica-Bold, then a page and a stream for each page.
   const objects = []
@@ -180,6 +252,8 @@ function build(pages) {
   return Buffer.concat(chunks)
 }
 
-fs.mkdirSync(path.dirname(OUT), { recursive: true })
+fs.mkdirSync(DIR, { recursive: true })
 fs.writeFileSync(OUT, build([pageOne(), pageTwo()]))
 console.log(`wrote ${path.relative(process.cwd(), OUT)}`)
+fs.writeFileSync(OUT_LETTER, build([pageLetter()]))
+console.log(`wrote ${path.relative(process.cwd(), OUT_LETTER)}`)

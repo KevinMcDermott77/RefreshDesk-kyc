@@ -1,6 +1,19 @@
 # Slice 7: client-provided ownership evidence (spec)
 
-Status: approved 2026-10-15, with the changes in "Decisions". Building from slice 7a.
+Status: approved 2026-10-15, with the changes in "Decisions" and the design correction below (2026-10-16).
+
+## Design correction: ask the client to confirm in writing
+
+In institutional KYC we do not ask a client for a register. We ask it to **confirm its ownership in writing**: a signed letter, an email, or a signed structure chart. A register extract or shareholder register is the fallback. So:
+
+- **Kinds.** `client_ownership_confirmation` is the primary kind and the form's default. `shareholder_register`, `register_extract` and `annual_report_page` remain. `signed_structure_chart` is an older kind: still accepted and shown, no longer offered, and treated as a confirmation. (The annual-report kind keeps its existing name `annual_report_page`: renaming it would need a migration for nothing.)
+- **No certification for a confirmation.** It is the client's own statement, so nobody certifies it and there is no "uncertified" blocker, flag or override for it. Instead: `confirmed_by_capacity` (director, company_secretary, authorised_signatory, compliance_officer, other, unclear), `confirmation_date`, and `received_as` (signed_letter, email, signed_chart, other). The signatory's **name is never kept**: not in the payload, nodes, summary, chart or a pack. (The payload still carries `certified: "unclear"` because the 7a database check requires a value; everything that reads it looks at the kind first.)
+- **Age rule unchanged.** `maxEvidenceAgeMonths` applies, measured from `as_at`, else the confirmation date, else the document date. A stale override is still possible.
+- **"No other person holds X% or more".** If the document says so with X at or below the policy threshold, that completes the picture like a full list of holders: any holder not named holds less than X. Above the threshold it does not help. Extraction looks for the statement (`no_other_holder_at_or_above`); the reviewer sees and edits it; the coverage box uses it.
+- **Policy `acceptEmailConfirmation`** (default true). Off: a confirmation that arrived by email stays partial (`CLIENT_EVIDENCE_EMAIL_NOT_ACCEPTED`), and says to ask for a signed letter or chart. A signed letter, signed chart or other channel is unaffected.
+- **What to do.** Every register-stop reason now leads with "request written confirmation of ownership from the client (a signed letter or email, ideally with a structure chart)", and each register profile's "Document to request" shows that first with the register-specific document as the fallback.
+- **Samples.** `SAMPLE-ownership-confirmation.pdf`: a fictional director's signed letter confirming the five shareholders and stating that no other person holds 25% or more. `SAMPLE-shareholder-register.pdf` is kept.
+- **Schema.** One new migration is needed (the new kind must be allowed by the `evidence_kind` check and by `create_ownership_evidence`): see the report. Everything else is carried in the existing JSON payload, which the 7a check already accepts.
 
 ## Why
 

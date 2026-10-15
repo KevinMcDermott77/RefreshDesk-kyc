@@ -32,6 +32,7 @@ export const REASON_CODES = [
   'CLIENT_EVIDENCE_UNCERTIFIED',
   'CLIENT_EVIDENCE_APPLIED',
   'CLIENT_EVIDENCE_NOT_ACCEPTED',
+  'CLIENT_EVIDENCE_EMAIL_NOT_ACCEPTED',
   'CLIENT_EVIDENCE_PENDING',
 ] as const
 
@@ -93,9 +94,14 @@ export const nodeClientEvidenceSchema = z.object({
   kind: z.string(),
   asAt: z.string().optional(),
   documentDate: z.string().optional(),
-  certified: z.enum(['yes', 'no', 'unclear']),
+  // Absent on a client's written confirmation, which nobody certifies.
+  certified: z.enum(['yes', 'no', 'unclear']).optional(),
   certifierCapacity: z.enum(['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear']).optional(),
   certificationDate: z.string().optional(),
+  // Present on a client's written confirmation: who confirmed it (capacity only), when, and how it arrived.
+  confirmedByCapacity: z.enum(['director', 'company_secretary', 'authorised_signatory', 'compliance_officer', 'other', 'unclear']).optional(),
+  confirmationDate: z.string().optional(),
+  receivedAs: z.enum(['signed_letter', 'email', 'signed_chart', 'other']).optional(),
   confirmedBy: z.string().optional(),
   confirmedAt: z.string(),
   edited: z.boolean(),
@@ -104,7 +110,7 @@ export const nodeClientEvidenceSchema = z.object({
   /** Whether it resolved the node. */
   applied: z.boolean(),
   /** Why it did not: the blockers, or "policy" when the policy does not accept evidence as resolving. */
-  notApplied: z.array(z.enum(['incomplete', 'stale', 'uncertified', 'policy'])).optional(),
+  notApplied: z.array(z.enum(['incomplete', 'stale', 'uncertified', 'email', 'policy'])).optional(),
 })
 export type NodeClientEvidence = z.infer<typeof nodeClientEvidenceSchema>
 
@@ -199,6 +205,8 @@ export type WalkPolicy = {
   acceptRegulatedAsTerminal?: boolean
   /** Confirmed client evidence may resolve a branch. Off: it is shown, but the branch stays partial. Default true. */
   acceptClientEvidenceAsResolved?: boolean
+  /** An emailed confirmation from the client may resolve a branch. Off: it stays partial. Default true. */
+  acceptEmailConfirmation?: boolean
   /** Evidence older than this, from its as-at (else document) date, is not applied. Default 12. */
   maxEvidenceAgeMonths?: number
   /** The run's date and time (ISO), for evidence age. The walk has no clock of its own beyond this default. */
@@ -286,6 +294,11 @@ export type ClientEvidenceItem = {
   certified: 'yes' | 'no' | 'unclear'
   certifierCapacity: 'notary' | 'lawyer' | 'accountant' | 'company_officer' | 'other' | 'unclear' | null
   certificationDate: string | null
+  /** A client's written confirmation (Slice 7): the signatory's capacity, the date, how it arrived, and the "no other holder" statement. */
+  confirmedByCapacity: 'director' | 'company_secretary' | 'authorised_signatory' | 'compliance_officer' | 'other' | 'unclear' | null
+  confirmationDate: string | null
+  receivedAs: 'signed_letter' | 'email' | 'signed_chart' | 'other' | null
+  noOtherHolderAtOrAbove: number | null
   /** The admin who confirmed it (a user id, not a name). */
   confirmedBy: string | null
   confirmedAt: string

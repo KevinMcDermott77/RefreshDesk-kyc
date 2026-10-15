@@ -95,6 +95,7 @@ function packPolicy(policy: WalkPolicy): PackPolicy {
     indirectMethod: policy.indirectMethod ?? 'either',
     acceptRegulatedAsTerminal: policy.acceptRegulatedAsTerminal ?? true,
     acceptClientEvidenceAsResolved: policy.acceptClientEvidenceAsResolved ?? true,
+    acceptEmailConfirmation: policy.acceptEmailConfirmation ?? true,
     maxEvidenceAgeMonths: policy.maxEvidenceAgeMonths ?? 12,
   }
 }
@@ -241,6 +242,7 @@ export async function walkOwnershipAction(
     threshold,
     indirectMethod,
     acceptClientEvidenceAsResolved: clientId ? formData.get('accept_client_evidence') === 'on' : true,
+    acceptEmailConfirmation: clientId ? formData.get('accept_email_confirmation') === 'on' : true,
     maxEvidenceAgeMonths: evidenceAge,
     now: new Date().toISOString(),
   }

@@ -39,6 +39,10 @@ const itemSchema = z.object({
     owners_complete: z.boolean(),
     certifier_capacity: z.enum(['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear']).nullish(),
     certification_date: z.string().nullish(),
+    confirmed_by_capacity: z.enum(['director', 'company_secretary', 'authorised_signatory', 'compliance_officer', 'other', 'unclear']).nullish(),
+    confirmation_date: z.string().nullish(),
+    received_as: z.enum(['signed_letter', 'email', 'signed_chart', 'other']).nullish(),
+    no_other_holder_at_or_above: z.number().nullish(),
     override: z.object({ reasons: z.array(z.enum(['stale', 'uncertified'])), note: z.string() }).nullish(),
   }),
 })
@@ -65,6 +69,11 @@ export function toClientEvidenceItems(json: unknown): ClientEvidenceItem[] {
       // Only the capacity and the date: the certifier's own text (it can be a person's name) is not carried.
       certifierCapacity: item.payload.certifier_capacity ?? null,
       certificationDate: item.payload.certification_date ?? null,
+      // A client's written confirmation: the signatory's capacity (never a name), when, how it arrived, and the "no other holder" statement.
+      confirmedByCapacity: item.payload.confirmed_by_capacity ?? null,
+      confirmationDate: item.payload.confirmation_date ?? null,
+      receivedAs: item.payload.received_as ?? null,
+      noOtherHolderAtOrAbove: item.payload.no_other_holder_at_or_above ?? null,
       confirmedBy: item.confirmed_by ?? null,
       confirmedAt: item.confirmed_at,
       edited: item.edited ?? false,
