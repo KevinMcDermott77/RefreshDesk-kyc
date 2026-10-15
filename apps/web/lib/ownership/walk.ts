@@ -3,6 +3,7 @@ import { countryCode } from './countries'
 import { sameRegistration } from './registration-number'
 import { profileFor, stopReasonFor } from './register-profiles'
 import type {
+  CheckRun,
   Fetched,
   Evidence,
   GleifRecord,
@@ -302,6 +303,10 @@ export async function walk(
     node.evidence = [...(node.evidence ?? []), evidence]
   }
 
+  function addCheck(node: OwnershipNode, run: CheckRun) {
+    node.checks = [...(node.checks ?? []), run]
+  }
+
   function addSecondaryCode(node: OwnershipNode, code: ReasonCode) {
     if (!node.secondaryReasons.includes(code)) node.secondaryReasons.push(code)
   }
@@ -318,25 +323,30 @@ export async function walk(
 
     try {
       const us = await terminals.usListing(record.legalName)
+      addCheck(node, { check: 'sec_us', outcome: us ? 'found' : 'none' })
       if (us) {
         addEvidence(node, us)
         addSecondaryCode(node, 'LISTING_US_UNCONFIRMED')
       }
     } catch {
       // The US file is supporting evidence only.
+      addCheck(node, { check: 'sec_us', outcome: 'unavailable' })
     }
 
-    async function check(run: () => Promise<Evidence | null>): Promise<Evidence | null> {
+    async function check(name: CheckRun['check'], run: () => Promise<Evidence | null>): Promise<Evidence | null> {
       try {
-        return await run()
+        const found = await run()
+        addCheck(node, { check: name, outcome: found ? 'found' : 'none' })
+        return found
       } catch {
         addSecondaryCode(node, 'SOURCE_UNAVAILABLE')
+        addCheck(node, { check: name, outcome: 'unavailable' })
         return null
       }
     }
 
-    const listed = await check(() => terminals.listedEU(record.lei))
-    const regulated = await check(() => terminals.regulatedEU(record.lei))
+    const listed = await check('esma_firds', () => terminals.listedEU(record.lei))
+    const regulated = await check('esma_upreg', () => terminals.regulatedEU(record.lei))
     if (listed) addEvidence(node, listed)
     if (regulated) addEvidence(node, regulated)
 
@@ -665,7 +675,9 @@ export async function walk(
 
     const exemptions = await safely(() => fetcher.getExemptions(item.companyNumber))
     noteFetched(node, exemptions)
-    if (hasUkRegulatedMarketExemption(exemptions)) {
+    const exempt = hasUkRegulatedMarketExemption(exemptions)
+    addCheck(node, { check: 'ch_exemption', outcome: exempt ? 'found' : isAvailable(exemptions) ? 'none' : 'unavailable' })
+    if (exempt) {
       settle(node, 'RESOLVED_LISTED')
       continue
     }
