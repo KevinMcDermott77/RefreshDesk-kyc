@@ -21,7 +21,9 @@ import { createSourceLog, type SourceLog } from '@/lib/packs/source-log'
 import { createPackOffer, packFirmId, type PackOfferResult } from '@/lib/packs/offer'
 import { packSigningSecret } from '@/lib/packs/sign'
 import type { PackPolicy, PackSubject } from '@/lib/packs/snapshot'
-import type { CheckRun, Evidence, IndirectMethod, WalkPolicy } from '@/lib/ownership/types'
+import type { CheckRun, Evidence, IndirectMethod, OwnershipFetcher, WalkPolicy } from '@/lib/ownership/types'
+import { createEvidenceLoader } from '@/lib/evidence/load'
+import { pendingEvidencePoints } from '@/lib/evidence/pending'
 
 export type EntryCandidate = {
   lei: string
@@ -77,7 +79,35 @@ function packPolicy(policy: WalkPolicy): PackPolicy {
     maxDepth: policy.maxDepth ?? 6,
     indirectMethod: policy.indirectMethod ?? 'either',
     acceptRegulatedAsTerminal: policy.acceptRegulatedAsTerminal ?? true,
+    acceptClientEvidenceAsResolved: policy.acceptClientEvidenceAsResolved ?? true,
+    maxEvidenceAgeMonths: policy.maxEvidenceAgeMonths ?? 12,
   }
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+/**
+ * Gives the walk the client's confirmed ownership evidence, when the run was started from a client page. The
+ * names it carried are kept only so the pack can check they never reach a snapshot.
+ */
+function withClientEvidence(fetcher: OwnershipFetcher, supabase: Supabase, clientId: string | undefined, subjectId: string) {
+  if (!clientId) return { fetcher, individualNames: () => [] as string[] }
+  const loader = createEvidenceLoader(supabase, clientId, subjectId)
+  return { fetcher: { ...fetcher, clientEvidence: loader.load }, individualNames: loader.individualNames }
+}
+
+/** Evidence uploaded for this client and walk that is not confirmed yet: noted, never counted. */
+async function pendingEvidence(supabase: Supabase, clientId: string | undefined, subjectId: string): Promise<WalkSummary['pointsToCheck']> {
+  if (!clientId) return []
+  const { data } = await supabase
+    .from('ownership_evidence_overview')
+    .select('id, node_name, status')
+    .eq('client_id', clientId)
+    .eq('subject_id', subjectId.trim().toUpperCase())
+    .in('status', ['draft', 'proposed'])
+  return pendingEvidencePoints((data ?? []) as { id: string; node_name: string; status: string }[])
 }
 
 /** Turns a finished run into a signed snapshot for "Save as refresh pack", or says why it cannot. */
@@ -125,7 +155,22 @@ export async function walkOwnershipAction(
   }
   const indirectMethod = String(formData.get('indirect_method')) as IndirectMethod
   if (!METHODS.includes(indirectMethod)) return { error: 'Unknown indirect method' }
-  const policy: WalkPolicy = { maxDepth, threshold, indirectMethod }
+  // Started from a client page: that client's confirmed ownership evidence may be used, within these limits.
+  const clientField = String(formData.get('client_id') ?? '').trim()
+  if (clientField && !UUID.test(clientField)) return { error: 'Unknown client' }
+  const clientId = clientField || undefined
+  const evidenceAge = clientId ? Number(formData.get('max_evidence_age_months') ?? 12) : 12
+  if (!Number.isInteger(evidenceAge) || evidenceAge < 1 || evidenceAge > 120) {
+    return { error: 'The evidence age limit must be a whole number of months from 1 to 120' }
+  }
+  const policy: WalkPolicy = {
+    maxDepth,
+    threshold,
+    indirectMethod,
+    acceptClientEvidenceAsResolved: clientId ? formData.get('accept_client_evidence') === 'on' : true,
+    maxEvidenceAgeMonths: evidenceAge,
+    now: new Date().toISOString(),
+  }
 
   // A pick from the name-search list arrives as an LEI.
   const entry = String(formData.get('picked_lei') || formData.get('entry') || '')
@@ -153,7 +198,8 @@ export async function walkOwnershipAction(
 
     if (resolution.kind === 'lei') {
       const { record } = resolution
-      const walked = await walk(record.lei, createKycSearchFetcher(token, undefined, log), policy)
+      const evidence = withClientEvidence(createKycSearchFetcher(token, undefined, log), supabase, clientId, record.lei)
+      const walked = await walk(record.lei, evidence.fetcher, policy)
       const names = createReferenceNames(withSourceLog(gleifHttp, log))
       const [legalForm, registrationAuthority] = await Promise.all([
         record.legalForm ? names.legalForm(record.legalForm) : undefined,
@@ -168,6 +214,7 @@ export async function walkOwnershipAction(
       })
       const flow = toFlow(walked)
       const summary = summarise(walked)
+      summary.pointsToCheck.push(...(await pendingEvidence(supabase, clientId, record.lei)))
       const pack = await offerPack({
         supabase,
         userId: user.id,
@@ -178,13 +225,15 @@ export async function walkOwnershipAction(
         flow,
         summary,
         log,
+        individualNames: evidence.individualNames(),
       })
       return { result: { ...flow, summary, profile, pack } }
     }
 
     const cdd = await fetchEntityCdd(resolution.companyNumber, token, log)
+    const evidence = withClientEvidence(createKycSearchFetcher(token, cdd, log), supabase, clientId, cdd.companyNumber)
     const [walked, gleif, raw] = await Promise.all([
-      walk(cdd.companyNumber, createKycSearchFetcher(token, cdd, log), policy),
+      walk(cdd.companyNumber, evidence.fetcher, policy),
       lookupLei(cdd.companyNumber, fetch, Date.now, log),
       // The panel needs Companies House field names, which the flattened cdd data lacks.
       fetchRawProfile(cdd.companyNumber, token, log),
@@ -203,6 +252,7 @@ export async function walkOwnershipAction(
     })
     const flow = toFlow(walked)
     const summary = summarise(walked)
+    summary.pointsToCheck.push(...(await pendingEvidence(supabase, clientId, cdd.companyNumber)))
     const companyName = typeof raw.profile.company_name === 'string' ? raw.profile.company_name : cdd.companyNumber
     const pack = await offerPack({
       supabase,
@@ -215,7 +265,10 @@ export async function walkOwnershipAction(
       summary,
       log,
       // Officers' names are shown as initials; these full names are only used to check they did not leak.
-      individualNames: raw.officers.map((o) => (typeof (o as { name?: unknown }).name === 'string' ? (o as { name: string }).name : '')).filter(Boolean),
+      individualNames: [
+        ...raw.officers.map((o) => (typeof (o as { name?: unknown }).name === 'string' ? (o as { name: string }).name : '')).filter(Boolean),
+        ...evidence.individualNames(),
+      ],
     })
     return { result: { ...flow, summary, profile, pack } }
   } catch (err) {

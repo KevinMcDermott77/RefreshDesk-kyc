@@ -19,6 +19,10 @@ export type PackPolicy = {
   maxDepth: number
   indirectMethod: IndirectMethod
   acceptRegulatedAsTerminal: boolean
+  /** Slice 7: whether confirmed client evidence may resolve a branch (absent in packs saved before it existed). */
+  acceptClientEvidenceAsResolved?: boolean
+  /** Slice 7: the age limit for client evidence, in months. */
+  maxEvidenceAgeMonths?: number
 }
 
 export type PackSummary = {
@@ -67,6 +71,10 @@ export function findForbiddenKeys(value: unknown, path = 'snapshot'): string[] {
   return []
 }
 
+// A node that is already initials (client-evidence owners reach the walk that way) holds no name to leak,
+// and would only match the masked initials the snapshot is meant to contain.
+const INITIALS_ONLY = /^(\p{L}\.)+$/u
+
 /** "SMITH, John Paul" and "Mr John Paul Smith" both reduce to the words John, Paul, Smith. */
 function nameVariants(name: string): string[] {
   const clean = name.trim()
@@ -114,7 +122,7 @@ export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
     policy,
     profile,
     summary: {
-      status: walked.status === 'resolved' && openBranches === 0 ? 'complete' : 'partial',
+      status: (walked.status === 'resolved' || walked.status === 'resolved_client_evidence') && openBranches === 0 ? 'complete' : 'partial',
       walkStatus: summary.status,
       openBranches,
       counts: summary.counts,
@@ -132,7 +140,7 @@ export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
 
   const forbidden = findForbiddenKeys(plain)
   if (forbidden.length > 0) throw new Error(`A refresh pack snapshot must not hold personal data (${forbidden.join(', ')})`)
-  const names = [...(input.individualNames ?? []), ...walked.nodes.filter((n) => n.kind === 'individual').map((n) => n.name)]
+  const names = [...(input.individualNames ?? []), ...walked.nodes.filter((n) => n.kind === 'individual' && !INITIALS_ONLY.test(n.name.trim())).map((n) => n.name)]
   assertNoPersonalNames(plain, names)
   return plain
 }
@@ -166,11 +174,13 @@ export const packSnapshotSchema = z.object({
     maxDepth: z.number(),
     indirectMethod: z.enum(['either', 'multiply', 'majority']),
     acceptRegulatedAsTerminal: z.boolean(),
+    acceptClientEvidenceAsResolved: z.boolean().optional(),
+    maxEvidenceAgeMonths: z.number().optional(),
   }),
   profile: z.array(profileRowSchema),
   summary: z.object({
     status: z.enum(['complete', 'partial']),
-    walkStatus: z.enum(['resolved', 'partial', 'unresolved']),
+    walkStatus: z.enum(['resolved', 'resolved_client_evidence', 'partial', 'unresolved']),
     openBranches: z.number().int().nonnegative(),
     counts: z.record(z.string(), z.number()),
     intermediate: z.number(),

@@ -29,6 +29,13 @@ export const REASON_TEXT: Record<ReasonCode, string> = {
   LISTING_US_UNCONFIRMED: 'Name matches a US-listed company; confirm the listing (ticker shown) before relying on it.',
   CONSOLIDATION_ONLY:
     "Linked to the listed/regulated parent by accounting consolidation (GLEIF), not shareholding. Confirm the holding, e.g. the parent's published list of subsidiaries or a group structure chart.",
+  CLIENT_EVIDENCE_INCOMPLETE:
+    'Client evidence was provided but does not rule out an unlisted holder at or above the threshold; ask the client for a fuller document. A reviewer cannot override this.',
+  CLIENT_EVIDENCE_STALE: 'Client evidence was provided but is older than the age limit; ask for a current document, or have an admin confirm it with an override note.',
+  CLIENT_EVIDENCE_UNCERTIFIED: 'Client evidence was provided but is not certified; ask for a certified copy, or have an admin confirm it with an override note.',
+  CLIENT_EVIDENCE_APPLIED: 'Resolved on client-provided, reviewer-verified evidence (shown with its document, age and certification).',
+  CLIENT_EVIDENCE_NOT_ACCEPTED: 'Client evidence exists for this owner, but the policy does not accept client evidence as resolving; it is shown for information.',
+  CLIENT_EVIDENCE_PENDING: 'Client evidence has been uploaded for this owner and is waiting for an admin to confirm it; it is not used until then.',
   SOURCE_UNAVAILABLE: 'Companies House data was unavailable; retry later',
 }
 

@@ -190,3 +190,15 @@ Approved on 2026-10-15:
 9. Document extraction is a firm setting, default OFF for new firms; the migration turns it ON for the existing demo firm.
 10. An uncertified override has no separate end date but does not bypass `maxEvidenceAgeMonths`.
 11. Every `status === 'resolved'` check is found and handled in slice 7c.
+
+## Build status
+
+- **7a** data model, RPCs, SQL tests: built (migration `20261016000000`, not yet applied).
+- **7b** upload, extraction, proposal storage, queue, confirm page: built.
+- **7c** walk integration: built. `applyClientEvidence` runs only at a foreign stop with a register-stop or GLEIF-exception reason; the node is matched on an exact LEI or an exact registration number with its country. Policy `acceptClientEvidenceAsResolved` and `maxEvidenceAgeMonths` are on `WalkPolicy` and recorded in the pack policy. New walk status `resolved_client_evidence`; every `status === 'resolved'` check was found and handled: `walk.ts` (`overallStatus`), `evaluate.ts` (two profile rows), `packs/snapshot.ts` (completeness and schema), `ownership-viewer.tsx` (banner), `to-entity-cdd.ts` (a saved CDD record maps it to `partial`, since the PSC register did not resolve it).
+- **Decisions made while building 7c** (say if any should change):
+  - A holding that is not printed is the range 0 to 100 for the owner and counts as 0 towards coverage, so it can never complete the picture.
+  - Owners of a node reached over a GLEIF consolidation link have no effective range (a consolidation link is not a shareholding), so the walk stays partial there, as before.
+  - The certifier's text (can be a person's name) and any override note are not copied onto nodes, the summary or the chart; the 7d pack snapshot should carry only certified yes/no/unclear and whether an override exists.
+  - "Evidence awaiting confirmation" is a point to check (`CLIENT_EVIDENCE_PENDING`) from the names-free overview, never counted as resolved.
+- **7d** still to do: pack snapshot `clientEvidence` blocks and source-log entries, the pack-creation check that referenced evidence is confirmed, node-panel "Add client evidence" button, and chain-viewer details.

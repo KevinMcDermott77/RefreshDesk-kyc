@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre'
 import { governingBand, parseNatures } from './bands'
-import type { Evidence, OwnershipNode, Range, ReasonCode, RegisterProfileRef, Resolution, WalkResult } from './types'
+import type { Evidence, NodeClientEvidence, OwnershipNode, Range, ReasonCode, RegisterProfileRef, Resolution, WalkResult } from './types'
 
 export const GLEIF_EDGE_LABEL = 'consolidates (GLEIF)'
 
@@ -28,6 +28,10 @@ export type FlowNodeData = {
   lei?: string
   registerProfile?: RegisterProfileRef
   evidence?: Evidence[]
+  /** Client evidence used (or found but not usable) for this node. */
+  clientEvidence?: NodeClientEvidence
+  /** Set on an owner that exists because confirmed client evidence named it. */
+  viaClientEvidence?: string
   secondaryReasons: ReasonCode[]
   statementCode?: string
   fetchedAt?: string
@@ -49,6 +53,8 @@ export type FlowEdge = {
   label?: string
   /** A GLEIF consolidation link rather than a Companies House interest. */
   dashed?: boolean
+  /** An interest stated by confirmed client evidence rather than a register. */
+  client?: boolean
 }
 
 const TITLES = new Set(['mr', 'mrs', 'ms', 'miss', 'mx', 'dr', 'prof', 'sir', 'dame', 'lord', 'lady', 'rev'])
@@ -108,6 +114,7 @@ const FRIENDLY_RESOLUTION: Partial<Record<Resolution, string>> = {
 
 function resolutionLabel(node: OwnershipNode, hasOwners: boolean): string {
   if (node.resolution === 'PENDING') return hasOwners ? 'Intermediate' : 'Not reached'
+  if (node.viaClientEvidence && node.resolution === 'RESOLVED_INDIVIDUAL') return 'Individual (client evidence)'
   return FRIENDLY_RESOLUTION[node.resolution] ?? node.resolution
 }
 
@@ -139,6 +146,8 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
     ...(node.registerProfile ? { registerProfile: node.registerProfile } : {}),
     ...(node.lei ? { lei: node.lei } : {}),
     ...(node.evidence?.length ? { evidence: node.evidence } : {}),
+    ...(node.clientEvidence ? { clientEvidence: node.clientEvidence } : {}),
+    ...(node.viaClientEvidence ? { viaClientEvidence: node.viaClientEvidence } : {}),
     ...countryOf(node),
     secondaryReasons: node.secondaryReasons,
     statementCode: node.statementCode,
@@ -149,6 +158,8 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
 }
 
 /** e.g. "75-100% shares", "25-50% votes + control", "control"; undefined when there is nothing to say. */
+export const CLIENT_EDGE_LABEL = 'client evidence'
+
 export function edgeLabel(band: Range | null, natures: string[]): string | undefined {
   const parsed = parseNatures(natures)
   const parts: string[] = []
@@ -196,8 +207,16 @@ export function toFlow(result: WalkResult): { nodes: FlowNode[]; edges: FlowEdge
     id: `e${index}:${edge.parentId}>${edge.childId}`,
     source: edge.parentId,
     target: edge.childId,
-    label: edge.source === 'gleif' ? GLEIF_EDGE_LABEL : edgeLabel(edge.band, edge.natures),
+    label:
+      edge.source === 'gleif'
+        ? GLEIF_EDGE_LABEL
+        : edge.source === 'client'
+          ? edge.band
+            ? `${formatRange(edge.band)} (${CLIENT_EDGE_LABEL})`
+            : CLIENT_EDGE_LABEL
+          : edgeLabel(edge.band, edge.natures),
     ...(edge.source === 'gleif' ? { dashed: true } : {}),
+    ...(edge.source === 'client' ? { client: true } : {}),
   }))
 
   return { nodes, edges }
@@ -213,6 +232,31 @@ export type WalkSummary = {
   notReached: number
   sourceUnavailable: boolean
   unresolved: { id: string; name: string; subtitle: string; reasonCode: ReasonCode | undefined }[]
+  /**
+   * Confirmed client evidence the walk used or found, one entry per node. The certifier's text, which can be a
+   * person's name, is not here; neither is any override note.
+   */
+  clientEvidence: {
+    nodeId: string
+    nodeName: string
+    evidenceId: string
+    kind: string
+    asAt?: string
+    documentDate?: string
+    certified: 'yes' | 'no' | 'unclear'
+    confirmedAt: string
+    edited: boolean
+    override?: ('stale' | 'uncertified')[]
+    applied: boolean
+    notApplied?: NodeClientEvidence['notApplied']
+  }[]
+}
+
+/** What the banner says. A walk resolved with client evidence says so and how many branches rely on it. */
+export function overallText(summary: Pick<WalkSummary, 'status' | 'clientEvidence'>): string {
+  if (summary.status !== 'resolved_client_evidence') return summary.status
+  const n = summary.clientEvidence.filter((e) => e.applied).length
+  return `Complete — ${n} ${n === 1 ? 'branch' : 'branches'} resolved on client evidence`
 }
 
 /** Overall status, counts by resolution and the UNRESOLVED nodes (names masked as in the chart). */
@@ -252,10 +296,31 @@ export function summarise(result: WalkResult): WalkSummary {
         })
       }
       if (node.secondaryReasons.includes('CONSOLIDATION_ONLY')) points.push({ id: node.id, name, code: 'CONSOLIDATION_ONLY' })
+      if (node.secondaryReasons.includes('CLIENT_EVIDENCE_NOT_ACCEPTED')) points.push({ id: node.id, name, code: 'CLIENT_EVIDENCE_NOT_ACCEPTED' })
       return points
     }),
     notReached,
     sourceUnavailable: result.nodes.some((node) => node.reasonCode === 'SOURCE_UNAVAILABLE'),
     unresolved,
+    clientEvidence: result.nodes.flatMap((node) => {
+      const ev = node.clientEvidence
+      if (!ev) return []
+      return [
+        {
+          nodeId: node.id,
+          nodeName: nodeData(node, [], false).name,
+          evidenceId: ev.id,
+          kind: ev.kind,
+          ...(ev.asAt ? { asAt: ev.asAt } : {}),
+          ...(ev.documentDate ? { documentDate: ev.documentDate } : {}),
+          certified: ev.certified,
+          confirmedAt: ev.confirmedAt,
+          edited: ev.edited,
+          ...(ev.override ? { override: ev.override.reasons } : {}),
+          applied: ev.applied,
+          ...(ev.notApplied ? { notApplied: ev.notApplied } : {}),
+        },
+      ]
+    }),
   }
 }

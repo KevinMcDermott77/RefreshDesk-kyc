@@ -12,7 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
 import { reasonText } from '@/lib/ownership/reason-text'
-import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
+import { formatFetchedAt, formatRange, overallText, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
 import { ruleText } from '@/lib/ownership/terminals'
 import { SavePackButton } from './save-pack-button'
@@ -94,7 +94,7 @@ function ProfilePanel({ rows }: { rows: ProfileRow[] }) {
 
 function bannerTone(summary: Summary) {
   if (summary.sourceUnavailable) return 'error'
-  return summary.status === 'resolved' ? 'good' : 'attention'
+  return summary.status === 'resolved' || summary.status === 'resolved_client_evidence' ? 'good' : 'attention'
 }
 
 const BADGE = 'border border-current px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.06em]'
@@ -290,7 +290,7 @@ function showTop(instance: ReactFlowInstance, nodes: FlowNode[], width: number) 
 
 const INPUT = 'mt-1 block w-full border border-[var(--line)] bg-white px-3 py-2 text-sm text-gray-900 dark:bg-gray-900 dark:text-gray-100'
 
-export function OwnershipViewer() {
+export function OwnershipViewer({ client }: { client?: { id: string; name: string } } = {}) {
   const [state, action, pending] = useActionState<OwnershipViewState, FormData>(walkOwnershipAction, {})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -336,6 +336,25 @@ export function OwnershipViewer() {
             <option value="majority">majority</option>
           </select>
         </label>
+        {client ? (
+          <fieldset className="grid gap-3 border border-[var(--line)] p-3 md:col-span-5 md:grid-cols-3">
+            <legend className="px-1 text-sm font-semibold">Client evidence for {client.name}</legend>
+            <input type="hidden" name="client_id" value={client.id} />
+            <label className="flex items-start gap-2 text-sm md:col-span-2">
+              <input type="checkbox" name="accept_client_evidence" defaultChecked className="mt-1" />
+              <span>
+                Let confirmed client evidence resolve branches the registers cannot.
+                <span className="block text-xs text-[var(--muted)]">
+                  Shown as &ldquo;Resolved (client evidence)&rdquo;. When unticked, the evidence is shown but those branches stay partial.
+                </span>
+              </span>
+            </label>
+            <label className="text-sm font-medium">
+              Oldest evidence accepted (months)
+              <input name="max_evidence_age_months" type="number" min={1} max={120} defaultValue={12} className={INPUT} />
+            </label>
+          </fieldset>
+        ) : null}
         <div className="md:col-span-5">
           <button
             disabled={pending}
@@ -387,7 +406,7 @@ export function OwnershipViewer() {
           <ProfilePanel rows={result.profile} />
 
           <section className={`mt-6 border p-4 ${BANNER_CLASSES[bannerTone(result.summary)]}`}>
-            <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {result.summary.status}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {overallText(result.summary)}</p>
             <p className="mt-1 text-sm">{countsLine(result.summary)}</p>
             {result.summary.unresolved.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm">

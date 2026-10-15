@@ -320,6 +320,12 @@ export default async function ClientDetailPage({
                 >
                   Add ownership evidence
                 </a>
+                <a
+                  href={`/dashboard/ownership?client=${id}`}
+                  className="inline-flex items-center gap-1 border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm font-semibold hover:bg-[var(--line)]"
+                >
+                  Ownership chain (with this client&apos;s evidence)
+                </a>
                 <UploadDropdown clientId={id} />
               </div>
             )}

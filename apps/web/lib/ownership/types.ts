@@ -25,6 +25,14 @@ export const REASON_CODES = [
   'LISTING_US_UNCONFIRMED',
   // Secondary only: linked to a listed or regulated parent by accounting consolidation (GLEIF), not shareholding.
   'CONSOLIDATION_ONLY',
+  // Client-provided, reviewer-verified ownership evidence (Slice 7). The first three are primary on a node whose
+  // confirmed evidence could not be used; the others are secondary.
+  'CLIENT_EVIDENCE_INCOMPLETE',
+  'CLIENT_EVIDENCE_STALE',
+  'CLIENT_EVIDENCE_UNCERTIFIED',
+  'CLIENT_EVIDENCE_APPLIED',
+  'CLIENT_EVIDENCE_NOT_ACCEPTED',
+  'CLIENT_EVIDENCE_PENDING',
 ] as const
 
 export const reasonCodeSchema = z.enum(REASON_CODES)
@@ -50,8 +58,8 @@ export type Range = z.infer<typeof rangeSchema>
 export const ownershipEdgeSchema = z.object({
   parentId: z.string(),
   childId: z.string(),
-  source: z.enum(['ch', 'gleif', 'profile']),
-  basis: z.enum(['psc', 'consolidation', 'fund']),
+  source: z.enum(['ch', 'gleif', 'profile', 'client']),
+  basis: z.enum(['psc', 'consolidation', 'fund', 'client_evidence']),
   band: rangeSchema.nullable(),
   natures: z.array(z.string()),
 })
@@ -74,6 +82,28 @@ export const checkRunSchema = z.object({
   outcome: z.enum(['found', 'none', 'unavailable']),
 })
 export type CheckRun = z.infer<typeof checkRunSchema>
+
+/**
+ * The confirmed client evidence a walk used or looked at for a node. Names of individuals never get
+ * here: the owners are initials (the database strips names for read-only users and the loader drops
+ * them for everyone), and the certifier's text, which can be a person's name, stays off this record.
+ */
+export const nodeClientEvidenceSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  asAt: z.string().optional(),
+  documentDate: z.string().optional(),
+  certified: z.enum(['yes', 'no', 'unclear']),
+  confirmedAt: z.string(),
+  edited: z.boolean(),
+  documentSha256: z.string(),
+  override: z.object({ reasons: z.array(z.enum(['stale', 'uncertified'])) }).optional(),
+  /** Whether it resolved the node. */
+  applied: z.boolean(),
+  /** Why it did not: the blockers, or "policy" when the policy does not accept evidence as resolving. */
+  notApplied: z.array(z.enum(['incomplete', 'stale', 'uncertified', 'policy'])).optional(),
+})
+export type NodeClientEvidence = z.infer<typeof nodeClientEvidenceSchema>
 
 // The register a walk stopped at, for the UI. Mirrors RegisterProfile (register-profiles.ts).
 export const registerProfileRefSchema = z.object({
@@ -119,6 +149,10 @@ export const ownershipNodeSchema = z.object({
   evidence: z.array(evidenceSchema).optional(),
   // Which listing / authorisation checks ran on this node, with their outcome.
   checks: z.array(checkRunSchema).optional(),
+  // Client evidence used (or found but not usable) for this node.
+  clientEvidence: nodeClientEvidenceSchema.optional(),
+  // Set on an owner that exists because confirmed client evidence named it: the evidence id.
+  viaClientEvidence: z.string().optional(),
   // Edges from the root on the shortest path.
   depth: z.number().int().nonnegative(),
   // Companies House PSC statement code, verbatim (including CH's "signficant" typo).
@@ -130,7 +164,7 @@ export const ownershipNodeSchema = z.object({
 })
 export type OwnershipNode = z.infer<typeof ownershipNodeSchema>
 
-export type WalkStatus = 'resolved' | 'partial' | 'unresolved'
+export type WalkStatus = 'resolved' | 'resolved_client_evidence' | 'partial' | 'unresolved'
 
 export type WalkResult = {
   rootId: string
@@ -157,6 +191,12 @@ export type WalkPolicy = {
   indirectMethod?: IndirectMethod
   /** An authorised credit institution or MiFID firm ends the walk. Default true. */
   acceptRegulatedAsTerminal?: boolean
+  /** Confirmed client evidence may resolve a branch. Off: it is shown, but the branch stays partial. Default true. */
+  acceptClientEvidenceAsResolved?: boolean
+  /** Evidence older than this, from its as-at (else document) date, is not applied. Default 12. */
+  maxEvidenceAgeMonths?: number
+  /** The run's date and time (ISO), for evidence age. The walk has no clock of its own beyond this default. */
+  now?: string
 }
 
 /** A raw upstream response: HTTP status plus parsed JSON body (null when empty). */
@@ -218,6 +258,34 @@ export interface TerminalChecks {
   usListing(name: string): Promise<Evidence | null>
 }
 
+/** An owner named by confirmed client evidence. Individuals are initials only: no name reaches the walk. */
+export type ClientEvidenceOwner = {
+  kind: 'individual' | 'entity'
+  /** Initials for an individual; the name as shown for an entity. */
+  label: string
+  holding: { type: 'percent'; value: number } | { type: 'band'; low: number; high: number } | null
+  registration: { number: string; country: string } | null
+  leiShown: string | null
+  pageRef: string
+}
+
+/** One confirmed evidence item, as the walk sees it. */
+export type ClientEvidenceItem = {
+  id: string
+  /** What the reviewer saw: matched on these facts only, never on a name. */
+  nodeIdentity: { lei?: string; country?: string; registrationNumber?: string }
+  evidenceKind: string
+  asAt: string | null
+  documentDate: string | null
+  certified: 'yes' | 'no' | 'unclear'
+  confirmedAt: string
+  edited: boolean
+  documentSha256: string
+  owners: ClientEvidenceOwner[]
+  ownersComplete: boolean
+  override: { reasons: ('stale' | 'uncertified')[]; note: string } | null
+}
+
 export interface OwnershipFetcher {
   getProfile(companyNumber: string): Promise<Fetched>
   getPscs(companyNumber: string): Promise<Fetched>
@@ -227,5 +295,7 @@ export interface OwnershipFetcher {
   getGleifParents(companyNumber: string): Promise<GleifParents | null>
   /** Absent in fetchers that cannot reach GLEIF: the walk then stays on Companies House. */
   gleif?: GleifSource
+  /** The confirmed client evidence for this walk's client and subject. Absent when the walk has no client. */
+  clientEvidence?: () => Promise<ClientEvidenceItem[]>
   terminals?: TerminalChecks
 }

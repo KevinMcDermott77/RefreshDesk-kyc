@@ -32,6 +32,8 @@ export type OwnershipSummary = {
   possibleOwners: string[]
   /** A listed company at the target or the top of the chain: beneficial owners need not be identified. */
   listed?: { alsoAuthorised?: { register: string; authority: string } }
+  /** Client-provided, reviewer-verified evidence: branches resolved on it, and branches where it could not be used. */
+  clientEvidence?: { applied: number; notUsed: number; notAcceptedByPolicy: number }
   fetchedAt?: string
 }
 
@@ -416,10 +418,35 @@ function listedLines(listed: NonNullable<OwnershipSummary['listed']>): string[] 
   ]
 }
 
+export const CLIENT_EVIDENCE_STATUS_TEXT = 'resolved (client evidence)'
+
+/** The walk status as the profile shows it: client evidence is never merged into a plain "resolved". */
+function statusText(status: WalkResult['status']): string {
+  return status === 'resolved_client_evidence' ? CLIENT_EVIDENCE_STATUS_TEXT : status
+}
+
+const isResolvedStatus = (status: WalkResult['status']) => status === 'resolved' || status === 'resolved_client_evidence'
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+/** The lines about client evidence for the ownership row; none when the walk did not meet any. */
+export function clientEvidenceLines(summary: OwnershipSummary): string[] {
+  const ev = summary.clientEvidence
+  if (!ev) return []
+  return [
+    ...(ev.applied > 0 ? [`${plural(ev.applied, 'branch', 'branches')} resolved on client-provided, reviewer-verified evidence`] : []),
+    ...(ev.notUsed > 0 ? [`Client evidence for ${plural(ev.notUsed, 'branch', 'branches')} could not be used (stale, uncertified or incomplete): see the chain`] : []),
+    ...(ev.notAcceptedByPolicy > 0 ? [`Client evidence for ${plural(ev.notAcceptedByPolicy, 'branch', 'branches')} is not accepted as resolving by the policy`] : []),
+  ]
+}
+
 function ownershipRow(input: ProfileInput): ProfileRow {
   const { status, threshold, owners, possibleOwners, listed } = input.ownership
   const lines = [
-    `Walk status: ${status}`,
+    `Walk status: ${statusText(status)}`,
+    ...clientEvidenceLines(input.ownership),
     ...(listed ? listedLines(listed) : []),
     ...(owners.length > 0
       ? [`${owners.length} beneficial ${owners.length === 1 ? 'owner' : 'owners'} at or above ${threshold}%: ${owners.join(', ')}`]
@@ -433,7 +460,7 @@ function ownershipRow(input: ProfileInput): ProfileRow {
   return {
     key: 'ownership',
     label: 'Ownership',
-    mark: status === 'resolved' ? 'PASS' : 'GAP',
+    mark: isResolvedStatus(status) ? 'PASS' : 'GAP',
     lines,
     source: {
       label: 'Companies House PSC register',
@@ -457,6 +484,14 @@ export function ownershipSummary(result: WalkResult, threshold: number): Ownersh
     result.nodes.find((node) => node.id === result.rootId && node.resolution === 'RESOLVED_LISTED') ??
     [...result.nodes].sort((a, b) => a.depth - b.depth).find((node) => node.resolution === 'RESOLVED_LISTED')
   const authorised = listedNode?.evidence?.find((e) => e.kind === 'regulated_eu')
+  const evidenceNodes = result.nodes.filter((node) => node.clientEvidence)
+  const clientEvidence = evidenceNodes.length > 0
+    ? {
+        applied: evidenceNodes.filter((node) => node.clientEvidence?.applied).length,
+        notUsed: evidenceNodes.filter((node) => !node.clientEvidence?.applied && node.clientEvidence?.notApplied?.some((why) => why !== 'policy')).length,
+        notAcceptedByPolicy: evidenceNodes.filter((node) => node.clientEvidence?.notApplied?.includes('policy')).length,
+      }
+    : undefined
   return {
     status: result.status,
     threshold,
@@ -469,6 +504,7 @@ export function ownershipSummary(result: WalkResult, threshold: number): Ownersh
           },
         }
       : {}),
+    ...(clientEvidence ? { clientEvidence } : {}),
     fetchedAt: oldest,
   }
 }
@@ -557,8 +593,12 @@ export function evaluateForeignProfile(input: ForeignProfileInput): ProfileRow[]
     {
       key: 'ownership',
       label: 'Ownership',
-      mark: input.ownership.status === 'resolved' ? 'PASS' : 'GAP',
-      lines: [`Walk status: ${input.ownership.status}`, ...(input.ownership.listed ? listedLines(input.ownership.listed) : [])],
+      mark: isResolvedStatus(input.ownership.status) ? 'PASS' : 'GAP',
+      lines: [
+        `Walk status: ${statusText(input.ownership.status)}`,
+        ...clientEvidenceLines(input.ownership),
+        ...(input.ownership.listed ? listedLines(input.ownership.listed) : []),
+      ],
       source,
       fetchedAt: input.ownership.fetchedAt,
     },

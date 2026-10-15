@@ -38,7 +38,7 @@ export function parseEvidenceUploadInput(formData: FormData): ParsedEvidenceUplo
   const clientId = text(formData, 'client_id')
   if (!UUID.test(clientId)) return { ok: false, error: 'Missing client ID' }
 
-  const subjectId = text(formData, 'subject_id')
+  const subjectId = text(formData, 'subject_id').toUpperCase()
   if (!subjectId) return { ok: false, error: 'Enter the company or LEI the ownership walk started from' }
   if (subjectId.length > 64) return { ok: false, error: 'The walk subject is too long' }
 
