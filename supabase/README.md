@@ -73,3 +73,20 @@ DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
 ```
 
 The SQL tests share `supabase/tests/helpers.sql`; `permissions.test.sql` (Slice 0b) and `refresh_packs.test.sql` (Slice 6) each need it run first.
+
+## Slice 7a: client-provided ownership evidence
+
+`supabase/migrations/20261016000000_slice7a_client_evidence.sql` (needs Slices 0b and 6). Design: `docs/slice7-client-evidence.md`.
+
+- `ownership_evidence` holds one upload against one unresolved foreign node, its proposed owners (extracted by Claude, or typed in by hand) and, once an admin confirms it, the confirmed owners. Status runs draft → proposed → confirmed or rejected; a newer confirmation for the same node moves the old one to superseded. **Rows are never deleted**: a trigger refuses every DELETE, a confirmed row can only become superseded, and rejected and superseded rows are frozen. Rows are written only by the RPCs.
+- RPCs: `create_ownership_evidence` (member or admin; registers the document as type `ownership_evidence`, which `register_document` still refuses), `save_evidence_proposal` (its uploader), `confirm_ownership_evidence` (admin; with `firms.four_eyes` on, not the uploader), `reject_ownership_evidence` (admin, or the uploader withdrawing; a note is required), `set_evidence_extraction` (admin), `confirmed_evidence_for` (any member; read_only gets no names).
+- `firms.evidence_extraction_enabled` defaults to false, so a new firm must switch Claude extraction on; manual entry always works. The migration turns it on only when exactly one firm exists (the demo firm); with more, it leaves every firm off and prints a notice.
+- Names of owners are in `ownership_evidence` only (admins and members can read it). `read_only` reads `ownership_evidence_overview`, which has no payloads, names or file references. Audit payloads hold ids, kinds, counts and hashes, never names. The payload check refuses date of birth, nationality, residence and occupation keys, and requires initials on individuals, a page reference on every owner and a note on every override.
+
+Dry-run ONLY this migration (0b and 6 are already applied to the live database):
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+  --migration supabase/migrations/20261016000000_slice7a_client_evidence.sql \
+  --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence.test.sql
+```
