@@ -23,6 +23,17 @@ import { packSigningSecret } from '@/lib/packs/sign'
 import type { PackPolicy, PackSubject } from '@/lib/packs/snapshot'
 import type { CheckRun, Evidence, IndirectMethod, OwnershipFetcher, WalkPolicy } from '@/lib/ownership/types'
 import { createEvidenceLoader } from '@/lib/evidence/load'
+import {
+  DEMO_COMPANY_NAME,
+  DEMO_SUBJECT,
+  demoAllowed,
+  demoFetcher,
+  demoOfficers,
+  demoRawProfile,
+  demoSourceLog,
+  isDemoSubject,
+  labelAsSample,
+} from '@/lib/demo/fjordvik'
 import { pendingEvidencePoints } from '@/lib/evidence/pending'
 
 export type EntryCandidate = {
@@ -46,6 +57,10 @@ export type OwnershipViewState = {
     profile: ProfileRow[]
     /** The run as a signed snapshot, if it can be saved as a refresh pack; otherwise why not. */
     pack?: PackOfferResult
+    /** The root of the walk (company number or LEI), which client evidence is filed against. */
+    subjectId?: string
+    /** The walk used built-in sample data, not a real company. */
+    sample?: boolean
   }
 }
 
@@ -122,6 +137,8 @@ async function offerPack(input: {
   summary: WalkSummary
   log: SourceLog
   individualNames?: string[]
+  /** The run used the built-in sample subject. */
+  sample?: boolean
 }): Promise<PackOfferResult> {
   const secret = packSigningSecret()
   if (!secret) return { unavailable: 'Saving refresh packs needs PACK_SIGNING_SECRET (16+ characters) to be set on the server.' }
@@ -133,6 +150,62 @@ async function offerPack(input: {
   } catch (err) {
     return { unavailable: err instanceof Error ? err.message : 'The run could not be turned into a refresh pack.' }
   }
+}
+
+/**
+ * The built-in sample subject: a fictional UK company whose only owner is the fictional Norwegian company in the
+ * SAMPLE shareholder register. No register is called. Only firms on the allow-list may run it, and everything it
+ * produces, including a refresh pack, is labelled as sample data.
+ */
+async function runDemo(input: {
+  supabase: Supabase
+  userId: string
+  clientId: string | undefined
+  policy: WalkPolicy
+  threshold: number
+}): Promise<OwnershipViewState> {
+  const { supabase, userId, clientId, policy, threshold } = input
+  const firmId = clientId
+    ? ((await supabase.from('clients').select('firm_id').eq('id', clientId).maybeSingle()).data?.firm_id as string | undefined)
+    : ((await packFirmId(supabase, userId)) ?? undefined)
+  const slug = firmId ? ((await supabase.from('firms').select('slug').eq('id', firmId).maybeSingle()).data?.slug as string | undefined) : undefined
+  if (!demoAllowed(slug)) return { error: 'The sample subject is not available to this firm.' }
+
+  const now = new Date().toISOString()
+  const log = createSourceLog()
+  for (const entry of demoSourceLog(now)) log.record(entry)
+  const evidence = withClientEvidence(demoFetcher(now), supabase, clientId, DEMO_SUBJECT)
+  const walked = await walk(DEMO_SUBJECT, evidence.fetcher, policy)
+
+  const profile = labelAsSample(
+    evaluateProfile({
+      listingDecision: listingDecision(walked),
+      listingFetchedAt: now,
+      profile: demoRawProfile,
+      officers: demoOfficers,
+      gleif: { status: 'none' },
+      ownership: ownershipSummary(walked, threshold),
+      fetchedAt: { profile: now, officers: now },
+    }),
+    now,
+  )
+  const flow = toFlow(walked)
+  const summary = summarise(walked)
+  summary.pointsToCheck.push(...(await pendingEvidence(supabase, clientId, DEMO_SUBJECT)))
+  const pack = await offerPack({
+    supabase,
+    userId,
+    subject: { id: DEMO_SUBJECT, kind: 'company', name: DEMO_COMPANY_NAME },
+    policy: packPolicy(policy),
+    walked,
+    profile,
+    flow,
+    summary,
+    log,
+    sample: true,
+    individualNames: [...demoOfficers.map((o) => String(o.name)), ...evidence.individualNames()],
+  })
+  return { result: { ...flow, summary, profile, pack, subjectId: DEMO_SUBJECT, sample: true } }
 }
 
 export async function walkOwnershipAction(
@@ -174,6 +247,7 @@ export async function walkOwnershipAction(
 
   // A pick from the name-search list arrives as an LEI.
   const entry = String(formData.get('picked_lei') || formData.get('entry') || '')
+  if (isDemoSubject(entry)) return runDemo({ supabase, userId: user.id, clientId, policy, threshold })
   // Every register fetch of this run goes in the log, which becomes part of a refresh pack.
   const log = createSourceLog()
   const gleifSource = createGleifSource(withSourceLog(gleifHttp, log))
@@ -227,7 +301,7 @@ export async function walkOwnershipAction(
         log,
         individualNames: evidence.individualNames(),
       })
-      return { result: { ...flow, summary, profile, pack } }
+      return { result: { ...flow, summary, profile, pack, subjectId: record.lei } }
     }
 
     const cdd = await fetchEntityCdd(resolution.companyNumber, token, log)
@@ -270,7 +344,7 @@ export async function walkOwnershipAction(
         ...evidence.individualNames(),
       ],
     })
-    return { result: { ...flow, summary, profile, pack } }
+    return { result: { ...flow, summary, profile, pack, subjectId: cdd.companyNumber } }
   } catch (err) {
     return { error: err instanceof Error ? `Lookup failed: ${err.message}` : 'Lookup failed' }
   }

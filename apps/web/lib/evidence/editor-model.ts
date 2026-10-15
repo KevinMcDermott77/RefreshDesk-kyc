@@ -1,5 +1,5 @@
 import { coverage, type Coverage } from './coverage'
-import type { Certified, EvidenceOwner, EvidencePayload } from './types'
+import type { Certified, CertifierCapacity, EvidenceOwner, EvidencePayload } from './types'
 
 /**
  * The editor keeps every field as text, the way a form does, and turns it into a payload on submit.
@@ -28,6 +28,8 @@ export type EditorState = {
   documentDate: string
   certified: Certified
   certifiedBy: string
+  certifierCapacity: CertifierCapacity
+  certificationDate: string
   stale: boolean
   uncertifiedOverride: boolean
   overrideNote: string
@@ -71,6 +73,8 @@ export function toState(payload: EvidencePayload): EditorState {
     documentDate: payload.document_date ?? '',
     certified: payload.certified,
     certifiedBy: payload.certified_by ?? '',
+    certifierCapacity: payload.certifier_capacity ?? 'unclear',
+    certificationDate: payload.certification_date ?? '',
     stale: payload.override?.reasons.includes('stale') ?? false,
     uncertifiedOverride: payload.override?.reasons.includes('uncertified') ?? false,
     overrideNote: payload.override?.note ?? '',
@@ -113,6 +117,8 @@ export function toPayloadInput(state: EditorState, withOverride: boolean): Recor
     document_date: state.documentDate.trim() || null,
     certified: state.certified,
     certified_by: state.certifiedBy.trim() || null,
+    certifier_capacity: state.certified === 'no' ? null : state.certifierCapacity,
+    certification_date: state.certified === 'no' ? null : state.certificationDate.trim() || null,
     override: withOverride && reasons.length > 0 ? { reasons, note: state.overrideNote } : null,
   }
 }

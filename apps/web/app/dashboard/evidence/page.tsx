@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { DEMO_SUBJECT } from '@/lib/demo/fjordvik'
 import { EVIDENCE_KIND_LABELS, EVIDENCE_STATUS_LABELS, type EvidenceKind, type EvidenceStatus } from '@/lib/evidence/types'
 
 type Item = {
   id: string
   firm_id: string
   client_id: string
+  subject_id: string
   node_name: string
   evidence_kind: EvidenceKind
   status: EvidenceStatus
@@ -31,7 +33,7 @@ export default async function EvidenceQueuePage() {
   // The overview carries no names, so every role can list from it; the item page decides what each role sees.
   const { data } = await supabase
     .from('ownership_evidence_overview')
-    .select('id, firm_id, client_id, node_name, evidence_kind, status, has_override, created_by, created_at, reviewed_at')
+    .select('id, firm_id, client_id, subject_id, node_name, evidence_kind, status, has_override, created_by, created_at, reviewed_at')
     .order('created_at', { ascending: false })
     .limit(200)
   const items = (data ?? []) as Item[]
@@ -67,6 +69,9 @@ export default async function EvidenceQueuePage() {
                 >
                   <span>
                     <strong>{item.node_name}</strong>
+                    {item.subject_id === DEMO_SUBJECT ? (
+                      <span className="ml-2 border border-red-700 bg-red-50 px-1.5 py-0.5 text-xs font-semibold uppercase text-red-900">Sample data</span>
+                    ) : null}
                     <span className="block text-xs text-[var(--muted)]">
                       {clientName.get(item.client_id) ?? 'Client'} · {EVIDENCE_KIND_LABELS[item.evidence_kind]} · uploaded by{' '}
                       {item.created_by === user!.id ? 'you' : (memberName.get(item.created_by) ?? 'a colleague')} {age(item.created_at)}

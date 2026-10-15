@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { initials } from '@/lib/ownership/to-flow'
-import type { EvidencePayload } from './types'
+import { CERTIFIER_CAPACITIES, type EvidencePayload } from './types'
 
 /**
  * Validates and normalises an evidence payload that came from the browser (the editor) or from
@@ -79,6 +79,8 @@ const payloadSchema = z.object({
   document_date: isoDate,
   certified: z.enum(['yes', 'no', 'unclear']),
   certified_by: optionalText,
+  certifier_capacity: z.enum(CERTIFIER_CAPACITIES).nullish().transform((value) => value ?? undefined),
+  certification_date: isoDate,
   document_title: optionalText,
   signed: z.boolean().nullish().transform((value) => (typeof value === 'boolean' ? value : undefined)),
   override: overrideSchema.nullish().transform((value) => value ?? undefined),
@@ -109,6 +111,9 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
   if ((value.as_at && value.as_at > today) || (value.document_date && value.document_date > today)) {
     return { ok: false, error: 'The as-at date and document date cannot be in the future' }
   }
+  if (value.certification_date && value.certification_date > today) {
+    return { ok: false, error: 'The certification date cannot be in the future' }
+  }
   if (options.forConfirm && !value.as_at && !value.document_date) {
     return { ok: false, error: "Enter the as-at date or the document date: it is needed to measure the evidence's age" }
   }
@@ -132,6 +137,16 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
     return base
   })
 
+  // Capacity and date only mean something on a document that is, or may be, certified; a certified one with no
+  // stated capacity is "unclear", never assumed.
+  const certification =
+    value.certified === 'no'
+      ? {}
+      : {
+          certifier_capacity: value.certifier_capacity ?? ('unclear' as const),
+          ...(value.certification_date ? { certification_date: value.certification_date } : {}),
+        }
+
   const payload: EvidencePayload = {
     owners,
     owners_complete: value.owners_complete,
@@ -139,6 +154,7 @@ export function normalisePayload(input: unknown, options: NormaliseOptions = {})
     ...(value.document_date ? { document_date: value.document_date } : {}),
     certified: value.certified,
     ...(value.certified_by ? { certified_by: value.certified_by } : {}),
+    ...certification,
     ...(value.document_title ? { document_title: value.document_title } : {}),
     ...(typeof value.signed === 'boolean' ? { signed: value.signed } : {}),
     ...(value.override ? { override: { reasons: value.override.reasons, note: value.override.note } } : {}),

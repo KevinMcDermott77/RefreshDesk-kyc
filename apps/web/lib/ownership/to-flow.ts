@@ -28,6 +28,8 @@ export type FlowNodeData = {
   lei?: string
   registerProfile?: RegisterProfileRef
   evidence?: Evidence[]
+  /** What identifies a foreign stop: an LEI, or a registration number with its country. */
+  identity?: { lei?: string; country?: string; registrationNumber?: string }
   /** Client evidence used (or found but not usable) for this node. */
   clientEvidence?: NodeClientEvidence
   /** Set on an owner that exists because confirmed client evidence named it. */
@@ -62,7 +64,7 @@ const TITLES = new Set(['mr', 'mrs', 'ms', 'miss', 'mx', 'dr', 'prof', 'sir', 'd
 /** "Mr Stephen Allen Schwarzman" -> "S.A.S."; "SMITH, John Paul" -> "J.P.S." */
 export function initials(name: string): string {
   // Already initials (e.g. a sanitised fixture): leave as is.
-  if (/^([A-Z]\.)+$/.test(name.trim())) return name.trim()
+  if (/^(\p{Lu}\.)+$/u.test(name.trim())) return name.trim()
   const [first, ...rest] = name.split(',')
   const ordered = rest.length > 0 ? `${rest.join(' ')} ${first}` : first
   const letters = ordered
@@ -146,6 +148,7 @@ function nodeData(node: OwnershipNode, natures: string[], hasOwners: boolean): F
     ...(node.registerProfile ? { registerProfile: node.registerProfile } : {}),
     ...(node.lei ? { lei: node.lei } : {}),
     ...(node.evidence?.length ? { evidence: node.evidence } : {}),
+    ...(node.identity ? { identity: node.identity } : {}),
     ...(node.clientEvidence ? { clientEvidence: node.clientEvidence } : {}),
     ...(node.viaClientEvidence ? { viaClientEvidence: node.viaClientEvidence } : {}),
     ...countryOf(node),
@@ -244,6 +247,8 @@ export type WalkSummary = {
     asAt?: string
     documentDate?: string
     certified: 'yes' | 'no' | 'unclear'
+    certifierCapacity?: NodeClientEvidence['certifierCapacity']
+    certificationDate?: string
     confirmedAt: string
     edited: boolean
     override?: ('stale' | 'uncertified')[]
@@ -314,6 +319,8 @@ export function summarise(result: WalkResult): WalkSummary {
           ...(ev.asAt ? { asAt: ev.asAt } : {}),
           ...(ev.documentDate ? { documentDate: ev.documentDate } : {}),
           certified: ev.certified,
+          ...(ev.certifierCapacity ? { certifierCapacity: ev.certifierCapacity } : {}),
+          ...(ev.certificationDate ? { certificationDate: ev.certificationDate } : {}),
           confirmedAt: ev.confirmedAt,
           edited: ev.edited,
           ...(ev.override ? { override: ev.override.reasons } : {}),

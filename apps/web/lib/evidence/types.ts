@@ -29,6 +29,19 @@ export const EVIDENCE_LABEL = 'client-provided, reviewer-verified'
 
 export type Certified = 'yes' | 'no' | 'unclear'
 
+/** Who certified the document, by capacity: the person's name is never kept. */
+export const CERTIFIER_CAPACITIES = ['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear'] as const
+export type CertifierCapacity = (typeof CERTIFIER_CAPACITIES)[number]
+
+export const CERTIFIER_CAPACITY_LABELS: Record<CertifierCapacity, string> = {
+  notary: 'Notary',
+  lawyer: 'Lawyer',
+  accountant: 'Accountant',
+  company_officer: 'Company officer (e.g. secretary or director)',
+  other: 'Other',
+  unclear: 'Unclear',
+}
+
 export type Holding = { type: 'percent'; value: number } | { type: 'band'; low: number; high: number }
 
 export type EvidenceOwner = {
@@ -61,6 +74,10 @@ export type EvidencePayload = {
   document_date?: string
   certified: Certified
   certified_by?: string
+  /** In what capacity the certifier signed. Set only when the document is certified (or may be). */
+  certifier_capacity?: CertifierCapacity
+  /** The date on the certification itself (yyyy-mm-dd). */
+  certification_date?: string
   document_title?: string
   signed?: boolean
   override?: EvidenceOverride

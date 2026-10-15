@@ -30,12 +30,15 @@ const itemSchema = z.object({
   as_at: z.string().nullish(),
   document_date: z.string().nullish(),
   certified: z.enum(['yes', 'no', 'unclear']),
+  confirmed_by: z.string().nullish(),
   edited: z.boolean().nullish(),
   confirmed_at: z.string(),
   document_sha256: z.string(),
   payload: z.object({
     owners: z.array(owner),
     owners_complete: z.boolean(),
+    certifier_capacity: z.enum(['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear']).nullish(),
+    certification_date: z.string().nullish(),
     override: z.object({ reasons: z.array(z.enum(['stale', 'uncertified'])), note: z.string() }).nullish(),
   }),
 })
@@ -59,6 +62,10 @@ export function toClientEvidenceItems(json: unknown): ClientEvidenceItem[] {
       asAt: item.as_at ?? null,
       documentDate: item.document_date ?? null,
       certified: item.certified,
+      // Only the capacity and the date: the certifier's own text (it can be a person's name) is not carried.
+      certifierCapacity: item.payload.certifier_capacity ?? null,
+      certificationDate: item.payload.certification_date ?? null,
+      confirmedBy: item.confirmed_by ?? null,
       confirmedAt: item.confirmed_at,
       edited: item.edited ?? false,
       documentSha256: item.document_sha256,

@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { blankOwner, coverageOf, toPayloadInput, toState, type EditorState, type OwnerRow } from '@/lib/evidence/editor-model'
-import type { EvidencePayload } from '@/lib/evidence/types'
+import { CERTIFIER_CAPACITIES, CERTIFIER_CAPACITY_LABELS, type EvidencePayload } from '@/lib/evidence/types'
 import { confirmEvidenceAction, saveProposalAction } from '../actions'
 
 type Props = {
@@ -167,6 +167,24 @@ export function EvidenceEditor({ mode, evidenceId, clientId, initial, canSubmit,
           <span className="font-medium">Certified by (as printed)</span>
           <input className={field} value={state.certifiedBy} onChange={(e) => update({ certifiedBy: e.target.value })} />
         </label>
+        {state.certified !== 'no' && (
+          <>
+            <label className="block text-sm">
+              <span className="font-medium">Certifier&apos;s capacity</span>
+              <select className={field} value={state.certifierCapacity} onChange={(e) => update({ certifierCapacity: e.target.value as EditorState['certifierCapacity'] })}>
+                {CERTIFIER_CAPACITIES.map((capacity) => (
+                  <option key={capacity} value={capacity}>
+                    {CERTIFIER_CAPACITY_LABELS[capacity]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium">Date of the certification</span>
+              <input type="date" className={field} value={state.certificationDate} onChange={(e) => update({ certificationDate: e.target.value })} />
+            </label>
+          </>
+        )}
         <label className="flex items-start gap-3 text-sm md:col-span-2">
           <input type="checkbox" className="mt-1" checked={state.ownersComplete} onChange={(e) => update({ ownersComplete: e.target.checked })} />
           <span>The document says it lists every holder.</span>

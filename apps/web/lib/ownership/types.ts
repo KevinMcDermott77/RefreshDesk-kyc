@@ -94,6 +94,9 @@ export const nodeClientEvidenceSchema = z.object({
   asAt: z.string().optional(),
   documentDate: z.string().optional(),
   certified: z.enum(['yes', 'no', 'unclear']),
+  certifierCapacity: z.enum(['notary', 'lawyer', 'accountant', 'company_officer', 'other', 'unclear']).optional(),
+  certificationDate: z.string().optional(),
+  confirmedBy: z.string().optional(),
   confirmedAt: z.string(),
   edited: z.boolean(),
   documentSha256: z.string(),
@@ -149,6 +152,9 @@ export const ownershipNodeSchema = z.object({
   evidence: z.array(evidenceSchema).optional(),
   // Which listing / authorisation checks ran on this node, with their outcome.
   checks: z.array(checkRunSchema).optional(),
+  // What identifies a foreign node that stopped the walk: an exact LEI, or a registration number with its country.
+  // Company facts only; it is what evidence is matched on, and what the "Add client evidence" link is filled in from.
+  identity: z.object({ lei: z.string().optional(), country: z.string().optional(), registrationNumber: z.string().optional() }).optional(),
   // Client evidence used (or found but not usable) for this node.
   clientEvidence: nodeClientEvidenceSchema.optional(),
   // Set on an owner that exists because confirmed client evidence named it: the evidence id.
@@ -278,6 +284,10 @@ export type ClientEvidenceItem = {
   asAt: string | null
   documentDate: string | null
   certified: 'yes' | 'no' | 'unclear'
+  certifierCapacity: 'notary' | 'lawyer' | 'accountant' | 'company_officer' | 'other' | 'unclear' | null
+  certificationDate: string | null
+  /** The admin who confirmed it (a user id, not a name). */
+  confirmedBy: string | null
   confirmedAt: string
   edited: boolean
   documentSha256: string

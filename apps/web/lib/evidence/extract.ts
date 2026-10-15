@@ -30,6 +30,8 @@ List the shareholders / owners shown, and describe the document. Return this exa
   "document_date": "yyyy-mm-dd or null",
   "certified": "yes" or "no" or "unclear",
   "certified_by": "who certified it, as printed, or null",
+  "certifier_capacity": "notary" or "lawyer" or "accountant" or "company_officer" or "other" or "unclear",
+  "certification_date": "yyyy-mm-dd or null",
   "document_title": "title as printed or null",
   "signed": true or false or null,
   "confidence_score": 0.0,
@@ -44,6 +46,7 @@ Rules:
 - "owners_complete" is true only if the document itself states that it lists all shareholders or all holders; otherwise false.
 - "as_at" is the date the holdings are stated for; "document_date" is the date of the document itself. Use null if not printed or not readable.
 - "certified" is "yes" only if a certification statement, stamp or signature is visible (for example a company secretary, notary, auditor or registrar certifying the copy or the contents); "no" if the document shows none; "unclear" if you cannot tell.
+- "certifier_capacity" is the capacity the certifier signs in, only if it is printed (for example "Notary Public", "Solicitor", "Chartered Accountant", "Company Secretary", "Director"); "company_officer" covers a secretary or director of the company; otherwise "unclear". "certification_date" is the date written on the certification itself, not the date of the document; null if none.
 - Do not output dates of birth, nationality, residence, occupation or addresses of individuals.
 - Set "uncertain" to true on any row where you were reading poor print or guessing a field.`
 }

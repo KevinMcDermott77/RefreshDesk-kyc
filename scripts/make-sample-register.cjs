@@ -9,6 +9,9 @@
 // The layout is chosen to exercise the flow: Nordic letters in names, one entity shareholder with a
 // registration number printed beside it, holdings that add up to 100% (so the coverage rule passes),
 // a statement that the register lists every shareholder, an as-at date and a certification block.
+// The company shareholder holds 20%, so in the sample walk (its owner holds 75-100% of the UK company) it is below
+// the 25% threshold and is pruned: the walk can end "Resolved (client evidence)". Raise it to 30% to see an open
+// company branch instead.
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -106,9 +109,9 @@ function pageTwo() {
   p.text(cols[4] + 4, head, 10, '% of capital', true)
 
   const holders = [
-    ['1', 'Øystein Åsmund Testersen', '-', '400', '40.0 %'],
-    ['2', 'Nordlys Invest Test AS', '999 000 002', '300', '30.0 %'],
-    ['3', 'Kari Eksempel-Fjeld', '-', '150', '15.0 %'],
+    ['1', 'Øystein Åsmund Testersen', '-', '450', '45.0 %'],
+    ['2', 'Nordlys Invest Test AS', '999 000 002', '200', '20.0 %'],
+    ['3', 'Kari Eksempel-Fjeld', '-', '200', '20.0 %'],
     ['4', 'Bjørn Prøve', '-', '100', '10.0 %'],
     ['5', 'Mia Sampleby', '-', '50', '5.0 %'],
   ]

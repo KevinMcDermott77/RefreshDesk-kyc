@@ -316,6 +316,16 @@ export async function walk(
     node.evidence = [...(node.evidence ?? []), evidence]
   }
 
+  /** The facts a foreign stop can be identified by, without the empty ones. */
+  function setIdentity(node: OwnershipNode, facts: NodeFacts) {
+    const identity = {
+      ...(facts.lei ? { lei: facts.lei } : {}),
+      ...(facts.country ? { country: facts.country } : {}),
+      ...(facts.registrationNumber ? { registrationNumber: facts.registrationNumber } : {}),
+    }
+    if (Object.keys(identity).length > 0) node.identity = identity
+  }
+
   function addCheck(node: OwnershipNode, run: CheckRun) {
     node.checks = [...(node.checks ?? []), run]
   }
@@ -416,6 +426,9 @@ export async function walk(
       ...(item.asAt ? { asAt: item.asAt } : {}),
       ...(item.documentDate ? { documentDate: item.documentDate } : {}),
       certified: item.certified,
+      ...(item.certifierCapacity ? { certifierCapacity: item.certifierCapacity } : {}),
+      ...(item.certificationDate ? { certificationDate: item.certificationDate } : {}),
+      ...(item.confirmedBy ? { confirmedBy: item.confirmedBy } : {}),
       confirmedAt: item.confirmedAt,
       edited: item.edited,
       documentSha256: item.documentSha256,
@@ -500,6 +513,7 @@ export async function walk(
         const profile = registerProfileRef(registration?.country)
         if (profile) stop.registerProfile = profile
         addSecondary(stop, registration?.country)
+        setIdentity(stop, { lei: owner.leiShown ?? undefined, country: registration?.country, registrationNumber: registration?.number })
         nodes.set(id, stop)
         edgeFrom(id)
         await applyClientEvidence(
@@ -578,6 +592,7 @@ export async function walk(
     const parent = result.parent
     if (!parent) {
       stopGleif(node, country, result.exception)
+      setIdentity(node, { lei: record.lei, country, registrationNumber: record.registeredAs })
       await applyClientEvidence(
         node,
         { lei: record.lei, country, registrationNumber: record.registeredAs },
@@ -732,6 +747,7 @@ export async function walk(
         const profile = registerProfileRef(code)
         if (profile) stop.registerProfile = profile
         addSecondary(stop, code)
+        setIdentity(stop, { country: code, registrationNumber: registration })
         await applyClientEvidence(
           stop,
           { country: code, registrationNumber: registration },

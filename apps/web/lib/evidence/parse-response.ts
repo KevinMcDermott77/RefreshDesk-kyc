@@ -45,6 +45,8 @@ export function parseEvidenceResponse(raw: string, today?: string): ParsedExtrac
     document_date: obj.document_date,
     certified,
     certified_by: obj.certified_by,
+    certifier_capacity: obj.certifier_capacity,
+    certification_date: obj.certification_date,
     document_title: obj.document_title,
     signed: obj.signed,
     // An override is a reviewer's act. The model cannot make one.

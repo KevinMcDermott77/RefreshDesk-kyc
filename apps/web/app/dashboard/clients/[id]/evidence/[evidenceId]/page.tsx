@@ -9,6 +9,7 @@ import { parseEvidenceResponse } from '@/lib/evidence/parse-response'
 import { emptyPayload } from '@/lib/evidence/payload'
 import { lookupRegistrations } from '@/lib/evidence/registration-lookup'
 import {
+  CERTIFIER_CAPACITY_LABELS,
   EVIDENCE_KIND_LABELS,
   EVIDENCE_LABEL,
   EVIDENCE_STATUS_LABELS,
@@ -16,6 +17,7 @@ import {
   type EvidencePayload,
   type EvidenceStatus,
 } from '@/lib/evidence/types'
+import { DEMO_SUBJECT } from '@/lib/demo/fjordvik'
 import { EvidenceEditor } from './evidence-editor'
 import { RejectForm } from './reject-form'
 
@@ -206,6 +208,11 @@ export default async function EvidencePage({
           <p className="mt-1 text-xs text-[var(--muted)]">
             Walk subject {ev.subject_id} · node {ev.node_key}
           </p>
+          {ev.subject_id === DEMO_SUBJECT ? (
+            <p className="mt-2 inline-block border border-red-700 bg-red-50 px-2 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-red-900">
+              Sample data: invented company and document
+            </p>
+          ) : null}
         </header>
 
         {notice && NOTICES[notice] && (
@@ -247,7 +254,9 @@ export default async function EvidencePage({
               Confirmed by {who(ev.reviewed_by)} on {when(ev.reviewed_at)}
               {ev.edited ? ' with edits to the proposal' : ''}. As at {ev.as_at ?? '—'}, document date {ev.document_date ?? '—'},
               certified: {ev.certified}
-              {ev.confirmed.certified_by ? ` (${ev.confirmed.certified_by})` : ''}.
+              {ev.confirmed.certified_by ? ` (${ev.confirmed.certified_by})` : ''}
+              {ev.confirmed.certifier_capacity ? `, capacity: ${CERTIFIER_CAPACITY_LABELS[ev.confirmed.certifier_capacity]}` : ''}
+              {ev.confirmed.certification_date ? `, certified on ${ev.confirmed.certification_date}` : ''}.
             </p>
             {ev.confirmed.override && (
               <p className="text-sm text-amber-900">
