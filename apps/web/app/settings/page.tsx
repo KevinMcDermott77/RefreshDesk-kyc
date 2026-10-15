@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SupervisorEmailForm } from "./supervisor-email-form";
 import { TeamSection } from "./team-section";
 import { BillingSection } from "./billing-section";
+import { EvidenceExtractionForm } from "./evidence-extraction-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -30,6 +31,13 @@ export default async function SettingsPage() {
     : membership.firms;
 
   const isAdmin = membership.role === "admin";
+
+  // Read on its own, so the page still loads on a database that does not have this column yet.
+  const { data: extractionSetting } = await supabase
+    .from("firms")
+    .select("evidence_extraction_enabled")
+    .eq("id", membership.firm_id)
+    .maybeSingle();
 
   let members: { user_id: string; full_name: string; role: string }[] = [];
   let joinCodes: {
@@ -99,6 +107,8 @@ export default async function SettingsPage() {
             </dl>
 
             <SupervisorEmailForm currentEmail={firm.mlr_supervisor_email ?? null} />
+
+            <EvidenceExtractionForm firmId={membership.firm_id} enabled={!!extractionSetting?.evidence_extraction_enabled} />
 
             <TeamSection
               currentUserId={user.id}

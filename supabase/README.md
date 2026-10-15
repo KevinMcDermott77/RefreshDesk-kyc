@@ -90,3 +90,13 @@ DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
   --migration supabase/migrations/20261016000000_slice7a_client_evidence.sql \
   --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence.test.sql
 ```
+
+### Slice 7b: using it (no new migration)
+
+7b is app code on top of the 7a migration; it needs nothing more in the database, so apply 7a and deploy 7b together (migration first: the evidence pages and the Settings toggle read columns and tables that 7a creates).
+
+- **Add evidence:** `/dashboard/clients/<id>/evidence/new` (a link on the client page). The browser uploads the file straight to Storage; the server action receives only the path, checks it is in the client's folder and that the bytes match the type, hashes the file (SHA-256) and calls `create_ownership_evidence`. The node is identified by an LEI, or a registration number with its country: never a name alone.
+- **Extraction** runs only if the firm switched it on (Settings → Client ownership evidence, admins) and the uploader ticked it. It uses prompt `ownership-evidence-v1` on `claude-sonnet-4-20250514` and only reads what is printed; it is never asked to look anything up. Rows without a page reference are dropped with a warning, an override is never accepted from the model, certification defaults to "unclear", and initials are set by the server. With extraction off, or if it fails, the item stays a draft and the uploader types the owners in.
+- **Confirm:** `/dashboard/clients/<id>/evidence/<evidenceId>` shows the document beside an editable table. A different admin (four-eyes) confirms, edits, or rejects with a note; the uploader can withdraw. Printed registration numbers are looked up in GLEIF for the reviewer to compare (exact number and country only, display only, nothing is linked). The coverage rule is shown as the reviewer edits and cannot be overridden.
+- **Queue:** `/dashboard/evidence` (a link on the dashboard) lists items awaiting confirmation, drafts and recent decisions from the names-free overview, so every role can open it; `read_only` sees status only.
+- Node keys are `LEI:<lei>` or `REG:<country>:<normalised number>`, built from the identity alone, so slice 7c can find evidence for a walk node from the same facts.

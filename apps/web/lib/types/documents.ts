@@ -1,4 +1,4 @@
-export type DocumentType = 'passport' | 'proof_of_address' | 'incorporation' | 'source_of_funds' | 'filing'
+export type DocumentType = 'passport' | 'proof_of_address' | 'incorporation' | 'source_of_funds' | 'filing' | 'ownership_evidence'
 
 export type DocumentStatus = 'uploaded' | 'extracting' | 'pending_review' | 'pending' | 'approved' | 'rejected'
 
@@ -88,6 +88,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   incorporation: 'Incorporation',
   source_of_funds: 'Source of funds',
   filing: 'Filing',
+  ownership_evidence: 'Ownership evidence',
 }
 
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {

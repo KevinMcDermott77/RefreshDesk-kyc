@@ -40,6 +40,8 @@ function getFieldsComment(documentType: DocumentType): string {
       return '"description": null, "amount_or_range": null, "supporting_evidence": null'
     case 'filing':
       throw new Error('Filing documents are not extracted — they are saved as source documents')
+    case 'ownership_evidence':
+      throw new Error('Ownership evidence is read by lib/evidence/extract.ts, not here')
   }
 }
 
