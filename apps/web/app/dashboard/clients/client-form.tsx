@@ -82,7 +82,7 @@ export function ClientForm({ action, initial, submitLabel, cancelHref }: Props) 
       </div>
 
       <p className="text-xs text-[var(--muted)]">
-        Leave "Override refresh due date" blank to use the firm's default cadence for the selected risk rating.
+        Leave &quot;Override refresh due date&quot; blank to use the firm&apos;s default cadence for the selected risk rating.
       </p>
 
       <FormError message={state.error} />
