@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { reasonText } from '@/lib/ownership/reason-text'
-import { formatFetchedAt } from '@/lib/ownership/to-flow'
+import { formatFetchedAt, overallText } from '@/lib/ownership/to-flow'
 import type { ReasonCode } from '@/lib/ownership/types'
 import { PACK_STATUS_LABELS, type PackStatus } from '@/lib/packs/sign-off'
 import type { PackSnapshot } from '@/lib/packs/snapshot'
@@ -78,6 +78,9 @@ function reasonOf(code: string | undefined): string {
 export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapshot; meta: PackMeta; controls?: ReactNode }) {
   const { subject, policy, summary } = snapshot
   const shortPrint = `${meta.fingerprint.slice(0, 16)}…${meta.fingerprint.slice(-8)}`
+  // The same words the Ownership row and the banner use: never the raw status code.
+  const walkText = overallText({ status: summary.walkStatus, clientEvidence: snapshot.clientEvidence ?? [] })
+  const resolvedOnEvidence = summary.walkStatus === 'resolved_client_evidence'
 
   return (
     <article>
@@ -130,8 +133,13 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
 
       <Section title="Summary">
         <p className="keep-together text-sm">
-          <strong>{summary.status === 'complete' ? 'Complete' : 'Partial'}</strong> · {summary.openBranches} open{' '}
-          {summary.openBranches === 1 ? 'branch' : 'branches'} · walk status {summary.walkStatus}
+          {resolvedOnEvidence && summary.status === 'complete' ? (
+            <strong>{walkText}</strong>
+          ) : (
+            <strong>{summary.status === 'complete' ? 'Complete' : 'Partial'}</strong>
+          )}{' '}
+          · {summary.openBranches} open {summary.openBranches === 1 ? 'branch' : 'branches'}
+          {resolvedOnEvidence && summary.status === 'complete' ? '' : ` · walk status ${walkText}`}
         </p>
         <p className="mt-1 text-sm text-[var(--muted)]">{countsLine(summary)}</p>
         {summary.unresolved.length > 0 ? (

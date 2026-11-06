@@ -87,8 +87,12 @@ export function formatNumber(value: number): string {
   return String(Math.round(value * 10) / 10)
 }
 
+/** "45%" when both ends are the same number, "25-50%" for a real band. */
 export function formatRange(range: Range | undefined): string | undefined {
-  return range ? `${formatNumber(range[0])}-${formatNumber(range[1])}%` : undefined
+  if (!range) return undefined
+  const low = formatNumber(range[0])
+  const high = formatNumber(range[1])
+  return low === high ? `${low}%` : `${low}-${high}%`
 }
 
 /** "7 Oct 2026, 20:04" in London time; the input unchanged if it is not a date. */
@@ -261,7 +265,7 @@ export type WalkSummary = {
 }
 
 /** What the banner says. A walk resolved with client evidence says so and how many branches rely on it. */
-export function overallText(summary: Pick<WalkSummary, 'status' | 'clientEvidence'>): string {
+export function overallText(summary: { status: WalkSummary['status']; clientEvidence: { applied: boolean }[] }): string {
   if (summary.status !== 'resolved_client_evidence') return summary.status
   const n = summary.clientEvidence.filter((e) => e.applied).length
   return `Complete — ${n} ${n === 1 ? 'branch' : 'branches'} resolved on client evidence`

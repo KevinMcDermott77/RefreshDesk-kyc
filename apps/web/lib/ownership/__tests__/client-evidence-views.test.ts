@@ -65,7 +65,7 @@ describe('chart and summary', () => {
     const stop = flow.nodes.find((n) => n.data.clientEvidence)!
     expect(stop.data).toMatchObject({ resolutionLabel: 'Intermediate', clientEvidence: { id: 'ev-1', applied: true } })
     const edge = flow.edges.find((e) => e.source === owner.id)!
-    expect(edge).toMatchObject({ client: true, label: '85-85% (client evidence)' })
+    expect(edge).toMatchObject({ client: true, label: '85% (client evidence)' })
     expect(edge.dashed).toBeUndefined()
   })
 

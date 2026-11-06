@@ -19,12 +19,10 @@ export function SignOffPanel({ packId, gate }: Props) {
 
   return (
     <section className="no-print mt-6 border border-[var(--line)] bg-[var(--panel)] p-5 text-[var(--foreground)] dark:bg-gray-900 dark:text-gray-100">
-      <h2 className="text-lg font-semibold">Sign-off</h2>
-
       {gate.showSubmit ? (
-        <form action={submit} className="mt-3">
+        <form action={submit}>
           <input type="hidden" name="pack_id" value={packId} />
-          <p className="text-sm text-[var(--muted)]">Submit this pack for approval. Once submitted it cannot be edited; it never can be.</p>
+          <p className="text-sm text-[var(--muted)]">Once submitted, a pack is locked and can never be edited.</p>
           <button
             disabled={busy || !gate.canSubmit}
             className="mt-2 border border-[var(--accent-strong)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
@@ -35,7 +33,7 @@ export function SignOffPanel({ packId, gate }: Props) {
       ) : null}
 
       {gate.showReview ? (
-        <div className="mt-3 grid gap-3">
+        <div className={`grid gap-3 ${gate.showSubmit ? 'mt-3' : ''}`}>
           <label className="block text-sm font-medium" htmlFor={`note-${packId}`}>
             Note <span className="font-normal text-[var(--muted)]">(required to reject)</span>
           </label>
