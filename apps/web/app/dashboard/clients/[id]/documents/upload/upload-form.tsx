@@ -5,6 +5,7 @@ import { uploadClientDocument } from '@/lib/documents/upload-client-document'
 import { uploadDocumentAction } from './actions'
 import { DOCUMENT_TYPE_LABELS } from '@/lib/types/documents'
 import type { DocumentType } from '@/lib/types/documents'
+import { UPLOADABLE_DOCUMENT_TYPES } from '@/lib/documents/upload-input'
 
 type Props = {
   clientId: string
@@ -60,7 +61,9 @@ export function UploadForm({ clientId, firmId, preselectedType }: Props) {
           defaultValue={preselectedType}
           className="mt-2 w-full border border-[var(--line)] bg-white px-3 py-3 outline-none focus:border-[var(--accent)]"
         >
-          {(Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]).map(([value, label]) => (
+          {(Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][])
+            .filter(([value]) => (UPLOADABLE_DOCUMENT_TYPES as readonly string[]).includes(value))
+            .map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>

@@ -6,6 +6,7 @@ import { snapshotFingerprint } from '@/lib/packs/canonical'
 import { packFirmId } from '@/lib/packs/offer'
 import { packSigningSecret, verifyPackSignature } from '@/lib/packs/sign'
 import { parseSnapshot } from '@/lib/packs/snapshot'
+import { unconfirmedEvidence } from '@/lib/packs/evidence-check'
 
 export type SavePackInput = {
   snapshot: unknown
@@ -45,6 +46,16 @@ export async function saveRefreshPackAction(input: SavePackInput): Promise<SaveP
 
   const verified = verifyPackSignature(secret, firmId, input.issuedAt, sha256, input.signature)
   if (!verified.ok) return { error: verified.reason }
+
+  // The run can be an hour old: the evidence it rests on must still be confirmed, and be the same document.
+  const evidenceIds = (snapshot.clientEvidence ?? []).map((block) => block.id)
+  if (evidenceIds.length > 0) {
+    const { data: stored } = await supabase.from('ownership_evidence').select('id, status, document_sha256').in('id', evidenceIds).eq('firm_id', firmId)
+    const gone = unconfirmedEvidence(snapshot, (stored ?? []) as { id: string; status: string; document_sha256: string }[])
+    if (gone.length > 0) {
+      return { error: 'Client evidence used by this run has been superseded, rejected or changed since: run the walk again' }
+    }
+  }
 
   const { data, error } = await supabase.rpc('create_refresh_pack', {
     p_firm_id: firmId,

@@ -12,6 +12,8 @@ export type EntityCddOwnership = {
 
 const QUALITY: Record<WalkResult['status'], PscDataQuality> = {
   resolved: 'full',
+  // Resolved with the help of client evidence is not the PSC register resolving the chain, so it is not "full".
+  resolved_client_evidence: 'partial',
   partial: 'partial',
   unresolved: 'none',
 }

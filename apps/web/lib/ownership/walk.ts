@@ -1,9 +1,12 @@
 import { classify, governingBand, maxRanges, multiplyRanges, parseNatures } from './bands'
 import { countryCode } from './countries'
 import { sameRegistration } from './registration-number'
+import { isConfirmationKind } from '@/lib/evidence/types'
+import { assessEvidence, BLOCKER_CODE, EVIDENCE_ELIGIBLE_REASONS, holdingRange, matchEvidence, type NodeFacts } from '@/lib/evidence/apply'
 import { profileFor, stopReasonFor } from './register-profiles'
 import type {
   CheckRun,
+  ClientEvidenceItem,
   Fetched,
   Evidence,
   GleifRecord,
@@ -55,6 +58,8 @@ type Item = {
   // A control right on this link or any link below it: nothing here or above is pruned.
   noPrune: boolean
   ancestors: Set<string>
+  /** Client evidence already applied on the path to this item, so one item cannot resolve itself in a loop. */
+  evidenceUsed?: Set<string>
 }
 
 function chooseRange(ranges: PathRanges, method: IndirectMethod): Range | undefined {
@@ -160,6 +165,12 @@ function pscName(psc: Psc): string {
 }
 
 function overallStatus(nodes: OwnershipNode[], threshold: number, viaGleif: boolean): WalkStatus {
+  const base = baseStatus(nodes, threshold, viaGleif)
+  // Resolved with the help of client evidence is its own status, never merged with a register-only resolution.
+  return base === 'resolved' && nodes.some((node) => node.clientEvidence?.applied) ? 'resolved_client_evidence' : base
+}
+
+function baseStatus(nodes: OwnershipNode[], threshold: number, viaGleif: boolean): WalkStatus {
   const terminals = nodes.filter((node) => node.resolution !== 'PENDING')
   const materialUnresolved = terminals.some(
     (node) =>
@@ -184,6 +195,10 @@ export async function walk(
   const threshold = policy.threshold ?? DEFAULT_THRESHOLD
   const method = policy.indirectMethod ?? DEFAULT_INDIRECT_METHOD
   const acceptRegulated = policy.acceptRegulatedAsTerminal ?? true
+  const acceptEvidence = policy.acceptClientEvidenceAsResolved ?? true
+  const maxEvidenceAgeMonths = policy.maxEvidenceAgeMonths ?? 12
+  const acceptEmail = policy.acceptEmailConfirmation ?? true
+  const now = policy.now ?? new Date().toISOString()
 
   const nodes = new Map<string, OwnershipNode>()
   const edges: OwnershipEdge[] = []
@@ -303,6 +318,16 @@ export async function walk(
     node.evidence = [...(node.evidence ?? []), evidence]
   }
 
+  /** The facts a foreign stop can be identified by, without the empty ones. */
+  function setIdentity(node: OwnershipNode, facts: NodeFacts) {
+    const identity = {
+      ...(facts.lei ? { lei: facts.lei } : {}),
+      ...(facts.country ? { country: facts.country } : {}),
+      ...(facts.registrationNumber ? { registrationNumber: facts.registrationNumber } : {}),
+    }
+    if (Object.keys(identity).length > 0) node.identity = identity
+  }
+
   function addCheck(node: OwnershipNode, run: CheckRun) {
     node.checks = [...(node.checks ?? []), run]
   }
@@ -364,7 +389,182 @@ export async function walk(
     return true
   }
 
-  /** Walks one GLEIF node: follows its direct parent, or stops with a reason. Never resolves a node. */
+  /** Match on registration number and country only, never on name: ISSUED records whose number normalises to this one. */
+  async function matchGleif(registration: string | undefined, code: string | undefined): Promise<{ matches: GleifRecord[]; outage: boolean }> {
+    if (!fetcher.gleif || !registration || !code) return { matches: [], outage: false }
+    try {
+      const found = await fetcher.gleif.findByRegistration(registration, code)
+      return { matches: found.filter((m) => m.registrationStatus === 'ISSUED' && sameRegistration(m.registeredAs, registration)), outage: false }
+    } catch {
+      return { matches: [], outage: true }
+    }
+  }
+
+  let evidenceLoad: Promise<ClientEvidenceItem[]> | undefined
+  /** The client's confirmed evidence, loaded once. A failure to load only means no evidence: nothing resolves on a guess. */
+  function loadEvidence(): Promise<ClientEvidenceItem[]> {
+    evidenceLoad ??= fetcher.clientEvidence ? fetcher.clientEvidence().catch(() => []) : Promise.resolve([])
+    return evidenceLoad
+  }
+
+  type EvidenceContext = { ranges: PathRanges; noPrune: boolean; ancestors: Set<string>; used: Set<string> }
+
+  /**
+   * Uses confirmed client evidence at a foreign node the registers left unresolved. Only for the register-stop
+   * and GLEIF-exception reasons; never over a listing, a Companies House finding, a loop, a depth limit or an outage.
+   * The node is matched by an exact LEI, or an exact registration number and country: never by name.
+   * If the evidence cannot be used the node stays unresolved and says why; if it can, the node's owners are the
+   * evidence's owners and the walk carries on from there.
+   */
+  async function applyClientEvidence(node: OwnershipNode, facts: NodeFacts, context: EvidenceContext) {
+    if (!fetcher.clientEvidence || !node.reasonCode || !EVIDENCE_ELIGIBLE_REASONS.includes(node.reasonCode)) return
+    const item = matchEvidence(await loadEvidence(), facts)
+    if (!item || context.used.has(item.id)) return
+
+    const assessment = assessEvidence(item, { accept: acceptEvidence, acceptEmail, maxAgeMonths: maxEvidenceAgeMonths, threshold, now })
+    const record = {
+      id: item.id,
+      kind: item.evidenceKind,
+      ...(item.asAt ? { asAt: item.asAt } : {}),
+      ...(item.documentDate ? { documentDate: item.documentDate } : {}),
+      // A client's written confirmation is nobody's certification: it carries who confirmed it (capacity), when and how.
+      ...(isConfirmationKind(item.evidenceKind)
+        ? {
+            ...(item.confirmedByCapacity ? { confirmedByCapacity: item.confirmedByCapacity } : {}),
+            ...(item.confirmationDate ? { confirmationDate: item.confirmationDate } : {}),
+            ...(item.receivedAs ? { receivedAs: item.receivedAs } : {}),
+          }
+        : {
+            certified: item.certified === 'not_applicable' ? ('unclear' as const) : item.certified,
+            ...(item.certifierCapacity ? { certifierCapacity: item.certifierCapacity } : {}),
+            ...(item.certificationDate ? { certificationDate: item.certificationDate } : {}),
+          }),
+      ...(item.confirmedBy ? { confirmedBy: item.confirmedBy } : {}),
+      confirmedAt: item.confirmedAt,
+      edited: item.edited,
+      documentSha256: item.documentSha256,
+      ...(item.override ? { override: { reasons: item.override.reasons } } : {}),
+    }
+    const original = node.reasonCode
+
+    if (!assessment.apply) {
+      node.clientEvidence = { ...record, applied: false, notApplied: [...assessment.blockers, ...(assessment.policyOff ? (['policy'] as const) : [])] }
+      if (assessment.policyOff) addSecondaryCode(node, 'CLIENT_EVIDENCE_NOT_ACCEPTED')
+      if (assessment.blockers.length > 0) {
+        // What stopped the evidence is now the headline; the register stop moves down beside it.
+        const [first, ...rest] = assessment.blockers
+        node.reasonCode = BLOCKER_CODE[first]
+        for (const code of [original, ...rest.map((blocker) => BLOCKER_CODE[blocker])]) addSecondaryCode(node, code)
+      }
+      return
+    }
+
+    node.clientEvidence = { ...record, applied: true }
+    addSecondaryCode(node, original)
+    addSecondaryCode(node, 'CLIENT_EVIDENCE_APPLIED')
+    delete node.reasonCode
+    node.resolution = 'PENDING'
+    await addEvidenceOwners(node, item, { ...context, used: new Set([...context.used, item.id]) })
+  }
+
+  /** The owners a confirmed item names, as nodes above `node`. Individuals are initials only. */
+  async function addEvidenceOwners(node: OwnershipNode, item: ClientEvidenceItem, context: EvidenceContext) {
+    const depth = node.depth + 1
+    for (const [index, owner] of item.owners.entries()) {
+      const stated = holdingRange(owner)
+      const ranges: PathRanges = {
+        ...(context.ranges.multiply ? { multiply: multiplyRanges(context.ranges.multiply, stated) } : {}),
+        ...(context.ranges.majority ? { majority: multiplyRanges(context.ranges.majority, stated[0] > 50 ? [100, 100] : stated) } : {}),
+      }
+      const range = chooseRange(ranges, method)
+      const id = `${node.id}/ev/${index}`
+      const edgeFrom = (ownerId: string) =>
+        edges.push({ parentId: ownerId, childId: node.id, source: 'client', basis: 'client_evidence', band: owner.holding ? stated : null, natures: [] })
+      const base = { id, name: owner.label, depth, secondaryReasons: [] as ReasonCode[], ...rangeFields(ranges, method), viaClientEvidence: item.id }
+
+      if (owner.kind === 'individual') {
+        const created: OwnershipNode = { ...base, kind: 'individual', resolution: 'RESOLVED_INDIVIDUAL' }
+        if (range && classify(range, threshold) === 'straddles') created.reasonCode = 'BAND_STRADDLES_THRESHOLD'
+        nodes.set(id, created)
+        edgeFrom(id)
+        continue
+      }
+
+      if (!context.noPrune && range && classify(range, threshold) === 'below') {
+        nodes.set(id, { ...base, kind: 'corporate', resolution: 'PRUNED' })
+        edgeFrom(id)
+        continue
+      }
+      if (depth >= maxDepth) {
+        nodes.set(id, { ...base, kind: 'corporate', resolution: 'UNRESOLVED', reasonCode: 'DEPTH_LIMIT_REACHED' })
+        edgeFrom(id)
+        continue
+      }
+
+      // Link to a register record only on exact keys the document printed: the registration number with its
+      // country, and/or an LEI. If both are printed they must point at the same record.
+      const registration = owner.registration
+      const byNumber = registration ? await matchGleif(registration.number, registration.country) : { matches: [], outage: false }
+      let byLei: GleifRecord | null = null
+      let outage = byNumber.outage
+      if (owner.leiShown && fetcher.gleif) {
+        try {
+          byLei = await fetcher.gleif.getRecord(owner.leiShown)
+        } catch {
+          outage = true
+        }
+      }
+      const numberMatch = byNumber.matches.length === 1 ? byNumber.matches[0] : null
+      const agreed = numberMatch && byLei && numberMatch.lei !== byLei.lei ? null : (numberMatch ?? byLei)
+      const match = agreed && agreed.registrationStatus === 'ISSUED' ? agreed : null
+
+      if (!match) {
+        const reasonCode: ReasonCode = outage ? 'SOURCE_UNAVAILABLE' : registration ? stopReasonFor(registration.country) : 'FOREIGN_ENTITY_UNMATCHED'
+        const stop: OwnershipNode = { ...base, kind: 'corporate', resolution: 'UNRESOLVED', reasonCode }
+        const profile = registerProfileRef(registration?.country)
+        if (profile) stop.registerProfile = profile
+        addSecondary(stop, registration?.country)
+        setIdentity(stop, { lei: owner.leiShown ?? undefined, country: registration?.country, registrationNumber: registration?.number })
+        nodes.set(id, stop)
+        edgeFrom(id)
+        await applyClientEvidence(
+          stop,
+          { lei: owner.leiShown ?? undefined, country: registration?.country, registrationNumber: registration?.number },
+          { ranges, noPrune: context.noPrune, ancestors: new Set([...context.ancestors, id]), used: context.used },
+        )
+        continue
+      }
+
+      const leiKey = `LEI:${match.lei}`
+      if (context.ancestors.has(leiKey)) {
+        nodes.set(id, { ...base, kind: 'corporate', resolution: 'UNRESOLVED', reasonCode: 'CIRCULAR_OWNERSHIP' })
+        edgeFrom(id)
+        continue
+      }
+      const seen = visited.get(leiKey)
+      if (seen) {
+        edgeFrom(seen)
+        continue
+      }
+      const followed = gleifNode(match, depth, { name: owner.label, ...rangeFields(ranges, method), viaClientEvidence: item.id })
+      nodes.set(leiKey, followed)
+      visited.set(leiKey, leiKey)
+      edgeFrom(leiKey)
+      queue.push({
+        companyNumber: '',
+        lei: match.lei,
+        record: match,
+        nodeId: leiKey,
+        depth,
+        ranges,
+        noPrune: context.noPrune,
+        ancestors: new Set([...context.ancestors, leiKey]),
+        evidenceUsed: context.used,
+      })
+    }
+  }
+
+  /** Walks one GLEIF node: follows its direct parent, or stops with a reason. Never resolves a node by itself. */
   async function processGleif(item: Item, node: OwnershipNode) {
     const gleif = fetcher.gleif
     if (!gleif || !item.lei) {
@@ -403,6 +603,12 @@ export async function walk(
     const parent = result.parent
     if (!parent) {
       stopGleif(node, country, result.exception)
+      setIdentity(node, { lei: record.lei, country, registrationNumber: record.registeredAs })
+      await applyClientEvidence(
+        node,
+        { lei: record.lei, country, registrationNumber: record.registeredAs },
+        { ranges: item.ranges, noPrune: item.noPrune, ancestors: item.ancestors, used: item.evidenceUsed ?? new Set() },
+      )
       return
     }
 
@@ -538,17 +744,7 @@ export async function walk(
       // Match on registration number and country only, never on name.
       const { text, code } = overseasCountry(psc)
       const registration = str(asRecord(psc.identification).registration_number)?.trim()
-      let matches: GleifRecord[] = []
-      let outage = false
-      if (registration && code) {
-        try {
-          matches = (await gleif.findByRegistration(registration, code)).filter(
-            (m) => m.registrationStatus === 'ISSUED' && sameRegistration(m.registeredAs, registration),
-          )
-        } catch {
-          outage = true
-        }
-      }
+      const { matches, outage } = await matchGleif(registration, code)
 
       if (matches.length !== 1) {
         const reasonCode: ReasonCode = outage
@@ -562,6 +758,12 @@ export async function walk(
         const profile = registerProfileRef(code)
         if (profile) stop.registerProfile = profile
         addSecondary(stop, code)
+        setIdentity(stop, { country: code, registrationNumber: registration })
+        await applyClientEvidence(
+          stop,
+          { country: code, registrationNumber: registration },
+          { ranges, noPrune, ancestors: new Set([...item.ancestors, stop.id]), used: new Set() },
+        )
         return
       }
 

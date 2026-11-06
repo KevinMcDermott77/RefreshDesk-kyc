@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-const MODEL = 'claude-sonnet-4-20250514'
+import { CLAUDE_MODEL } from './model'
+
+const MODEL = CLAUDE_MODEL
 export const PROMPT_VERSION = 'v1.0-entity'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

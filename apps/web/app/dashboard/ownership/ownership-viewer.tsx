@@ -11,8 +11,9 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { ExternalLink, X } from 'lucide-react'
-import { reasonText } from '@/lib/ownership/reason-text'
-import { formatFetchedAt, formatRange, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
+import { REQUEST_CONFIRMATION, reasonText } from '@/lib/ownership/reason-text'
+import { evidenceLink } from '@/lib/evidence/entry-link'
+import { formatFetchedAt, formatRange, overallText, NODE_HEIGHT, NODE_WIDTH, type FlowNode, type FlowNodeData, type Tone } from '@/lib/ownership/to-flow'
 import type { Mark, ProfileRow } from '@/lib/kyc-profile/evaluate'
 import { ruleText } from '@/lib/ownership/terminals'
 import { SavePackButton } from './save-pack-button'
@@ -94,7 +95,7 @@ function ProfilePanel({ rows }: { rows: ProfileRow[] }) {
 
 function bannerTone(summary: Summary) {
   if (summary.sourceUnavailable) return 'error'
-  return summary.status === 'resolved' ? 'good' : 'attention'
+  return summary.status === 'resolved' || summary.status === 'resolved_client_evidence' ? 'good' : 'attention'
 }
 
 const BADGE = 'border border-current px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.06em]'
@@ -128,6 +129,9 @@ function OwnerNode({ data, selected }: NodeProps<FlowNodeData>) {
         ) : null}
         <span className="opacity-80">{data.resolutionLabel}</span>
         {data.reasonCode ? <span className={BADGE}>{data.reasonCode}</span> : null}
+        {data.viaClientEvidence || data.clientEvidence?.applied ? (
+          <span className={`${BADGE} border-sky-700 text-sky-900 dark:border-sky-300 dark:text-sky-200`}>Client evidence</span>
+        ) : null}
         {data.secondaryReasons.includes('LISTING_US_UNCONFIRMED') ? (
           <span className={`${BADGE} border-amber-600 text-amber-800 dark:border-amber-400 dark:text-amber-300`}>US listing?</span>
         ) : null}
@@ -200,14 +204,80 @@ function RegisterProfileBlock({ profile }: { profile: NonNullable<FlowNodeData['
             </ul>
           ) : null}
         </Field>
-        <Field label="Document to request">{profile.documentToRequest}</Field>
+        <Field label="Document to request">
+          {REQUEST_CONFIRMATION}.
+          <span className="mt-1 block text-xs text-[var(--muted)]">If a register document is wanted instead: {profile.documentToRequest}.</span>
+        </Field>
         <Field label="Note">{profile.note}</Field>
       </dl>
     </div>
   )
 }
 
-function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void }) {
+const CERTIFIED_TEXT = { yes: 'certified', no: 'not certified', unclear: 'certification unclear' } as const
+
+function ClientEvidenceBlock({ evidence, clientId }: { evidence: NonNullable<FlowNodeData['clientEvidence']>; clientId?: string }) {
+  const why = evidence.notApplied?.map((w) => (w === 'policy' ? 'the policy does not accept client evidence as resolving' : w)).join(', ')
+  return (
+    <div className="border border-[var(--line)] p-3">
+      <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
+        Client evidence · {evidence.applied ? 'used: resolved on client-provided, reviewer-verified evidence' : 'found but not used'}
+      </p>
+      <ul className="mt-1 text-sm">
+        <li>
+          <span className="text-[var(--muted)]">document:</span> {evidence.kind.replace(/_/g, ' ')}
+        </li>
+        <li>
+          <span className="text-[var(--muted)]">as at:</span> {evidence.asAt ?? evidence.documentDate ?? 'not stated'}
+        </li>
+        {evidence.certified ? (
+          <li>
+            <span className="text-[var(--muted)]">certification:</span> {CERTIFIED_TEXT[evidence.certified]}
+            {evidence.certifierCapacity ? ` (${evidence.certifierCapacity.replace(/_/g, ' ')}${evidence.certificationDate ? `, ${evidence.certificationDate}` : ''})` : ''}
+          </li>
+        ) : (
+          <li>
+            <span className="text-[var(--muted)]">written confirmation:</span> {(evidence.receivedAs ?? 'other').replace(/_/g, ' ')} from the client, confirmed by a{' '}
+            {(evidence.confirmedByCapacity ?? 'unclear').replace(/_/g, ' ')}
+            {evidence.confirmationDate ? `, ${evidence.confirmationDate}` : ''} (no certification applies)
+          </li>
+        )}
+        <li>
+          <span className="text-[var(--muted)]">confirmed:</span> {formatFetchedAt(evidence.confirmedAt)}
+          {evidence.edited ? ' (with edits by the reviewer)' : ''}
+        </li>
+        {evidence.override ? (
+          <li>
+            <span className="text-[var(--muted)]">override:</span> accepted despite {evidence.override.reasons.join(' and ')}
+          </li>
+        ) : null}
+        {why ? (
+          <li>
+            <span className="text-[var(--muted)]">not used because:</span> {why}
+          </li>
+        ) : null}
+      </ul>
+      {clientId ? (
+        <a href={`/dashboard/clients/${clientId}/evidence/${evidence.id}`} className="mt-1 inline-block text-sm underline">
+          Open the evidence and its document
+        </a>
+      ) : null}
+    </div>
+  )
+}
+
+function SidePanel({
+  data,
+  onClose,
+  client,
+  subjectId,
+}: {
+  data: FlowNodeData
+  onClose: () => void
+  client?: { id: string; name: string }
+  subjectId?: string
+}) {
+  const link = evidenceLink(client?.id, subjectId, data)
   return (
     <aside className="absolute right-0 top-0 z-10 h-full w-full max-w-sm overflow-y-auto border-l border-[var(--line)] bg-[var(--panel)] p-4 text-[var(--foreground)] shadow-lg dark:bg-gray-900 dark:text-gray-100">
       <div className="flex items-start justify-between gap-2">
@@ -219,6 +289,15 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
           <X className="h-4 w-4" />
         </button>
       </div>
+      {link ? (
+        // At the top: the register profile below is long, and the button must not hide under it.
+        <a
+          href={link.href}
+          className="mt-3 block border border-[var(--accent-strong)] bg-[var(--accent)] px-4 py-2 text-center text-sm font-semibold text-white"
+        >
+          {link.label}
+        </a>
+      ) : null}
       <dl className="mt-4 space-y-3">
         <Field label="Resolution">
           {data.resolution}
@@ -259,6 +338,7 @@ function SidePanel({ data, onClose }: { data: FlowNodeData; onClose: () => void 
             </a>
           </div>
         ))}
+        {data.clientEvidence ? <ClientEvidenceBlock evidence={data.clientEvidence} clientId={client?.id} /> : null}
         {data.registerProfile ? <RegisterProfileBlock profile={data.registerProfile} /> : null}
       </dl>
       {data.companyUrl ? (
@@ -290,7 +370,7 @@ function showTop(instance: ReactFlowInstance, nodes: FlowNode[], width: number) 
 
 const INPUT = 'mt-1 block w-full border border-[var(--line)] bg-white px-3 py-2 text-sm text-gray-900 dark:bg-gray-900 dark:text-gray-100'
 
-export function OwnershipViewer() {
+export function OwnershipViewer({ client }: { client?: { id: string; name: string } } = {}) {
   const [state, action, pending] = useActionState<OwnershipViewState, FormData>(walkOwnershipAction, {})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -336,6 +416,32 @@ export function OwnershipViewer() {
             <option value="majority">majority</option>
           </select>
         </label>
+        {client ? (
+          <fieldset className="grid gap-3 border border-[var(--line)] p-3 md:col-span-5 md:grid-cols-3">
+            <legend className="px-1 text-sm font-semibold">Client evidence for {client.name}</legend>
+            <input type="hidden" name="client_id" value={client.id} />
+            <label className="flex items-start gap-2 text-sm md:col-span-2">
+              <input type="checkbox" name="accept_client_evidence" defaultChecked className="mt-1" />
+              <span>
+                Let confirmed client evidence resolve branches the registers cannot.
+                <span className="block text-xs text-[var(--muted)]">
+                  Shown as &ldquo;Resolved (client evidence)&rdquo;. When unticked, the evidence is shown but those branches stay partial. To add evidence, click an unresolved foreign company in the chart: its panel has an &ldquo;Add client evidence&rdquo; button at the top.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="accept_email_confirmation" defaultChecked className="mt-1" />
+              <span>
+                Accept an emailed confirmation.
+                <span className="block text-xs text-[var(--muted)]">Unticked: a confirmation that arrived by email stays partial; ask for a signed letter or chart.</span>
+              </span>
+            </label>
+            <label className="text-sm font-medium">
+              Oldest evidence accepted (months)
+              <input name="max_evidence_age_months" type="number" min={1} max={120} defaultValue={12} className={INPUT} />
+            </label>
+          </fieldset>
+        ) : null}
         <div className="md:col-span-5">
           <button
             disabled={pending}
@@ -382,12 +488,18 @@ export function OwnershipViewer() {
 
       {result ? (
         <>
+          {result.sample ? (
+            <p role="note" className="mt-4 border-2 border-red-700 bg-red-50 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-red-900">
+              Sample data: the built-in demo subject. The company, its register entries and the evidence are invented. A pack saved from this run says so.
+            </p>
+          ) : null}
+
           <SavePackButton pack={result.pack} />
 
           <ProfilePanel rows={result.profile} />
 
           <section className={`mt-6 border p-4 ${BANNER_CLASSES[bannerTone(result.summary)]}`}>
-            <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {result.summary.status}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.1em]">Overall: {overallText(result.summary)}</p>
             <p className="mt-1 text-sm">{countsLine(result.summary)}</p>
             {result.summary.unresolved.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm">
@@ -451,7 +563,7 @@ export function OwnershipViewer() {
               <Background />
               <Controls showInteractive={false} />
             </ReactFlow>
-            {selected ? <SidePanel data={selected} onClose={() => setSelectedId(null)} /> : null}
+            {selected ? <SidePanel data={selected} onClose={() => setSelectedId(null)} client={client} subjectId={result?.subjectId} /> : null}
           </div>
         </>
       ) : null}

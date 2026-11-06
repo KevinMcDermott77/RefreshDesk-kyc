@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useRef, useState } from 'react'
+import Link from 'next/link'
 import Papa from 'papaparse'
 import { validateCsvRow, type CsvRow } from '@/lib/schemas/client-csv'
 import { FormError } from '@/components/form-error'
@@ -66,12 +67,12 @@ export function ImportForm() {
             </ul>
           </div>
         )}
-        <a
+        <Link
           href="/dashboard/clients"
           className="mt-6 inline-block bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white"
         >
           View clients
-        </a>
+        </Link>
       </div>
     )
   }
@@ -205,12 +206,12 @@ export function ImportForm() {
         </div>
       )}
 
-      <a
+      <Link
         href="/dashboard/clients"
         className="text-sm text-[var(--muted)] hover:underline"
       >
         ← Back to clients
-      </a>
+      </Link>
     </div>
   )
 }

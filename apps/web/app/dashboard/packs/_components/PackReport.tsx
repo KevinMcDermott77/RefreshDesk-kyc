@@ -83,6 +83,12 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
     <article>
       <style>{PRINT_CSS}</style>
 
+      {snapshot.sample ? (
+        <p role="note" className="keep-together mb-4 border-2 border-red-700 bg-red-50 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-red-900">
+          Sample data: built from the built-in demo subject. The company, the register entries and the evidence are invented. Not a real KYC record.
+        </p>
+      ) : null}
+
       <header className="border-b border-[var(--line)] pb-5">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Refresh pack</p>
         <h1 className="mt-2 text-3xl font-semibold">{subject.name}</h1>
@@ -101,6 +107,9 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
             <dd>
               Threshold {policy.threshold}% · max depth {policy.maxDepth} · indirect method {policy.indirectMethod} · regulated entities{' '}
               {policy.acceptRegulatedAsTerminal ? 'end the walk' : 'do not end the walk'}
+              {policy.acceptClientEvidenceAsResolved === undefined
+                ? ''
+                : ` · client evidence ${policy.acceptClientEvidenceAsResolved ? 'may resolve a branch' : 'is shown but does not resolve'}, up to ${policy.maxEvidenceAgeMonths ?? 12} months old${policy.acceptEmailConfirmation === false ? ', emailed confirmations not accepted' : ''}`}
             </dd>
           </div>
           <div className="md:col-span-2">
@@ -193,6 +202,38 @@ export function PackReport({ snapshot, meta, controls }: { snapshot: PackSnapsho
           </p>
         </div>
       </Section>
+
+      {snapshot.clientEvidence && snapshot.clientEvidence.length > 0 ? (
+        <Section title="Client-provided evidence">
+          <p className="text-xs text-[var(--muted)]">
+            Documents the client provided, checked against the document by an admin other than the uploader. Each is identified by the
+            fingerprint of the document it rests on.
+          </p>
+          <ul className="mt-3 space-y-3 text-sm">
+            {snapshot.clientEvidence.map((block) => (
+              <li key={block.id} className="keep-together border border-[var(--line)] p-3">
+                <p className="font-semibold">
+                  {block.nodeName} · {block.applied ? 'resolved on this evidence' : 'found but not used'}
+                </p>
+                <p>
+                  {block.kind.replace(/_/g, ' ')} · as at {block.asAt ?? block.confirmationDate ?? block.documentDate ?? 'not stated'}
+                  {block.certified === undefined
+                    ? ` · written confirmation from the client (${(block.receivedAs ?? 'other').replace(/_/g, ' ')}), by a ${(block.confirmedByCapacity ?? 'unclear').replace(/_/g, ' ')}${block.confirmationDate ? `, ${block.confirmationDate}` : ''}; no certification applies`
+                    : ` · ${block.certified === 'yes' ? 'certified' : block.certified === 'no' ? 'not certified' : 'certification unclear'}`}
+                  {block.certifierCapacity ? ` (${block.certifierCapacity.replace(/_/g, ' ')}${block.certificationDate ? `, ${block.certificationDate}` : ''})` : ''}
+                </p>
+                <p>
+                  {block.label} · confirmed {formatFetchedAt(block.confirmedAt)}
+                  {block.edited ? ' with edits' : ''}
+                  {block.overrideExists ? ' · accepted by override (see the evidence record)' : ''}
+                </p>
+                {block.notApplied && block.notApplied.length > 0 ? <p>Not used because: {block.notApplied.join(', ')}</p> : null}
+                <p className="break-all font-mono text-xs">document sha-256 {block.documentSha256}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       <Section title="Source log">
         <p className="mb-2 text-xs text-[var(--muted)]">Every fetch behind this pack. “Cached” rows were served from an in-memory cache; the time is that of the original fetch.</p>

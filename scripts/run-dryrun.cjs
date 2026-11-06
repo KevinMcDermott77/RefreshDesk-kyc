@@ -12,6 +12,8 @@
 // (after supabase/tests/helpers.sql). --migration and --tests may each be given several times and
 // run in the order given: migrations first, then tests. Paths are relative to the current directory.
 // Slice 6 needs Slice 0b (require_role, firms.four_eyes), so list both unless 0b is already applied.
+// Slice 7a needs both; with 0b and 6 already on the database, give only the 7a migration.
+// Several --migration flags run in the order given (7e, then 7f), in the one transaction, with the tests after both.
 //
 // DRYRUN_DB_URL is read from the environment only. Neither it nor any part of it (host, user,
 // password, database name) is ever printed: error text is scrubbed before it is shown.
@@ -58,6 +60,37 @@ const PROBES = [
       select to_regclass('public.refresh_packs')::text as refresh_packs_table,
              to_regprocedure('public.create_refresh_pack(uuid,text,text,jsonb,jsonb,text)')::text as create_refresh_pack`,
     applied: (r) => r.refresh_packs_table !== null || r.create_refresh_pack !== null,
+  },
+  {
+    match: /slice7a/,
+    name: 'Slice 7a (client evidence)',
+    sql: `
+      select to_regclass('public.ownership_evidence')::text as ownership_evidence_table,
+             (select count(*) from information_schema.columns
+               where table_schema = 'public' and table_name = 'firms' and column_name = 'evidence_extraction_enabled')::int as extraction_columns,
+             to_regprocedure('public.confirm_ownership_evidence(uuid,jsonb,text)')::text as confirm_ownership_evidence`,
+    applied: (r) => r.ownership_evidence_table !== null || r.extraction_columns > 0 || r.confirm_ownership_evidence !== null,
+  },
+  {
+    match: /slice7e/,
+    name: 'Slice 7e (evidence follow-up)',
+    sql: `
+      select (select pg_get_constraintdef(c.oid)
+                from pg_constraint c
+               where c.conname = 'ownership_evidence_proposal_present'
+                 and c.conrelid = to_regclass('public.ownership_evidence')) as proposal_present_check`,
+    // Absent when 7a is not applied (the migration would fail); applied once the check allows a rejected draft.
+    applied: (r) => typeof r.proposal_present_check === 'string' && r.proposal_present_check.includes('rejected'),
+  },
+  {
+    match: /slice7f/,
+    name: 'Slice 7f (client ownership confirmation kind)',
+    sql: `
+      select (select pg_get_constraintdef(c.oid)
+                from pg_constraint c
+               where c.conname = 'ownership_evidence_evidence_kind_check'
+                 and c.conrelid = to_regclass('public.ownership_evidence')) as evidence_kind_check`,
+    applied: (r) => typeof r.evidence_kind_check === 'string' && r.evidence_kind_check.includes('client_ownership_confirmation'),
   },
 ]
 

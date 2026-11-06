@@ -312,7 +312,23 @@ export default async function ClientDetailPage({
         <section className="mt-6 border border-[var(--line)] bg-[var(--panel)] p-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-semibold">Documents</h2>
-            {canWrite && <UploadDropdown clientId={id} />}
+            {canWrite && (
+              <div className="flex items-center gap-3">
+                <a
+                  href={`/dashboard/clients/${id}/evidence/new`}
+                  className="inline-flex items-center gap-1 border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm font-semibold hover:bg-[var(--line)]"
+                >
+                  Add ownership evidence
+                </a>
+                <a
+                  href={`/dashboard/ownership?client=${id}`}
+                  className="inline-flex items-center gap-1 border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm font-semibold hover:bg-[var(--line)]"
+                >
+                  Ownership chain (with this client&apos;s evidence)
+                </a>
+                <UploadDropdown clientId={id} />
+              </div>
+            )}
           </div>
 
           {docs.length === 0 ? (

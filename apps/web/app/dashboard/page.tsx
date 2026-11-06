@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { redirect } from "next/navigation";
-import { FileCheck, LogOut, Network, Settings } from "lucide-react";
+import { FileCheck, FileSearch, LogOut, Network, Settings } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -70,6 +70,13 @@ export default async function DashboardPage() {
             >
               <FileCheck className="h-4 w-4" />
               Refresh packs
+            </Link>
+            <Link
+              className="inline-flex items-center gap-2 border border-[var(--line)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold"
+              href="/dashboard/evidence"
+            >
+              <FileSearch className="h-4 w-4" />
+              Client evidence
             </Link>
             <Link
               className="inline-flex items-center gap-2 border border-[var(--line)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold"

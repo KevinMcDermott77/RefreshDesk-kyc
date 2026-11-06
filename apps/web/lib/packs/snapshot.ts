@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { ProfileRow } from '@/lib/kyc-profile/evaluate'
 import type { FlowEdge, FlowNode, WalkSummary } from '@/lib/ownership/to-flow'
 import type { IndirectMethod, WalkResult } from '@/lib/ownership/types'
+import { EVIDENCE_LABEL } from '@/lib/evidence/types'
 import { canonicalJson, snapshotFingerprint } from './canonical'
 import type { SourceLogEntry } from './source-log'
 
@@ -19,6 +20,43 @@ export type PackPolicy = {
   maxDepth: number
   indirectMethod: IndirectMethod
   acceptRegulatedAsTerminal: boolean
+  /** Slice 7: whether confirmed client evidence may resolve a branch (absent in packs saved before it existed). */
+  acceptClientEvidenceAsResolved?: boolean
+  /** Slice 7: an emailed confirmation from the client may resolve a branch. */
+  acceptEmailConfirmation?: boolean
+  /** Slice 7: the age limit for client evidence, in months. */
+  maxEvidenceAgeMonths?: number
+}
+
+/**
+ * Confirmed client evidence the run used, or found and could not use. What a reader needs to judge it: the kind
+ * of document, its dates, whether and in what capacity it was certified, who confirmed it, a fingerprint of the
+ * document, and whether an override was needed. Not here: the certifier's name, an override's note, any owner's name.
+ */
+export type PackClientEvidence = {
+  id: string
+  kind: string
+  /** The company the evidence is about (not a person). */
+  nodeName: string
+  asAt?: string
+  documentDate?: string
+  /** Absent on a client's written confirmation, which nobody certifies. */
+  certified?: 'yes' | 'no' | 'unclear'
+  certifierCapacity?: string
+  certificationDate?: string
+  /** A client's written confirmation: the capacity of whoever confirmed it (never their name), the date, and how it arrived. */
+  confirmedByCapacity?: string
+  confirmationDate?: string
+  receivedAs?: string
+  confirmedAt: string
+  /** The confirming admin's user id. */
+  confirmedBy?: string
+  edited: boolean
+  documentSha256: string
+  label: string
+  overrideExists: boolean
+  applied: boolean
+  notApplied?: string[]
 }
 
 export type PackSummary = {
@@ -48,6 +86,10 @@ export type PackSnapshot = {
   pointsToCheck: WalkSummary['pointsToCheck']
   chart: { nodes: FlowNode[]; edges: FlowEdge[] }
   sourceLog: SourceLogEntry[]
+  /** Client evidence used or found (Slice 7); absent when the run met none. */
+  clientEvidence?: PackClientEvidence[]
+  /** Built from the built-in sample subject, not a real company. Absent on a real run. */
+  sample?: true
 }
 
 // Keys that must never appear anywhere in a snapshot (personal data about individuals).
@@ -66,6 +108,10 @@ export function findForbiddenKeys(value: unknown, path = 'snapshot'): string[] {
   }
   return []
 }
+
+// A node that is already initials (client-evidence owners reach the walk that way) holds no name to leak,
+// and would only match the masked initials the snapshot is meant to contain.
+const INITIALS_ONLY = /^(\p{L}\.)+$/u
 
 /** "SMITH, John Paul" and "Mr John Paul Smith" both reduce to the words John, Paul, Smith. */
 function nameVariants(name: string): string[] {
@@ -99,13 +145,59 @@ export type BuildSnapshotInput = {
   sourceLog: SourceLogEntry[]
   /** Full names that must not appear (officers and individual owners); checked, never stored. */
   individualNames?: string[]
+  /** The run used the built-in sample subject. */
+  sample?: boolean
   now?: Date
+}
+
+/** The client-evidence blocks of a run, one per node that met evidence. */
+export function evidenceBlocks(walked: WalkResult): PackClientEvidence[] {
+  return walked.nodes.flatMap((node) => {
+    const ev = node.clientEvidence
+    if (!ev) return []
+    return [
+      {
+        id: ev.id,
+        kind: ev.kind,
+        nodeName: node.name,
+        ...(ev.asAt ? { asAt: ev.asAt } : {}),
+        ...(ev.documentDate ? { documentDate: ev.documentDate } : {}),
+        ...(ev.certified ? { certified: ev.certified } : {}),
+        ...(ev.certifierCapacity ? { certifierCapacity: ev.certifierCapacity } : {}),
+        ...(ev.certificationDate ? { certificationDate: ev.certificationDate } : {}),
+        ...(ev.confirmedByCapacity ? { confirmedByCapacity: ev.confirmedByCapacity } : {}),
+        ...(ev.confirmationDate ? { confirmationDate: ev.confirmationDate } : {}),
+        ...(ev.receivedAs ? { receivedAs: ev.receivedAs } : {}),
+        confirmedAt: ev.confirmedAt,
+        ...(ev.confirmedBy ? { confirmedBy: ev.confirmedBy } : {}),
+        edited: ev.edited,
+        documentSha256: ev.documentSha256,
+        label: EVIDENCE_LABEL,
+        overrideExists: !!ev.override,
+        applied: ev.applied,
+        ...(ev.notApplied ? { notApplied: ev.notApplied } : {}),
+      },
+    ]
+  })
+}
+
+/** One source-log line per evidence item: the claim rests on these exact bytes, confirmed at that time. */
+export function evidenceSourceLog(blocks: PackClientEvidence[]): SourceLogEntry[] {
+  return blocks.map((block) => ({
+    register: 'Client-provided evidence (reviewer-verified)',
+    path: `evidence/${block.id}#sha256:${block.documentSha256}`,
+    fetchedAt: block.confirmedAt,
+    status: 200,
+    cached: false,
+  }))
 }
 
 /** Assembles the snapshot from the views the ownership page already shows. Pure. */
 export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
-  const { subject, policy, walked, profile, flow, summary, sourceLog } = input
+  const { subject, policy, walked, profile, flow, summary } = input
   const openBranches = summary.unresolved.length
+  const blocks = evidenceBlocks(walked)
+  const sourceLog = [...input.sourceLog, ...evidenceSourceLog(blocks)]
 
   const snapshot: PackSnapshot = {
     version: PACK_SNAPSHOT_VERSION,
@@ -114,7 +206,7 @@ export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
     policy,
     profile,
     summary: {
-      status: walked.status === 'resolved' && openBranches === 0 ? 'complete' : 'partial',
+      status: (walked.status === 'resolved' || walked.status === 'resolved_client_evidence') && openBranches === 0 ? 'complete' : 'partial',
       walkStatus: summary.status,
       openBranches,
       counts: summary.counts,
@@ -125,6 +217,8 @@ export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
     pointsToCheck: summary.pointsToCheck,
     chart: flow,
     sourceLog,
+    ...(blocks.length > 0 ? { clientEvidence: blocks } : {}),
+    ...(input.sample ? { sample: true as const } : {}),
   }
 
   // Normalise to plain JSON (no undefined, no class instances) so what is hashed is what is stored.
@@ -132,7 +226,7 @@ export function buildSnapshot(input: BuildSnapshotInput): PackSnapshot {
 
   const forbidden = findForbiddenKeys(plain)
   if (forbidden.length > 0) throw new Error(`A refresh pack snapshot must not hold personal data (${forbidden.join(', ')})`)
-  const names = [...(input.individualNames ?? []), ...walked.nodes.filter((n) => n.kind === 'individual').map((n) => n.name)]
+  const names = [...(input.individualNames ?? []), ...walked.nodes.filter((n) => n.kind === 'individual' && !INITIALS_ONLY.test(n.name.trim())).map((n) => n.name)]
   assertNoPersonalNames(plain, names)
   return plain
 }
@@ -166,11 +260,14 @@ export const packSnapshotSchema = z.object({
     maxDepth: z.number(),
     indirectMethod: z.enum(['either', 'multiply', 'majority']),
     acceptRegulatedAsTerminal: z.boolean(),
+    acceptClientEvidenceAsResolved: z.boolean().optional(),
+    acceptEmailConfirmation: z.boolean().optional(),
+    maxEvidenceAgeMonths: z.number().optional(),
   }),
   profile: z.array(profileRowSchema),
   summary: z.object({
     status: z.enum(['complete', 'partial']),
-    walkStatus: z.enum(['resolved', 'partial', 'unresolved']),
+    walkStatus: z.enum(['resolved', 'resolved_client_evidence', 'partial', 'unresolved']),
     openBranches: z.number().int().nonnegative(),
     counts: z.record(z.string(), z.number()),
     intermediate: z.number(),
@@ -203,6 +300,32 @@ export const packSnapshotSchema = z.object({
   sourceLog: z.array(
     z.object({ register: z.string(), path: z.string(), fetchedAt: z.string(), status: z.number(), cached: z.boolean().optional() }),
   ),
+  clientEvidence: z
+    .array(
+      z.object({
+        id: z.string(),
+        kind: z.string(),
+        nodeName: z.string(),
+        asAt: z.string().optional(),
+        documentDate: z.string().optional(),
+        certified: z.enum(['yes', 'no', 'unclear']).optional(),
+        certifierCapacity: z.string().optional(),
+        certificationDate: z.string().optional(),
+        confirmedByCapacity: z.string().optional(),
+        confirmationDate: z.string().optional(),
+        receivedAs: z.string().optional(),
+        confirmedAt: z.string(),
+        confirmedBy: z.string().optional(),
+        edited: z.boolean(),
+        documentSha256: z.string(),
+        label: z.string(),
+        overrideExists: z.boolean(),
+        applied: z.boolean(),
+        notApplied: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
+  sample: z.literal(true).optional(),
 })
 
 /** Parses and checks a snapshot; throws with a readable message if it is malformed or holds personal data. */

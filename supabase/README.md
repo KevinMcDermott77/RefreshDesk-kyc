@@ -73,3 +73,59 @@ DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
 ```
 
 The SQL tests share `supabase/tests/helpers.sql`; `permissions.test.sql` (Slice 0b) and `refresh_packs.test.sql` (Slice 6) each need it run first.
+
+## Slice 7a: client-provided ownership evidence
+
+`supabase/migrations/20261016000000_slice7a_client_evidence.sql` (needs Slices 0b and 6). Design: `docs/slice7-client-evidence.md`.
+
+- `ownership_evidence` holds one upload against one unresolved foreign node, its proposed owners (extracted by Claude, or typed in by hand) and, once an admin confirms it, the confirmed owners. Status runs draft → proposed → confirmed or rejected; a newer confirmation for the same node moves the old one to superseded. **Rows are never deleted**: a trigger refuses every DELETE, a confirmed row can only become superseded, and rejected and superseded rows are frozen. Rows are written only by the RPCs.
+- RPCs: `create_ownership_evidence` (member or admin; registers the document as type `ownership_evidence`, which `register_document` still refuses), `save_evidence_proposal` (its uploader), `confirm_ownership_evidence` (admin; with `firms.four_eyes` on, not the uploader), `reject_ownership_evidence` (admin, or the uploader withdrawing; a note is required), `set_evidence_extraction` (admin), `confirmed_evidence_for` (any member; read_only gets no names).
+- `firms.evidence_extraction_enabled` defaults to false, so a new firm must switch Claude extraction on; manual entry always works. The migration turns it on only when exactly one firm exists (the demo firm); with more, it leaves every firm off and prints a notice.
+- Names of owners are in `ownership_evidence` only (admins and members can read it). `read_only` reads `ownership_evidence_overview`, which has no payloads, names or file references. Audit payloads hold ids, kinds, counts and hashes, never names. The payload check refuses date of birth, nationality, residence and occupation keys, and requires initials on individuals, a page reference on every owner and a note on every override.
+
+Dry-run ONLY this migration (0b and 6 are already applied to the live database):
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+  --migration supabase/migrations/20261016000000_slice7a_client_evidence.sql \
+  --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence.test.sql
+```
+
+### Slice 7b: using it (no new migration)
+
+7b is app code on top of the 7a migration; it needs nothing more in the database, so apply 7a and deploy 7b together (migration first: the evidence pages and the Settings toggle read columns and tables that 7a creates).
+
+- **Add evidence:** `/dashboard/clients/<id>/evidence/new` (a link on the client page). The browser uploads the file straight to Storage; the server action receives only the path, checks it is in the client's folder and that the bytes match the type, hashes the file (SHA-256) and calls `create_ownership_evidence`. The node is identified by an LEI, or a registration number with its country: never a name alone.
+- **Extraction** runs only if the firm switched it on (Settings → Client ownership evidence, admins) and the uploader ticked it. It uses prompt `ownership-evidence-v1` on `claude-sonnet-4-20250514` and only reads what is printed; it is never asked to look anything up. Rows without a page reference are dropped with a warning, an override is never accepted from the model, certification defaults to "unclear", and initials are set by the server. With extraction off, or if it fails, the item stays a draft and the uploader types the owners in.
+- **Confirm:** `/dashboard/clients/<id>/evidence/<evidenceId>` shows the document beside an editable table. A different admin (four-eyes) confirms, edits, or rejects with a note; the uploader can withdraw. Printed registration numbers are looked up in GLEIF for the reviewer to compare (exact number and country only, display only, nothing is linked). The coverage rule is shown as the reviewer edits and cannot be overridden.
+- **Queue:** `/dashboard/evidence` (a link on the dashboard) lists items awaiting confirmation, drafts and recent decisions from the names-free overview, so every role can open it; `read_only` sees status only.
+- Node keys are `LEI:<lei>` or `REG:<country>:<normalised number>`, built from the identity alone, so slice 7c can find evidence for a walk node from the same facts.
+
+## Slice 7e: follow-up to 7a
+
+`supabase/migrations/20261017000000_slice7e_evidence_followup.sql` (needs 7a, which is already applied).
+
+- A draft (uploaded, no owners entered) could not be withdrawn or rejected: the row becomes `rejected` with no proposal, and `ownership_evidence_proposal_present` only allowed that on a draft. The check now allows a missing proposal on a draft or a rejected item; proposed, confirmed and superseded items still need one, and a rejected item is still frozen.
+- The "already open" message now says "an evidence item for this node is already open (draft or awaiting confirmation)". `create_ownership_evidence` is the 7a function with only that line changed.
+
+Dry-run ONLY this migration:
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs \
+  --migration supabase/migrations/20261017000000_slice7e_evidence_followup.sql \
+  --tests supabase/tests/helpers.sql --tests supabase/tests/client_evidence_followup.test.sql
+```
+
+## Slice 7f: a client's written confirmation (and certified = not_applicable)
+
+`supabase/migrations/20261018000000_slice7f_confirmation_kind.sql` (needs 7a and 7e).
+
+- New evidence kind `client_ownership_confirmation` in the `evidence_kind` check and in `create_ownership_evidence` (the 7e function plus that value). `signed_structure_chart` stays valid and is treated as a confirmation.
+- `certified` gains `not_applicable`, because nobody certifies the client's own statement. A new constraint, `ownership_evidence_certified_matches_kind`, pairs the two confirmation kinds with `not_applicable` and every other kind with yes, no or unclear, on the typed column and on the proposal and confirmed payloads. It is added `NOT VALID`: new and changed rows are checked, rows written before it existed are not re-checked.
+- `ownership_evidence_payload_error` accepts `not_applicable` (its message now lists the four values).
+
+7e and 7f are both unapplied, so ONE command dry-runs them together, in order, with all their tests (every migration and test file runs in the one transaction, which is rolled back):
+
+```
+DRYRUN_DB_URL='postgresql://...' node scripts/run-dryrun.cjs   --migration supabase/migrations/20261017000000_slice7e_evidence_followup.sql   --migration supabase/migrations/20261018000000_slice7f_confirmation_kind.sql   --tests supabase/tests/helpers.sql   --tests supabase/tests/client_evidence_followup.test.sql   --tests supabase/tests/client_evidence_kind.test.sql
+```
